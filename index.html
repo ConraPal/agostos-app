@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agostos — Gestión de Campo</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/livestock.css" />
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🌾</span>
+      <span class="logo-text">Agostos</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#livestock" class="nav-item active" data-module="livestock">
+        <span class="nav-icon">🐄</span>
+        <span>Hacienda</span>
+      </a>
+      <!-- Futuros módulos -->
+      <a href="#fields" class="nav-item disabled" data-module="fields">
+        <span class="nav-icon">🗺️</span>
+        <span>Potreros</span>
+      </a>
+      <a href="#finance" class="nav-item disabled" data-module="finance">
+        <span class="nav-icon">💰</span>
+        <span>Finanzas</span>
+      </a>
+      <a href="#reports" class="nav-item disabled" data-module="reports">
+        <span class="nav-icon">📊</span>
+        <span>Reportes</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Header -->
+    <header class="topbar">
+      <h1 class="topbar-title" id="page-title">Hacienda</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="btn-new-animal">+ Nuevo animal</button>
+      </div>
+    </header>
+
+    <!-- Módulo Hacienda -->
+    <section id="module-livestock" class="module active">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Stock total</span>
+          <span class="stat-value" id="stat-total">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Vacas</span>
+          <span class="stat-value" id="stat-cows">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Toros</span>
+          <span class="stat-value" id="stat-bulls">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Terneros</span>
+          <span class="stat-value" id="stat-calves">0</span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="registry">Registro</button>
+        <button class="tab" data-tab="movements">Movimientos</button>
+        <button class="tab" data-tab="history">Historial</button>
+      </div>
+
+      <!-- Tab: Registro -->
+      <div id="tab-registry" class="tab-content active">
+        <div class="table-toolbar">
+          <input type="search" class="search-input" id="search-animals" placeholder="Buscar por caravana o nombre..." />
+          <select class="filter-select" id="filter-type">
+            <option value="">Todos los tipos</option>
+            <option value="vaca">Vaca</option>
+            <option value="toro">Toro</option>
+            <option value="ternero">Ternero</option>
+            <option value="vaquillona">Vaquillona</option>
+            <option value="novillo">Novillo</option>
+          </select>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table" id="animals-table">
+            <thead>
+              <tr>
+                <th>Caravana</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Raza</th>
+                <th>Nacimiento</th>
+                <th>Potrero</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="animals-tbody">
+              <tr class="empty-row">
+                <td colspan="8">No hay animales registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Movimientos -->
+      <div id="tab-movements" class="tab-content">
+        <div class="table-toolbar">
+          <button class="btn btn-secondary" id="btn-new-movement">+ Registrar movimiento</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="movements-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Caravana</th>
+                <th>Tipo</th>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="movements-tbody">
+              <tr class="empty-row">
+                <td colspan="6">No hay movimientos registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Historial -->
+      <div id="tab-history" class="tab-content">
+        <div class="table-wrapper">
+          <table class="data-table" id="history-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Caravana</th>
+                <th>Evento</th>
+                <th>Detalle</th>
+                <th>Usuario</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <tr class="empty-row">
+                <td colspan="5">No hay registros en el historial.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Modal: Nuevo movimiento -->
+  <div class="modal-overlay hidden" id="modal-movement">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Registrar movimiento</h2>
+        <button class="modal-close" id="modal-movement-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-movement">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fm-animal">Animal *</label>
+            <div class="animal-search-wrap">
+              <input type="text" id="fm-animal" name="animal" required
+                placeholder="Buscar por caravana o nombre..."
+                autocomplete="off" />
+              <ul class="animal-dropdown hidden" id="animal-dropdown"></ul>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fm-tipo">Tipo de movimiento *</label>
+            <select id="fm-tipo" name="tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="traslado">Traslado</option>
+              <option value="entrada">Entrada</option>
+              <option value="salida">Salida</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fm-origen">Potrero origen</label>
+            <input type="text" id="fm-origen" name="origen" placeholder="Se completa automático" />
+          </div>
+          <div class="form-group">
+            <label for="fm-destino">Potrero destino</label>
+            <input type="text" id="fm-destino" name="destino" placeholder="Ej: Potrero Sur" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fm-fecha">Fecha *</label>
+            <input type="date" id="fm-fecha" name="fecha" required />
+          </div>
+          <div class="form-group">
+            <!-- spacer -->
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="fm-obs">Observaciones</label>
+          <textarea id="fm-obs" name="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-movement">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo animal -->
+  <div class="modal-overlay hidden" id="modal-animal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-animal-title">Nuevo animal</h2>
+        <button class="modal-close" id="modal-animal-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-animal">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-caravana">Caravana *</label>
+            <input type="text" id="f-caravana" name="caravana" required placeholder="Ej: AR-0042" />
+          </div>
+          <div class="form-group">
+            <label for="f-nombre">Nombre</label>
+            <input type="text" id="f-nombre" name="nombre" placeholder="Opcional" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-tipo">Tipo *</label>
+            <select id="f-tipo" name="tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="vaca">Vaca</option>
+              <option value="toro">Toro</option>
+              <option value="ternero">Ternero</option>
+              <option value="vaquillona">Vaquillona</option>
+              <option value="novillo">Novillo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="f-raza">Raza</label>
+            <input type="text" id="f-raza" name="raza" placeholder="Ej: Angus" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-nacimiento">Fecha de nacimiento</label>
+            <input type="date" id="f-nacimiento" name="nacimiento" />
+          </div>
+          <div class="form-group">
+            <label for="f-potrero">Potrero</label>
+            <input type="text" id="f-potrero" name="potrero" placeholder="Ej: Potrero Norte" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-estado">Estado</label>
+            <select id="f-estado" name="estado">
+              <option value="activo">Activo</option>
+              <option value="vendido">Vendido</option>
+              <option value="muerto">Muerto</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="f-peso">Peso (kg)</label>
+            <input type="number" id="f-peso" name="peso" placeholder="Ej: 420" min="0" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="f-obs">Observaciones</label>
+          <textarea id="f-obs" name="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-animal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/livestock.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
