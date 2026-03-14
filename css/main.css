@@ -29,6 +29,9 @@ body {
   font-size: 14px;
 }
 
+/* ===== Utilities ===== */
+.hidden { display: none !important; }
+
 /* ===== Sidebar ===== */
 .sidebar {
   width: 220px;

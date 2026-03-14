@@ -1,0 +1,39 @@
+/* ===== Finance Module ===== */
+
+/* Stats */
+.stat-negativo { color: var(--color-danger) !important; }
+
+/* Type badges */
+.badge-tx-ingreso { background: #e8f5e9; color: #2e7d32; }
+.badge-tx-gasto   { background: #fce4ec; color: #c0392b; }
+
+/* Monto column */
+.monto-cell    { text-align: right; font-weight: 600; white-space: nowrap; }
+.monto-ingreso { color: #2e7d32; }
+.monto-gasto   { color: #c0392b; }
+
+.actions-cell { white-space: nowrap; }
+
+/* Resumen tab */
+.resumen-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-top: 4px;
+}
+
+.resumen-section h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--color-muted);
+  margin-bottom: 12px;
+}
+
+.resumen-empty {
+  color: var(--color-muted);
+  font-style: italic;
+  padding: 20px 0;
+  font-size: 13px;
+}

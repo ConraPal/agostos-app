@@ -18,10 +18,12 @@ agostos-app/
 ├── index.html          # Entry point único — contiene sidebar, topbar y todos los módulos
 ├── css/
 │   ├── main.css        # Estilos globales: layout, sidebar, tablas, modales, formularios
-│   └── livestock.css   # Estilos específicos del módulo hacienda
+│   ├── livestock.css   # Estilos específicos del módulo hacienda
+│   └── finance.css     # Estilos específicos del módulo finanzas
 ├── js/
 │   ├── storage.js      # Wrapper de localStorage — se carga primero
 │   ├── livestock.js    # Módulo hacienda — se carga segundo
+│   ├── finance.js      # Módulo finanzas — se carga tercero
 │   └── app.js          # Bootstrap de la app — se carga último
 └── assets/
     └── icons/
@@ -41,13 +43,20 @@ Cada módulo del campo (hacienda, potreros, finanzas, etc.) sigue este patrón:
 
 No hay router de URL. La navegación entre módulos es visual (mostrar/ocultar secciones `.module`). El sidebar maneja el estado activo con clases CSS.
 
+Al cambiar de módulo, `app.js` también actualiza el título del topbar y alterna la visibilidad del botón de acción correspondiente (cada módulo tiene su propio botón en el topbar, oculto con `.hidden` cuando el módulo no está activo).
+
 ### Orden de carga de scripts
 
 ```html
 <script src="js/storage.js"></script>   <!-- 1. utilidades base -->
 <script src="js/livestock.js"></script> <!-- 2. módulos -->
-<script src="js/app.js"></script>       <!-- 3. bootstrap (inicia módulos) -->
+<script src="js/finance.js"></script>   <!-- 3. módulos -->
+<script src="js/app.js"></script>       <!-- 4. bootstrap (inicia módulos) -->
 ```
+
+### Tabs
+
+Los tabs están scoped al módulo padre: el handler de click en `app.js` usa `.closest('.module')` para activar/desactivar solo los tabs y tab-contents del módulo actualmente visible. Esto evita conflictos entre módulos.
 
 ## Módulo: Livestock Tracking (Hacienda)
 
@@ -150,17 +159,64 @@ Función interna del módulo. Llamada desde los 4 puntos de escritura:
 - **Movimientos** — registro de traslados/entradas/salidas entre potreros ✓
 - **Historial** — log cronológico con badges por tipo de evento ✓
 
+## Módulo: Finanzas
+
+### Propósito
+
+Registro de ingresos y gastos del campo, con resumen por categoría.
+
+### Datos persistidos en localStorage
+
+| Key                | Contenido                        |
+|--------------------|----------------------------------|
+| `ag_transactions`  | Array de transacciones           |
+
+### Estructura de una transacción
+
+```js
+{
+  id:            String,   // timestamp como string
+  fecha:         String,   // ISO date elegida por el usuario
+  tipo:          String,   // "ingreso" | "gasto"
+  categoria:     String,
+  monto:         Number,
+  descripcion:   String,
+  observaciones: String
+}
+```
+
+### Categorías
+
+**Ingreso:** Venta de animales · Arrendamiento · Subsidios · Otro ingreso
+
+**Gasto:** Compra de animales · Veterinaria · Alimentación · Combustible · Maquinaria · Sueldos · Otro gasto
+
+Las categorías se cargan dinámicamente en el modal según el tipo seleccionado.
+
+### Stats
+
+- **Balance** — total ingresos − total gastos (rojo si negativo)
+- **Total ingresos** — suma de todas las transacciones de tipo `ingreso`
+- **Total gastos** — suma de todas las transacciones de tipo `gasto`
+- **Transacciones del mes** — count de transacciones del mes en curso
+
+### Tabs del módulo
+
+- **Transacciones** — CRUD con búsqueda por descripción/categoría y filtro por tipo ✓
+- **Resumen** — breakdown de totales por categoría, separado en ingresos y gastos ✓
+
 ## Módulos planificados
 
 | Módulo     | Estado    | Descripción                                        |
 |------------|-----------|----------------------------------------------------|
 | Hacienda   | Completo  | Registro, movimientos e historial funcionando      |
-| Potreros   | Pendiente    | Gestión de campos y pasturas       |
-| Finanzas   | Pendiente    | Gastos, ingresos, ventas           |
-| Reportes   | Pendiente    | Resúmenes y exportaciones          |
+| Finanzas   | Completo  | Transacciones, stats y resumen por categoría       |
+| Potreros   | Pendiente | Gestión de campos y pasturas                       |
+| Reportes   | Pendiente | Resúmenes y exportaciones                          |
 
 ## Notas de desarrollo
 
 - **localStorage es temporal**: cuando se incorpore backend, `storage.js` es el único archivo a reemplazar. Los módulos llaman solo a `Storage.get()` y `Storage.set()`.
 - **Sin build step**: se puede abrir `index.html` directo en el navegador para desarrollo local.
-- **IDs de animales**: se usan timestamps (`Date.now()`) como IDs. Suficiente para localStorage; cambiar a UUIDs si se migra a backend.
+- **IDs**: se usan timestamps (`Date.now()`) como IDs. Suficiente para localStorage; cambiar a UUIDs si se migra a backend.
+- **`.hidden`**: clase utilitaria en `main.css` (`display: none !important`) usada para ocultar elementos del topbar al cambiar de módulo.
