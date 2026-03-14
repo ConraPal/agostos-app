@@ -310,6 +310,12 @@ La imagen se ubica al pie del sidebar (`<div class="sidebar-art">`). Estilos en 
 - `::before` aplica un gradiente de `--color-sidebar` a transparente para fundirla con la navegación
 - `height: 148px`, `object-fit: cover`, `object-position: center 30%`, `opacity: .82`
 
+## Git y deploy
+
+- **Remote:** `git@github.com:ConraPal/agostos-app.git` (SSH)
+- **Autenticación:** clave SSH ed25519 en `~/.ssh/id_ed25519`, registrada en GitHub bajo la cuenta ConraPal.
+- **Rama principal:** `main`
+
 ## Notas de desarrollo
 
 - **localStorage es temporal**: cuando se incorpore backend, `storage.js` es el único archivo a reemplazar. Los módulos llaman solo a `Storage.get()` y `Storage.set()`.
