@@ -53,6 +53,23 @@ No hay router de URL. La navegación entre módulos es visual (mostrar/ocultar s
 
 Al cambiar de módulo, `app.js` también actualiza el título del topbar y alterna la visibilidad del botón de acción correspondiente (cada módulo tiene su propio botón en el topbar, oculto con `.hidden` cuando el módulo no está activo).
 
+### Mobile / Responsive
+
+Breakpoints implementados en `main.css` y `livestock.css`:
+
+| Breakpoint   | Cambios                                                                 |
+|--------------|-------------------------------------------------------------------------|
+| `≤ 768px`    | Sidebar se convierte en overlay deslizable; aparece botón hamburger (☰) |
+| `≤ 768px`    | Stats grid pasa de 4 → 2 columnas; form-row pasa a 1 columna           |
+| `≤ 480px`    | Stats grid pasa a 1 columna; labels de botones del topbar se ocultan   |
+
+**Sidebar mobile:**
+- El sidebar se posiciona `fixed` con `left: -220px` por defecto
+- `body.sidebar-open` lo muestra (`left: 0`) con transición CSS
+- `#sidebar-overlay` cubre el contenido con fondo semitransparente; al clickearlo cierra el sidebar
+- Navegar a cualquier módulo también cierra el sidebar automáticamente
+- El toggle lo maneja `app.js` con `document.body.classList.toggle('sidebar-open')`
+
 ### Orden de carga de scripts
 
 ```html
@@ -315,6 +332,7 @@ La imagen se ubica al pie del sidebar (`<div class="sidebar-art">`). Estilos en 
 - **Remote:** `git@github.com:ConraPal/agostos-app.git` (SSH)
 - **Autenticación:** clave SSH ed25519 en `~/.ssh/id_ed25519`, registrada en GitHub bajo la cuenta ConraPal.
 - **Rama principal:** `main`
+- **Deploy:** GitHub Pages habilitado desde `main` — URL pública: `https://conrapal.github.io/agostos-app/`
 
 ## Notas de desarrollo
 
