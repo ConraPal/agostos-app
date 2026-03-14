@@ -1,3 +1,44 @@
+// ===== UI Utilities =====
+const ui = (() => {
+  // --- Toast ---
+  let toastTimer = null;
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast toast-${type} toast-show`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('toast-show'), 2800);
+  }
+
+  // --- Confirm modal ---
+  let _resolve = null;
+  function confirm(msg, okLabel = 'Eliminar') {
+    document.getElementById('confirm-message').textContent = msg;
+    document.getElementById('confirm-ok').textContent = okLabel;
+    document.getElementById('modal-confirm').classList.remove('hidden');
+    return new Promise(resolve => { _resolve = resolve; });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('confirm-ok').addEventListener('click', () => {
+      document.getElementById('modal-confirm').classList.add('hidden');
+      _resolve?.(true); _resolve = null;
+    });
+    document.getElementById('confirm-cancel').addEventListener('click', () => {
+      document.getElementById('modal-confirm').classList.add('hidden');
+      _resolve?.(false); _resolve = null;
+    });
+    document.getElementById('modal-confirm').addEventListener('click', e => {
+      if (e.target === e.currentTarget) {
+        document.getElementById('modal-confirm').classList.add('hidden');
+        _resolve?.(false); _resolve = null;
+      }
+    });
+  });
+
+  return { toast, confirm };
+})();
+
 // ===== App Bootstrap =====
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -15,9 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Module routing (sidebar) ---
   const pageTitle = document.getElementById('page-title');
-  const moduleTitles = { livestock: 'Hacienda', finance: 'Finanzas' };
+  const moduleTitles = { livestock: 'Hacienda', fields: 'Potreros', finance: 'Finanzas', reports: 'Reportes' };
   const moduleButtons = {
     livestock: document.getElementById('btn-new-animal'),
+    fields:    document.getElementById('btn-new-field'),
     finance:   document.getElementById('btn-new-transaction'),
   };
 
@@ -32,6 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (pageTitle && moduleTitles[mod]) pageTitle.textContent = moduleTitles[mod];
 
+      if (mod === 'fields')   Fields.refresh();
+      if (mod === 'reports')  Reports.refresh();
+
       Object.entries(moduleButtons).forEach(([key, btn]) => {
         if (!btn) return;
         btn.classList.toggle('hidden', key !== mod);
@@ -42,4 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Init modules ---
   Livestock.init();
   Finance.init();
+  Fields.init();
+  Reports.init();
 });

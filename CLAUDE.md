@@ -21,14 +21,18 @@ App web de gestión de campo construida con tecnologías vanilla, sin frameworks
 agostos-app/
 ├── index.html          # Entry point único — contiene sidebar, topbar y todos los módulos
 ├── css/
-│   ├── main.css        # Estilos globales: layout, sidebar, tablas, modales, formularios
+│   ├── main.css        # Estilos globales: layout, sidebar, tablas, modales, formularios, toast, confirm
 │   ├── livestock.css   # Estilos específicos del módulo hacienda
-│   └── finance.css     # Estilos específicos del módulo finanzas
+│   ├── finance.css     # Estilos específicos del módulo finanzas
+│   ├── fields.css      # Estilos específicos del módulo potreros
+│   └── reports.css     # Estilos específicos del módulo reportes
 ├── js/
 │   ├── storage.js      # Wrapper de localStorage — se carga primero
 │   ├── livestock.js    # Módulo hacienda — se carga segundo
 │   ├── finance.js      # Módulo finanzas — se carga tercero
-│   └── app.js          # Bootstrap de la app — se carga último
+│   ├── fields.js       # Módulo potreros — se carga cuarto
+│   ├── reports.js      # Módulo reportes — se carga quinto
+│   └── app.js          # Bootstrap + ui.toast() + ui.confirm() — se carga último
 └── assets/
     └── icons/
 ```
@@ -55,7 +59,9 @@ Al cambiar de módulo, `app.js` también actualiza el título del topbar y alter
 <script src="js/storage.js"></script>   <!-- 1. utilidades base -->
 <script src="js/livestock.js"></script> <!-- 2. módulos -->
 <script src="js/finance.js"></script>   <!-- 3. módulos -->
-<script src="js/app.js"></script>       <!-- 4. bootstrap (inicia módulos) -->
+<script src="js/fields.js"></script>    <!-- 4. módulos -->
+<script src="js/reports.js"></script>   <!-- 5. módulos -->
+<script src="js/app.js"></script>       <!-- 6. bootstrap (inicia módulos) -->
 ```
 
 ### Tabs
@@ -209,14 +215,100 @@ Las categorías se cargan dinámicamente en el modal según el tipo seleccionado
 - **Transacciones** — CRUD con búsqueda por descripción/categoría y filtro por tipo ✓
 - **Resumen** — breakdown de totales por categoría, separado en ingresos y gastos ✓
 
+## Módulo: Potreros
+
+### Propósito
+
+Gestión de campos y pasturas del establecimiento, con visibilidad de stock por potrero.
+
+### Datos persistidos en localStorage
+
+| Key          | Contenido                  |
+|--------------|----------------------------|
+| `ag_fields`  | Array de potreros          |
+
+### Estructura de un potrero
+
+```js
+{
+  id:            String,   // timestamp como string
+  nombre:        String,   // "Potrero Norte"
+  hectareas:     Number,   // puede ser null
+  pastura:       String,   // "Natural" | "Mejorada" | "Verdeo" | "Otro"
+  estado:        String,   // "activo" | "descanso" | "clausurado"
+  observaciones: String
+}
+```
+
+### Stats
+
+- **Total potreros** — count de potreros registrados
+- **Total hectáreas** — suma de hectáreas
+- **En uso** — potreros con al menos un animal activo asignado
+- **Libres** — total − en uso
+
+### Tabs del módulo
+
+- **Potreros** — CRUD con búsqueda por nombre/pastura, badges de estado ✓
+- **Stock** — tabla que cruza `ag_animals` activos con potreros; muestra cantidad y caravanas; potreros con animales pero sin registrar aparecen marcados como "sin registrar" ✓
+
+### Notas de integración
+
+- `Fields.refresh()` está expuesto y es llamado desde `app.js` cada vez que el usuario navega al módulo, para mantener el tab Stock actualizado con cambios hechos en Hacienda.
+- El campo `potrero` de los animales es texto libre; el cruce con `ag_fields` se hace por coincidencia exacta de nombre.
+
 ## Módulos planificados
 
 | Módulo     | Estado    | Descripción                                        |
 |------------|-----------|----------------------------------------------------|
 | Hacienda   | Completo  | Registro, movimientos e historial funcionando      |
 | Finanzas   | Completo  | Transacciones, stats y resumen por categoría       |
-| Potreros   | Pendiente | Gestión de campos y pasturas                       |
-| Reportes   | Pendiente | Resúmenes y exportaciones                          |
+| Potreros   | Completo  | CRUD de potreros y stock por potrero               |
+| Reportes   | Completo  | Stock por tipo/potrero, balance mensual, exportar CSV |
+
+## Módulo: Reportes
+
+### Propósito
+
+Resúmenes cruzados entre módulos y exportación de datos a CSV.
+
+### Tabs del módulo
+
+- **Hacienda** — stock activo por tipo (con %) y por potrero (con %), total al pie ✓
+- **Finanzas** — balance mensual del año en curso: ingresos, gastos, balance por mes con fila de totales ✓
+- **Exportar** — descarga CSV de animales, movimientos, transacciones y potreros ✓
+
+### Notas
+
+- No tiene action button en el topbar (solo lectura).
+- `Reports.refresh()` es llamado desde `app.js` al activar el módulo para mostrar datos actualizados.
+
+## UI Utilities (`app.js`)
+
+### `ui.toast(msg, type?)`
+
+Muestra una notificación flotante en la esquina inferior derecha. `type` puede ser `'success'` (default) o `'error'`. Se desvanece automáticamente a los 2.8s.
+
+### `ui.confirm(msg, okLabel?)`
+
+Abre un modal de confirmación y devuelve una Promise que resuelve `true` (confirmó) o `false` (canceló). Reemplaza todos los `confirm()` nativos del navegador.
+
+## Integración entre módulos
+
+- El campo **Potrero** en el modal de animales usa `<datalist id="potrero-options">` poblado desde `ag_fields` (estado activo) al abrir el modal.
+- El campo **Destino** en el modal de movimientos usa `<datalist id="destino-options">` con la misma fuente.
+- Al guardar un movimiento con un destino no registrado en `ag_fields`, se ofrece registrarlo vía `ui.confirm()`. Si el usuario acepta, se crea con estado `activo` y datos vacíos.
+
+## Assets
+
+| Archivo              | Uso                                                       |
+|----------------------|-----------------------------------------------------------|
+| `assets/gaucho.png`  | Ilustración estilo Molina Campos — gaucho a caballo       |
+
+La imagen se ubica al pie del sidebar (`<div class="sidebar-art">`). Estilos en `main.css`:
+- `margin-top: auto` la empuja al fondo del sidebar
+- `::before` aplica un gradiente de `--color-sidebar` a transparente para fundirla con la navegación
+- `height: 148px`, `object-fit: cover`, `object-position: center 30%`, `opacity: .82`
 
 ## Notas de desarrollo
 

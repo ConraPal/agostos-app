@@ -133,6 +133,18 @@ const Livestock = (() => {
     renderHistory();
   };
 
+  // --- Potrero datalist ---
+  const populateFieldOptions = datalistId => {
+    const fields = Storage.get('ag_fields') || [];
+    const dl = document.getElementById(datalistId);
+    if (!dl) return;
+    dl.innerHTML = fields
+      .filter(f => f.estado === 'activo')
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map(f => `<option value="${f.nombre}">`)
+      .join('');
+  };
+
   // --- Modal ---
   let editingId = null;
 
@@ -152,6 +164,7 @@ const Livestock = (() => {
       form.peso.value          = animal.peso || '';
       form.observaciones.value = animal.observaciones || '';
     }
+    populateFieldOptions('potrero-options');
     document.getElementById('modal-animal').classList.remove('hidden');
   };
 
@@ -185,7 +198,7 @@ const Livestock = (() => {
     } else {
       // Check duplicate caravana
       if (animals.some(a => a.caravana === data.caravana)) {
-        alert(`Ya existe un animal con la caravana ${data.caravana}`);
+        ui.toast(`Ya existe un animal con la caravana ${data.caravana}`, 'error');
         return;
       }
       animals.unshift({ id: String(Date.now()), ...data });
@@ -195,6 +208,7 @@ const Livestock = (() => {
     saveData(KEYS.animals, animals);
     closeModal();
     render();
+    ui.toast(editingId ? 'Animal actualizado.' : 'Animal registrado.');
   };
 
   // --- Movement Modal ---
@@ -206,6 +220,7 @@ const Livestock = (() => {
     form.reset();
     form.fecha.value = new Date().toISOString().slice(0, 10);
     document.getElementById('animal-dropdown').classList.add('hidden');
+    populateFieldOptions('destino-options');
     document.getElementById('modal-movement').classList.remove('hidden');
     document.getElementById('fm-animal').focus();
   };
@@ -262,7 +277,7 @@ const Livestock = (() => {
     }
 
     if (!animal) {
-      alert(`No se encontró ningún animal con esa caravana. Seleccioná uno de la lista.`);
+      ui.toast('No se encontró el animal. Seleccioná uno de la lista.', 'error');
       document.getElementById('fm-animal').focus();
       return;
     }
@@ -301,6 +316,20 @@ const Livestock = (() => {
 
     closeMovementModal();
     render();
+    ui.toast('Movimiento registrado.');
+
+    // Ofrecer registrar el potrero destino si no existe
+    if (destino) {
+      const fields = Storage.get('ag_fields') || [];
+      if (!fields.some(f => f.nombre === destino)) {
+        ui.confirm(`El potrero "${destino}" no está registrado. ¿Registrarlo ahora?`, 'Registrar').then(ok => {
+          if (!ok) return;
+          fields.push({ id: String(Date.now()), nombre: destino, hectareas: null, pastura: '', estado: 'activo', observaciones: '' });
+          Storage.set('ag_fields', fields);
+          ui.toast(`Potrero "${destino}" registrado.`);
+        });
+      }
+    }
   };
 
   // --- Edit ---
@@ -314,10 +343,13 @@ const Livestock = (() => {
     const animals = getData(KEYS.animals);
     const animal  = animals.find(a => a.id === id);
     if (!animal) return;
-    if (!confirm(`¿Eliminar el animal ${animal.caravana}? Esta acción no se puede deshacer.`)) return;
-    saveData(KEYS.animals, animals.filter(a => a.id !== id));
-    logHistory(animal.caravana, 'Baja', 'Eliminado del registro', animal.nombre);
-    render();
+    ui.confirm(`¿Eliminar el animal ${animal.caravana}? Esta acción no se puede deshacer.`).then(ok => {
+      if (!ok) return;
+      saveData(KEYS.animals, animals.filter(a => a.id !== id));
+      logHistory(animal.caravana, 'Baja', 'Eliminado del registro', animal.nombre);
+      render();
+      ui.toast(`Animal ${animal.caravana} eliminado.`);
+    });
   };
 
   // --- Init ---

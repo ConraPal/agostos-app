@@ -1,0 +1,24 @@
+/* ===== Fields Module ===== */
+
+/* Estado badges */
+.badge-field-activo     { background: #e8f5e9; color: #2e7d32; }
+.badge-field-descanso   { background: #fff8e1; color: #f57f17; }
+.badge-field-clausurado { background: #fce4ec; color: #c0392b; }
+
+/* Stock tab */
+.caravanas-cell {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.badge-no-reg {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f3e5f5;
+  color: #7b1fa2;
+  vertical-align: middle;
+}
+
+.text-muted { color: var(--color-muted); }

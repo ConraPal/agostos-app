@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/livestock.css" />
   <link rel="stylesheet" href="css/finance.css" />
+  <link rel="stylesheet" href="css/fields.css" />
+  <link rel="stylesheet" href="css/reports.css" />
 </head>
 <body>
 
@@ -22,7 +24,7 @@
         <span>Hacienda</span>
       </a>
       <!-- Futuros módulos -->
-      <a href="#fields" class="nav-item disabled" data-module="fields">
+      <a href="#fields" class="nav-item" data-module="fields">
         <span class="nav-icon">🗺️</span>
         <span>Potreros</span>
       </a>
@@ -30,11 +32,14 @@
         <span class="nav-icon">💰</span>
         <span>Finanzas</span>
       </a>
-      <a href="#reports" class="nav-item disabled" data-module="reports">
+      <a href="#reports" class="nav-item" data-module="reports">
         <span class="nav-icon">📊</span>
         <span>Reportes</span>
       </a>
     </nav>
+    <div class="sidebar-art">
+      <img src="assets/gaucho.png" alt="" aria-hidden="true" />
+    </div>
   </aside>
 
   <!-- Main -->
@@ -45,6 +50,7 @@
       <h1 class="topbar-title" id="page-title">Hacienda</h1>
       <div class="topbar-actions">
         <button class="btn btn-primary" id="btn-new-animal">+ Nuevo animal</button>
+        <button class="btn btn-primary hidden" id="btn-new-field">+ Nuevo potrero</button>
         <button class="btn btn-primary hidden" id="btn-new-transaction">+ Nueva transacción</button>
       </div>
     </header>
@@ -166,6 +172,83 @@
 
     </section>
 
+    <!-- Módulo Potreros -->
+    <section id="module-fields" class="module">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total potreros</span>
+          <span class="stat-value" id="stat-fields-total">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total hectáreas</span>
+          <span class="stat-value" id="stat-fields-ha">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">En uso</span>
+          <span class="stat-value" id="stat-fields-en-uso">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Libres</span>
+          <span class="stat-value" id="stat-fields-libres">0</span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="fields-list">Potreros</button>
+        <button class="tab" data-tab="fields-stock">Stock</button>
+      </div>
+
+      <!-- Tab: Potreros -->
+      <div id="tab-fields-list" class="tab-content active">
+        <div class="table-toolbar">
+          <input type="search" class="search-input" id="search-fields" placeholder="Buscar por nombre o pastura..." />
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="fields-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Hectáreas</th>
+                <th>Pastura</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="fields-tbody">
+              <tr class="empty-row">
+                <td colspan="5">No hay potreros registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Stock -->
+      <div id="tab-fields-stock" class="tab-content">
+        <div class="table-wrapper">
+          <table class="data-table" id="stock-table">
+            <thead>
+              <tr>
+                <th>Potrero</th>
+                <th>Hectáreas</th>
+                <th>Animales</th>
+                <th>Caravanas</th>
+              </tr>
+            </thead>
+            <tbody id="stock-tbody">
+              <tr class="empty-row">
+                <td colspan="4">Sin datos de stock.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
     <!-- Módulo Finanzas -->
     <section id="module-finance" class="module">
 
@@ -242,7 +325,146 @@
 
     </section>
 
+    <!-- Módulo Reportes -->
+    <section id="module-reports" class="module">
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="rpt-hacienda">Hacienda</button>
+        <button class="tab" data-tab="rpt-finanzas">Finanzas</button>
+        <button class="tab" data-tab="rpt-exportar">Exportar</button>
+      </div>
+
+      <!-- Tab: Hacienda -->
+      <div id="tab-rpt-hacienda" class="tab-content active">
+        <div class="rpt-grid">
+          <div class="rpt-section">
+            <h3>Stock activo por tipo</h3>
+            <table class="data-table">
+              <thead>
+                <tr><th>Tipo</th><th>Cantidad</th><th>%</th></tr>
+              </thead>
+              <tbody id="rpt-tipo-tbody">
+                <tr class="empty-row"><td colspan="3">Sin animales activos.</td></tr>
+              </tbody>
+              <tfoot>
+                <tr><td><strong>Total</strong></td><td><strong id="rpt-tipo-total">0</strong></td><td></td></tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="rpt-section">
+            <h3>Stock activo por potrero</h3>
+            <table class="data-table">
+              <thead>
+                <tr><th>Potrero</th><th>Animales</th><th>%</th></tr>
+              </thead>
+              <tbody id="rpt-potrero-tbody">
+                <tr class="empty-row"><td colspan="3">Sin animales activos.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Finanzas -->
+      <div id="tab-rpt-finanzas" class="tab-content">
+        <div class="rpt-section">
+          <h3>Balance mensual <span id="rpt-finanzas-year"></span></h3>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th style="text-align:right">Ingresos</th>
+                  <th style="text-align:right">Gastos</th>
+                  <th style="text-align:right">Balance</th>
+                </tr>
+              </thead>
+              <tbody id="rpt-finanzas-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Exportar -->
+      <div id="tab-rpt-exportar" class="tab-content">
+        <div class="export-grid">
+          <div class="export-card">
+            <span class="export-card-title">Animales</span>
+            <span class="export-card-desc">Todo el registro de hacienda con estado y potrero actual.</span>
+            <button class="btn btn-secondary" id="btn-export-animals">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Movimientos</span>
+            <span class="export-card-desc">Historial de traslados, entradas y salidas entre potreros.</span>
+            <button class="btn btn-secondary" id="btn-export-movements">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Transacciones</span>
+            <span class="export-card-desc">Ingresos y gastos con categoría, monto y descripción.</span>
+            <button class="btn btn-secondary" id="btn-export-transactions">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Potreros</span>
+            <span class="export-card-desc">Registro de potreros con hectáreas, pastura y estado.</span>
+            <button class="btn btn-secondary" id="btn-export-fields">Descargar CSV</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
+
+  <!-- Modal: Nuevo potrero -->
+  <div class="modal-overlay hidden" id="modal-field">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-field-title">Nuevo potrero</h2>
+        <button class="modal-close" id="modal-field-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-field">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ff-nombre">Nombre *</label>
+            <input type="text" id="ff-nombre" name="nombre" required placeholder="Ej: Potrero Norte" />
+          </div>
+          <div class="form-group">
+            <label for="ff-hectareas">Hectáreas</label>
+            <input type="number" id="ff-hectareas" name="hectareas" min="0" step="0.1" placeholder="Ej: 50" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ff-pastura">Tipo de pastura</label>
+            <select id="ff-pastura" name="pastura">
+              <option value="">Seleccionar...</option>
+              <option value="Natural">Natural</option>
+              <option value="Mejorada">Mejorada</option>
+              <option value="Verdeo">Verdeo</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ff-estado">Estado</label>
+            <select id="ff-estado" name="estado">
+              <option value="activo">Activo</option>
+              <option value="descanso">Descanso</option>
+              <option value="clausurado">Clausurado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="ff-obs">Observaciones</label>
+          <textarea id="ff-obs" name="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-field">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Modal: Nuevo movimiento -->
   <div class="modal-overlay hidden" id="modal-movement">
@@ -279,7 +501,8 @@
           </div>
           <div class="form-group">
             <label for="fm-destino">Potrero destino</label>
-            <input type="text" id="fm-destino" name="destino" placeholder="Ej: Potrero Sur" />
+            <input type="text" id="fm-destino" name="destino" list="destino-options" placeholder="Ej: Potrero Sur" autocomplete="off" />
+            <datalist id="destino-options"></datalist>
           </div>
         </div>
         <div class="form-row">
@@ -345,7 +568,8 @@
           </div>
           <div class="form-group">
             <label for="f-potrero">Potrero</label>
-            <input type="text" id="f-potrero" name="potrero" placeholder="Ej: Potrero Norte" />
+            <input type="text" id="f-potrero" name="potrero" list="potrero-options" placeholder="Ej: Potrero Norte" autocomplete="off" />
+            <datalist id="potrero-options"></datalist>
           </div>
         </div>
         <div class="form-row">
@@ -421,9 +645,28 @@
     </div>
   </div>
 
+  <!-- Modal: Confirmación genérica -->
+  <div class="modal-overlay hidden" id="modal-confirm">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 id="confirm-title">Confirmar</h2>
+      </div>
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="confirm-cancel">Cancelar</button>
+        <button class="btn btn-danger"    id="confirm-ok">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
   <script src="js/storage.js"></script>
   <script src="js/livestock.js"></script>
   <script src="js/finance.js"></script>
+  <script src="js/fields.js"></script>
+  <script src="js/reports.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

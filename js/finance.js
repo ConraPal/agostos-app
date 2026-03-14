@@ -172,20 +172,25 @@ const Finance = (() => {
       data.push({ id: String(Date.now()), fecha, tipo, categoria, monto, descripcion, observaciones });
     }
 
+    const isNew = !editingId;
     saveAll(data);
     closeModal();
     renderStats();
     renderTable();
     renderResumen();
+    ui.toast(isNew ? 'Transacción registrada.' : 'Transacción actualizada.');
   }
 
   // --- Delete ---
   function remove(id) {
-    if (!confirm('¿Eliminar esta transacción?')) return;
-    saveAll(getAll().filter(t => t.id !== id));
-    renderStats();
-    renderTable();
-    renderResumen();
+    ui.confirm('¿Eliminar esta transacción?').then(ok => {
+      if (!ok) return;
+      saveAll(getAll().filter(t => t.id !== id));
+      renderStats();
+      renderTable();
+      renderResumen();
+      ui.toast('Transacción eliminada.');
+    });
   }
 
   // --- Init ---
