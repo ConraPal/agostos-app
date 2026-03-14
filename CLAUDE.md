@@ -9,6 +9,10 @@ App web de gestión de campo construida con tecnologías vanilla, sin frameworks
 - **JavaScript vanilla (ES6+)** — módulos como IIFEs, sin bundler
 - **localStorage** — persistencia local por ahora (sin backend)
 
+## Configuración Claude Code
+
+`.claude/settings.json` — modo de permisos `acceptEdits`: Edit y Bash corren sin confirmación manual.
+
 ## Arquitectura
 
 ### Estructura de carpetas
