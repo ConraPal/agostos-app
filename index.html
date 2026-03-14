@@ -12,8 +12,11 @@
 </head>
 <body>
 
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
   <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <span class="logo-icon">🌾</span>
       <span class="logo-text">Agostos</span>
@@ -47,7 +50,10 @@
 
     <!-- Header -->
     <header class="topbar">
-      <h1 class="topbar-title" id="page-title">Hacienda</h1>
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Menú">☰</button>
+        <h1 class="topbar-title" id="page-title">Hacienda</h1>
+      </div>
       <div class="topbar-actions">
         <button class="btn btn-primary" id="btn-new-animal">+ Nuevo animal</button>
         <button class="btn btn-primary hidden" id="btn-new-field">+ Nuevo potrero</button>

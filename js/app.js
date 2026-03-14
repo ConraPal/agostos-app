@@ -84,6 +84,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // --- Sidebar toggle (mobile) ---
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  function closeSidebar() { document.body.classList.remove('sidebar-open'); }
+  sidebarToggle?.addEventListener('click', () => document.body.classList.toggle('sidebar-open'));
+  sidebarOverlay?.addEventListener('click', closeSidebar);
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', closeSidebar);
+  });
+
   // --- Init modules ---
   Livestock.init();
   Finance.init();
