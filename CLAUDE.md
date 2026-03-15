@@ -340,3 +340,135 @@ La imagen se ubica al pie del sidebar (`<div class="sidebar-art">`). Estilos en 
 - **Sin build step**: se puede abrir `index.html` directo en el navegador para desarrollo local.
 - **IDs**: se usan timestamps (`Date.now()`) como IDs. Suficiente para localStorage; cambiar a UUIDs si se migra a backend.
 - **`.hidden`**: clase utilitaria en `main.css` (`display: none !important`) usada para ocultar elementos del topbar al cambiar de módulo.
+
+---
+
+## Actualizaciones 14/03/2026
+
+### Campo castración (Hacienda)
+
+- Nuevo campo `castracion_fecha` (String, ISO date) en la estructura del animal.
+- El campo `#row-castracion` se muestra u oculta en el modal según el tipo seleccionado (solo visible para `ternero`).
+- En la tabla de animales se muestra "Castrado" como subtexto debajo del tipo cuando la fecha existe.
+
+### Módulo Hacienda — Tab Reproducción
+
+**localStorage key:** `ag_reproduction`
+
+**Estructura de un ciclo reproductivo:**
+```js
+{
+  id:                   String,   // Date.now()
+  año:                  Number,
+  fecha_entrada_toros:  String,   // ISO date
+  fecha_salida_toros:   String,   // ISO date
+  ia_realizada:         Boolean,
+  ia_fecha:             String,   // ISO date (opcional)
+  ia_toro:              String,
+  ia_prenez_pct:        Number,   // % preñez solo de IA
+  tacto_fecha:          String,   // ISO date
+  vacas_total:          Number,
+  vacas_positivas:      Number,
+  vacas_negativas:      Number,   // calculado: total - positivas
+  prenez_pct:           Number,   // calculado: positivas / total * 100
+  observaciones:        String
+}
+```
+
+**Stats:** % preñez del último ciclo, vacas positivas, vacas negativas.
+**Tabla:** Año, Entrada toros, Salida toros, IA (sí/no), % Preñez, Acciones.
+**Modal:** Sección IA se muestra/oculta con checkbox `#fr-ia`.
+
+**Funciones en `livestock.js`:** `renderReproduccion()`, `openModalRepro(id?)`, `closeModalRepro()`, `saveRepro(e)`, `editRepro(id)`, `removeRepro(id)`.
+
+---
+
+### Módulo Potreros — Tab Cultivos
+
+**localStorage key:** `ag_crop_history`
+
+**Estructura:**
+```js
+{
+  id:          String,
+  potrero_id:  String,   // referencia a ag_fields
+  potrero:     String,   // nombre (desnormalizado)
+  año:         Number,
+  tipo:        String,   // "cultivo" | "pastura"
+  detalle:     String,   // "Soja", "Alfalfa 80% / Festuca 20%"
+  notas:       String
+}
+```
+
+**Filtro:** selector por potrero (o "Todos").
+**Badges CSS:** `.badge-cultivo-cultivo` (verde), `.badge-cultivo-pastura` (azul).
+**Funciones en `fields.js`:** `renderCultivos()`, `openModalCultivo(id?)`, `saveCultivo(e)`, `removeCultivo(id)`.
+
+---
+
+### Módulo Potreros — Tab Forraje
+
+**localStorage key:** `ag_forraje`
+
+**Estructura:**
+```js
+{
+  id:            String,
+  potrero_id:    String,
+  potrero:       String,
+  año:           Number,
+  tipo:          String,   // "rollo" | "fardo"
+  cantidad:      Number,
+  cortes:        Number,
+  observaciones: String
+}
+```
+
+**Badges CSS:** `.badge-forraje-rollo` (naranja), `.badge-forraje-fardo` (rosa).
+**Funciones en `fields.js`:** `renderForraje()`, `openModalForraje(id?)`, `saveForraje(e)`, `removeForraje(id)`.
+
+---
+
+### Módulo Finanzas — Categoría Impuestos
+
+Se agregó `"Impuestos"` al array `CATEGORIES.gasto` en `finance.js`. Se usa para separar impuestos del resto de costos en el cálculo del margen.
+
+---
+
+### Módulo Finanzas — Tab Amortizaciones
+
+**localStorage key:** `ag_amortizations`
+
+**Estructura:**
+```js
+{
+  id:             String,
+  nombre:         String,
+  tipo:           String,   // "Maquinaria" | "Instalaciones" | "Rodado" | "Otro"
+  valor_original: Number,
+  vida_util:      Number,   // años
+  año_inicio:     Number,
+  cuota_anual:    Number,   // calculado: valor_original / vida_util
+  observaciones:  String
+}
+```
+
+**Stats:** total activos, cuota anual total.
+**Funciones en `finance.js`:** `renderAmortizaciones()`, `openModalAmort(id?)`, `saveAmort(e)`, `removeAmort(id)`.
+
+---
+
+### Módulo Finanzas — Tab Margen
+
+Cálculo del margen agropecuario filtrado por año.
+
+**Fórmulas:**
+- **Ingresos** = Σ transacciones tipo `ingreso` del año
+- **Costos** = Σ transacciones tipo `gasto` excl. `"Impuestos"` del año
+- **Amortizaciones año** = Σ `cuota_anual` de activos con `año >= año_inicio` y `año < año_inicio + vida_util`
+- **Margen Bruto** = Ingresos − Costos − Amortizaciones
+- **Impuestos** = Σ transacciones categoría `"Impuestos"` del año
+- **Margen Neto** = Margen Bruto − Impuestos
+
+Cards con color verde/rojo según signo.
+**Función en `finance.js`:** `renderMargen(año)`, `initMargenYear()`.

@@ -22,3 +22,11 @@
 }
 
 .text-muted { color: var(--color-muted); }
+
+/* Cultivos */
+.badge-cultivo-cultivo { background: #e8f5e9; color: #2e7d32; }
+.badge-cultivo-pastura { background: #e3f2fd; color: #1565c0; }
+
+/* Forraje */
+.badge-forraje-rollo { background: #fff8e1; color: #e65100; }
+.badge-forraje-fardo { background: #fce4ec; color: #880e4f; }

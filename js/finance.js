@@ -1,9 +1,10 @@
 const Finance = (() => {
   const KEY = 'ag_transactions';
+  const AMORT_KEY = 'ag_amortizations';
 
   const CATEGORIES = {
     ingreso: ['Venta de animales', 'Arrendamiento', 'Subsidios', 'Otro ingreso'],
-    gasto:   ['Compra de animales', 'Veterinaria', 'Alimentación', 'Combustible', 'Maquinaria', 'Sueldos', 'Otro gasto'],
+    gasto:   ['Compra de animales', 'Veterinaria', 'Alimentación', 'Combustible', 'Maquinaria', 'Sueldos', 'Impuestos', 'Otro gasto'],
   };
 
   let editingId = null;
@@ -193,6 +194,137 @@ const Finance = (() => {
     });
   }
 
+  // --- Tab: Amortizaciones ---
+  let editingAmortId = null;
+
+  function renderAmortizaciones() {
+    const data = Storage.get(AMORT_KEY) || [];
+    const total = data.length;
+    const cuotaTotal = data.reduce((s, a) => s + (a.cuota_anual || 0), 0);
+
+    document.getElementById('stat-amort-total').textContent = total;
+    document.getElementById('stat-amort-cuota').textContent = fmtMoney(cuotaTotal);
+
+    const tbody = document.getElementById('amort-tbody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay amortizaciones registradas.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(a => `
+      <tr>
+        <td>${a.nombre}</td>
+        <td><span class="badge badge-amort-tipo">${a.tipo}</span></td>
+        <td class="monto-cell">${fmtMoney(a.valor_original)}</td>
+        <td>${a.vida_util} años</td>
+        <td class="monto-cell">${fmtMoney(a.cuota_anual)}</td>
+        <td>${a.año_inicio}</td>
+        <td class="actions-cell">
+          <button class="action-btn" data-action="edit" data-id="${a.id}" title="Editar">✏️</button>
+          <button class="action-btn danger" data-action="delete" data-id="${a.id}" title="Eliminar">🗑️</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openModalAmort(id = null) {
+    editingAmortId = id;
+    document.getElementById('form-amortization').reset();
+    document.getElementById('modal-amort-title').textContent = id ? 'Editar amortización' : 'Nueva amortización';
+
+    if (id) {
+      const a = (Storage.get(AMORT_KEY) || []).find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('fa-nombre').value     = a.nombre;
+      document.getElementById('fa-tipo').value       = a.tipo;
+      document.getElementById('fa-año-inicio').value = a.año_inicio;
+      document.getElementById('fa-valor').value      = a.valor_original;
+      document.getElementById('fa-vida-util').value  = a.vida_util;
+      document.getElementById('fa-obs').value        = a.observaciones || '';
+    } else {
+      document.getElementById('fa-año-inicio').value = new Date().getFullYear();
+    }
+    document.getElementById('modal-amortization').classList.remove('hidden');
+  }
+
+  function closeModalAmort() {
+    document.getElementById('modal-amortization').classList.add('hidden');
+    editingAmortId = null;
+  }
+
+  function saveAmort(e) {
+    e.preventDefault();
+    const nombre         = document.getElementById('fa-nombre').value.trim();
+    const tipo           = document.getElementById('fa-tipo').value;
+    const año_inicio     = parseInt(document.getElementById('fa-año-inicio').value);
+    const valor_original = parseFloat(document.getElementById('fa-valor').value);
+    const vida_util      = parseInt(document.getElementById('fa-vida-util').value);
+    const cuota_anual    = vida_util > 0 ? valor_original / vida_util : 0;
+    const observaciones  = document.getElementById('fa-obs').value.trim();
+
+    const data = Storage.get(AMORT_KEY) || [];
+    if (editingAmortId) {
+      const idx = data.findIndex(a => a.id === editingAmortId);
+      if (idx !== -1) data[idx] = { ...data[idx], nombre, tipo, año_inicio, valor_original, vida_util, cuota_anual, observaciones };
+    } else {
+      data.push({ id: String(Date.now()), nombre, tipo, año_inicio, valor_original, vida_util, cuota_anual, observaciones });
+    }
+    Storage.set(AMORT_KEY, data);
+    closeModalAmort();
+    renderAmortizaciones();
+    ui.toast(editingAmortId ? 'Amortización actualizada.' : 'Amortización registrada.');
+  }
+
+  function removeAmort(id) {
+    ui.confirm('¿Eliminar esta amortización?').then(ok => {
+      if (!ok) return;
+      Storage.set(AMORT_KEY, (Storage.get(AMORT_KEY) || []).filter(a => a.id !== id));
+      renderAmortizaciones();
+      ui.toast('Amortización eliminada.');
+    });
+  }
+
+  // --- Tab: Margen ---
+  function renderMargen(año) {
+    const txAll  = getAll().filter(t => t.fecha && t.fecha.startsWith(String(año)));
+    const amorts = Storage.get(AMORT_KEY) || [];
+
+    const ingresos = txAll.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + Number(t.monto), 0);
+    const costos   = txAll.filter(t => t.tipo === 'gasto' && t.categoria !== 'Impuestos').reduce((s, t) => s + Number(t.monto), 0);
+    const impuestos = txAll.filter(t => t.tipo === 'gasto' && t.categoria === 'Impuestos').reduce((s, t) => s + Number(t.monto), 0);
+
+    const amortizacionesAño = amorts
+      .filter(a => año >= a.año_inicio && año < a.año_inicio + a.vida_util)
+      .reduce((s, a) => s + (a.cuota_anual || 0), 0);
+
+    const margenBruto = ingresos - costos - amortizacionesAño;
+    const margenNeto  = margenBruto - impuestos;
+
+    const card = (label, value) => {
+      const cls = value < 0 ? 'margen-card negativo' : 'margen-card positivo';
+      return `<div class="${cls}"><span class="margen-label">${label}</span><span class="margen-value">${fmtMoney(value)}</span></div>`;
+    };
+
+    document.getElementById('margen-cards').innerHTML = `
+      ${card('Ingresos', ingresos)}
+      ${card('Costos (excl. impuestos)', costos)}
+      ${card('Amortizaciones', amortizacionesAño)}
+      ${card('Margen Bruto', margenBruto)}
+      ${card('Impuestos', impuestos)}
+      ${card('Margen Neto', margenNeto)}
+    `;
+  }
+
+  function initMargenYear() {
+    const sel = document.getElementById('margen-year');
+    const currentYear = new Date().getFullYear();
+    sel.innerHTML = '';
+    for (let y = currentYear; y >= currentYear - 5; y--) {
+      sel.innerHTML += `<option value="${y}">${y}</option>`;
+    }
+    sel.addEventListener('change', () => renderMargen(parseInt(sel.value)));
+    renderMargen(currentYear);
+  }
+
   // --- Init ---
   function init() {
     document.getElementById('btn-new-transaction').addEventListener('click', () => openModal());
@@ -215,9 +347,26 @@ const Finance = (() => {
       if (action === 'delete') remove(id);
     });
 
+    // Amortizaciones
+    document.getElementById('btn-new-amort').addEventListener('click', () => openModalAmort());
+    document.getElementById('modal-amort-close').addEventListener('click', closeModalAmort);
+    document.getElementById('btn-cancel-amort').addEventListener('click', closeModalAmort);
+    document.getElementById('modal-amortization').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModalAmort();
+    });
+    document.getElementById('form-amortization').addEventListener('submit', saveAmort);
+    document.getElementById('amort-tbody').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'edit') openModalAmort(btn.dataset.id);
+      if (btn.dataset.action === 'delete') removeAmort(btn.dataset.id);
+    });
+
     renderStats();
     renderTable();
     renderResumen();
+    renderAmortizaciones();
+    initMargenYear();
   }
 
   return { init };

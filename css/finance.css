@@ -37,3 +37,70 @@
   padding: 20px 0;
   font-size: 13px;
 }
+
+/* Amortizaciones */
+.badge-amort-tipo {
+  background: #ede7f6;
+  color: #4527a0;
+}
+
+/* Margen */
+.margen-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.margen-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.margen-card {
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.margen-card.positivo {
+  background: #e8f5e9;
+  border-left: 4px solid #2e7d32;
+}
+
+.margen-card.negativo {
+  background: #fce4ec;
+  border-left: 4px solid #c0392b;
+}
+
+.margen-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--color-muted);
+}
+
+.margen-value {
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.margen-card.positivo .margen-value { color: #2e7d32; }
+.margen-card.negativo .margen-value { color: #c0392b; }
+
+@media (max-width: 768px) {
+  .margen-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .margen-cards {
+    grid-template-columns: 1fr;
+  }
+}

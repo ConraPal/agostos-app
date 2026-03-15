@@ -1,7 +1,7 @@
 // ===== Livestock Module =====
 const Livestock = (() => {
 
-  const KEYS = { animals: 'ag_animals', movements: 'ag_movements', history: 'ag_history' };
+  const KEYS = { animals: 'ag_animals', movements: 'ag_movements', history: 'ag_history', reproduction: 'ag_reproduction' };
 
   // --- Data helpers ---
   const getData = key => Storage.get(key, []);
@@ -67,7 +67,7 @@ const Livestock = (() => {
       <tr data-id="${a.id}">
         <td><strong>${a.caravana}</strong></td>
         <td>${a.nombre || '—'}</td>
-        <td style="text-transform:capitalize">${a.tipo}</td>
+        <td style="text-transform:capitalize">${a.tipo}${a.castracion_fecha ? '<br><span class="cell-sub">Castrado</span>' : ''}</td>
         <td>${a.raza || '—'}</td>
         <td>${formatDate(a.nacimiento)}</td>
         <td>${a.potrero || '—'}</td>
@@ -131,6 +131,7 @@ const Livestock = (() => {
     renderAnimals();
     renderMovements();
     renderHistory();
+    renderReproduccion();
   };
 
   // --- Potrero datalist ---
@@ -148,22 +149,29 @@ const Livestock = (() => {
   // --- Modal ---
   let editingId = null;
 
+  const toggleCastracion = tipo => {
+    document.getElementById('row-castracion').style.display = tipo === 'ternero' ? '' : 'none';
+    if (tipo !== 'ternero') document.getElementById('f-castracion').value = '';
+  };
+
   const openModal = (animal = null) => {
     editingId = animal ? animal.id : null;
     const form = document.getElementById('form-animal');
     form.reset();
     document.getElementById('modal-animal-title').textContent = animal ? 'Editar animal' : 'Nuevo animal';
     if (animal) {
-      form.caravana.value      = animal.caravana;
-      form.nombre.value        = animal.nombre || '';
-      form.tipo.value          = animal.tipo;
-      form.raza.value          = animal.raza || '';
-      form.nacimiento.value    = animal.nacimiento || '';
-      form.potrero.value       = animal.potrero || '';
-      form.estado.value        = animal.estado;
-      form.peso.value          = animal.peso || '';
-      form.observaciones.value = animal.observaciones || '';
+      form.caravana.value        = animal.caravana;
+      form.nombre.value          = animal.nombre || '';
+      form.tipo.value            = animal.tipo;
+      form.raza.value            = animal.raza || '';
+      form.nacimiento.value      = animal.nacimiento || '';
+      form.potrero.value         = animal.potrero || '';
+      form.estado.value          = animal.estado;
+      form.peso.value            = animal.peso || '';
+      form.observaciones.value   = animal.observaciones || '';
+      form.castracion_fecha.value = animal.castracion_fecha || '';
     }
+    toggleCastracion(animal ? animal.tipo : '');
     populateFieldOptions('potrero-options');
     document.getElementById('modal-animal').classList.remove('hidden');
   };
@@ -180,15 +188,16 @@ const Livestock = (() => {
     const animals = getData(KEYS.animals);
 
     const data = {
-      caravana:      form.caravana.value.trim().toUpperCase(),
-      nombre:        form.nombre.value.trim(),
-      tipo:          form.tipo.value,
-      raza:          form.raza.value.trim(),
-      nacimiento:    form.nacimiento.value,
-      potrero:       form.potrero.value.trim(),
-      estado:        form.estado.value,
-      peso:          form.peso.value ? Number(form.peso.value) : null,
-      observaciones: form.observaciones.value.trim()
+      caravana:         form.caravana.value.trim().toUpperCase(),
+      nombre:           form.nombre.value.trim(),
+      tipo:             form.tipo.value,
+      raza:             form.raza.value.trim(),
+      nacimiento:       form.nacimiento.value,
+      potrero:          form.potrero.value.trim(),
+      estado:           form.estado.value,
+      peso:             form.peso.value ? Number(form.peso.value) : null,
+      observaciones:    form.observaciones.value.trim(),
+      castracion_fecha: form.tipo.value === 'ternero' ? (form.castracion_fecha.value || null) : null
     };
 
     if (editingId) {
@@ -332,6 +341,119 @@ const Livestock = (() => {
     }
   };
 
+  // --- Reproducción ---
+  let editingReproId = null;
+
+  const renderReproduccion = () => {
+    const data = [...getData(KEYS.reproduction)].sort((a, b) => b.año - a.año);
+
+    // Stats: último ciclo
+    const last = data[0];
+    document.getElementById('stat-repro-prenez').textContent    = last ? (last.prenez_pct != null ? last.prenez_pct.toFixed(1) + '%' : '—') : '—';
+    document.getElementById('stat-repro-positivas').textContent = last ? (last.vacas_positivas ?? '—') : '—';
+    document.getElementById('stat-repro-negativas').textContent = last ? (last.vacas_negativas ?? '—') : '—';
+
+    const tbody = document.getElementById('repro-tbody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay ciclos reproductivos registrados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td><strong>${r.año}</strong></td>
+        <td>${formatDate(r.fecha_entrada_toros)}</td>
+        <td>${formatDate(r.fecha_salida_toros)}</td>
+        <td>${r.ia_realizada ? '<span class="badge badge-evento-alta">Sí</span>' : '<span class="badge badge-evento-baja">No</span>'}</td>
+        <td>${r.prenez_pct != null ? r.prenez_pct.toFixed(1) + '%' : '—'}</td>
+        <td>
+          <button class="action-btn" onclick="Livestock.editRepro('${r.id}')" title="Editar">✏️</button>
+          <button class="action-btn danger" onclick="Livestock.removeRepro('${r.id}')" title="Eliminar">🗑️</button>
+        </td>
+      </tr>
+    `).join('');
+  };
+
+  const openModalRepro = (id = null) => {
+    editingReproId = id;
+    const form = document.getElementById('form-reproduction');
+    form.reset();
+    document.getElementById('modal-repro-title').textContent = id ? 'Editar ciclo reproductivo' : 'Nuevo ciclo reproductivo';
+    document.getElementById('ia-section').style.display = 'none';
+
+    if (id) {
+      const r = getData(KEYS.reproduction).find(x => x.id === id);
+      if (!r) return;
+      form.año.value              = r.año;
+      form.fecha_entrada_toros.value = r.fecha_entrada_toros || '';
+      form.fecha_salida_toros.value  = r.fecha_salida_toros || '';
+      form.tacto_fecha.value      = r.tacto_fecha || '';
+      form.vacas_total.value      = r.vacas_total ?? '';
+      form.vacas_positivas.value  = r.vacas_positivas ?? '';
+      form.ia_realizada.checked   = !!r.ia_realizada;
+      form.ia_fecha.value         = r.ia_fecha || '';
+      form.ia_toro.value          = r.ia_toro || '';
+      form.ia_prenez_pct.value    = r.ia_prenez_pct ?? '';
+      form.observaciones.value    = r.observaciones || '';
+      if (r.ia_realizada) document.getElementById('ia-section').style.display = '';
+    }
+
+    document.getElementById('modal-reproduction').classList.remove('hidden');
+  };
+
+  const closeModalRepro = () => {
+    document.getElementById('modal-reproduction').classList.add('hidden');
+    editingReproId = null;
+  };
+
+  const saveRepro = e => {
+    e.preventDefault();
+    const form = e.target;
+    const vacas_total     = parseInt(form.vacas_total.value) || null;
+    const vacas_positivas = parseInt(form.vacas_positivas.value) || null;
+    const vacas_negativas = (vacas_total != null && vacas_positivas != null) ? vacas_total - vacas_positivas : null;
+    const prenez_pct      = (vacas_total && vacas_positivas != null) ? (vacas_positivas / vacas_total * 100) : null;
+    const ia_realizada    = form.ia_realizada.checked;
+
+    const entry = {
+      año:                  parseInt(form.año.value),
+      fecha_entrada_toros:  form.fecha_entrada_toros.value || null,
+      fecha_salida_toros:   form.fecha_salida_toros.value || null,
+      tacto_fecha:          form.tacto_fecha.value || null,
+      vacas_total,
+      vacas_positivas,
+      vacas_negativas,
+      prenez_pct,
+      ia_realizada,
+      ia_fecha:             ia_realizada ? (form.ia_fecha.value || null) : null,
+      ia_toro:              ia_realizada ? form.ia_toro.value.trim() : '',
+      ia_prenez_pct:        ia_realizada ? (parseFloat(form.ia_prenez_pct.value) || null) : null,
+      observaciones:        form.observaciones.value.trim()
+    };
+
+    const data = getData(KEYS.reproduction);
+    if (editingReproId) {
+      const idx = data.findIndex(r => r.id === editingReproId);
+      data[idx] = { ...data[idx], ...entry };
+    } else {
+      data.unshift({ id: String(Date.now()), ...entry });
+    }
+    saveData(KEYS.reproduction, data);
+    closeModalRepro();
+    renderReproduccion();
+    ui.toast(editingReproId ? 'Ciclo actualizado.' : 'Ciclo registrado.');
+  };
+
+  const editRepro = id => openModalRepro(id);
+
+  const removeRepro = id => {
+    ui.confirm('¿Eliminar este ciclo reproductivo?').then(ok => {
+      if (!ok) return;
+      saveData(KEYS.reproduction, getData(KEYS.reproduction).filter(r => r.id !== id));
+      renderReproduccion();
+      ui.toast('Ciclo eliminado.');
+    });
+  };
+
   // --- Edit ---
   const edit = id => {
     const animal = getData(KEYS.animals).find(a => a.id === id);
@@ -412,8 +534,23 @@ const Livestock = (() => {
     // Movement form submit
     document.getElementById('form-movement').addEventListener('submit', saveMovement);
 
+    // Castración toggle
+    document.getElementById('f-tipo').addEventListener('change', e => toggleCastracion(e.target.value));
+
+    // Reproducción
+    document.getElementById('btn-new-repro').addEventListener('click', () => openModalRepro());
+    document.getElementById('modal-repro-close').addEventListener('click', closeModalRepro);
+    document.getElementById('btn-cancel-repro').addEventListener('click', closeModalRepro);
+    document.getElementById('modal-reproduction').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModalRepro();
+    });
+    document.getElementById('fr-ia').addEventListener('change', e => {
+      document.getElementById('ia-section').style.display = e.target.checked ? '' : 'none';
+    });
+    document.getElementById('form-reproduction').addEventListener('submit', saveRepro);
+
     render();
   };
 
-  return { init, edit, remove };
+  return { init, edit, remove, editRepro, removeRepro };
 })();

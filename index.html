@@ -89,6 +89,7 @@
         <button class="tab active" data-tab="registry">Registro</button>
         <button class="tab" data-tab="movements">Movimientos</button>
         <button class="tab" data-tab="history">Historial</button>
+        <button class="tab" data-tab="reproduccion">Reproducción</button>
       </div>
 
       <!-- Tab: Registro -->
@@ -176,6 +177,46 @@
         </div>
       </div>
 
+      <!-- Tab: Reproducción -->
+      <div id="tab-reproduccion" class="tab-content">
+        <div class="stats-grid repro-stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Preñez último ciclo</span>
+            <span class="stat-value" id="stat-repro-prenez">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Vacas positivas</span>
+            <span class="stat-value" id="stat-repro-positivas">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Vacas negativas</span>
+            <span class="stat-value" id="stat-repro-negativas">—</span>
+          </div>
+        </div>
+        <div class="table-toolbar">
+          <button class="btn btn-secondary" id="btn-new-repro">+ Nuevo ciclo</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="repro-table">
+            <thead>
+              <tr>
+                <th>Año</th>
+                <th>Entrada toros</th>
+                <th>Salida toros</th>
+                <th>IA</th>
+                <th>% Preñez</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="repro-tbody">
+              <tr class="empty-row">
+                <td colspan="6">No hay ciclos reproductivos registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </section>
 
     <!-- Módulo Potreros -->
@@ -205,6 +246,8 @@
       <div class="tabs">
         <button class="tab active" data-tab="fields-list">Potreros</button>
         <button class="tab" data-tab="fields-stock">Stock</button>
+        <button class="tab" data-tab="cultivos">Cultivos</button>
+        <button class="tab" data-tab="forraje">Forraje</button>
       </div>
 
       <!-- Tab: Potreros -->
@@ -253,6 +296,65 @@
         </div>
       </div>
 
+      <!-- Tab: Cultivos -->
+      <div id="tab-cultivos" class="tab-content">
+        <div class="table-toolbar">
+          <select class="filter-select" id="cultivos-potrero-filter">
+            <option value="">Todos los potreros</option>
+          </select>
+          <button class="btn btn-secondary" id="btn-new-cultivo">+ Agregar cultivo</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="cultivos-table">
+            <thead>
+              <tr>
+                <th>Potrero</th>
+                <th>Año</th>
+                <th>Tipo</th>
+                <th>Detalle</th>
+                <th>Notas</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cultivos-tbody">
+              <tr class="empty-row">
+                <td colspan="6">No hay cultivos registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Forraje -->
+      <div id="tab-forraje" class="tab-content">
+        <div class="table-toolbar">
+          <select class="filter-select" id="forraje-potrero-filter">
+            <option value="">Todos los potreros</option>
+          </select>
+          <button class="btn btn-secondary" id="btn-new-forraje">+ Agregar forraje</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="forraje-table">
+            <thead>
+              <tr>
+                <th>Potrero</th>
+                <th>Año</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Cortes</th>
+                <th>Observaciones</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="forraje-tbody">
+              <tr class="empty-row">
+                <td colspan="7">No hay datos de forraje registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </section>
 
     <!-- Módulo Finanzas -->
@@ -282,6 +384,8 @@
       <div class="tabs">
         <button class="tab active" data-tab="transactions">Transacciones</button>
         <button class="tab" data-tab="resumen">Resumen</button>
+        <button class="tab" data-tab="amortizaciones">Amortizaciones</button>
+        <button class="tab" data-tab="margen">Margen</button>
       </div>
 
       <!-- Tab: Transacciones -->
@@ -327,6 +431,52 @@
             <div id="resumen-gastos"></div>
           </div>
         </div>
+      </div>
+
+      <!-- Tab: Amortizaciones -->
+      <div id="tab-amortizaciones" class="tab-content">
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card">
+            <span class="stat-label">Total activos</span>
+            <span class="stat-value" id="stat-amort-total">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Cuota anual total</span>
+            <span class="stat-value" id="stat-amort-cuota">$&nbsp;0,00</span>
+          </div>
+        </div>
+        <div class="table-toolbar">
+          <button class="btn btn-secondary" id="btn-new-amort">+ Nueva amortización</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="amort-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th style="text-align:right">Valor original</th>
+                <th>Vida útil</th>
+                <th style="text-align:right">Cuota anual</th>
+                <th>Año inicio</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="amort-tbody">
+              <tr class="empty-row">
+                <td colspan="7">No hay amortizaciones registradas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Margen -->
+      <div id="tab-margen" class="tab-content">
+        <div class="margen-toolbar">
+          <label for="margen-year">Año:</label>
+          <select id="margen-year" class="filter-select"></select>
+        </div>
+        <div class="margen-cards" id="margen-cards"></div>
       </div>
 
     </section>
@@ -578,6 +728,13 @@
             <datalist id="potrero-options"></datalist>
           </div>
         </div>
+        <div class="form-row" id="row-castracion" style="display:none">
+          <div class="form-group">
+            <label for="f-castracion">Fecha de castración</label>
+            <input type="date" id="f-castracion" name="castracion_fecha" />
+          </div>
+          <div class="form-group"><!-- spacer --></div>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label for="f-estado">Estado</label>
@@ -645,6 +802,226 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btn-cancel-tx">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Ciclo reproductivo -->
+  <div class="modal-overlay hidden" id="modal-reproduction">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-repro-title">Nuevo ciclo reproductivo</h2>
+        <button class="modal-close" id="modal-repro-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-reproduction">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fr-año">Año *</label>
+            <input type="number" id="fr-año" name="año" required min="2000" max="2100" placeholder="Ej: 2025" />
+          </div>
+          <div class="form-group">
+            <label for="fr-tacto-fecha">Fecha de tacto</label>
+            <input type="date" id="fr-tacto-fecha" name="tacto_fecha" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fr-entrada-toros">Entrada de toros</label>
+            <input type="date" id="fr-entrada-toros" name="fecha_entrada_toros" />
+          </div>
+          <div class="form-group">
+            <label for="fr-salida-toros">Salida de toros</label>
+            <input type="date" id="fr-salida-toros" name="fecha_salida_toros" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fr-vacas-total">Total vacas</label>
+            <input type="number" id="fr-vacas-total" name="vacas_total" min="0" placeholder="Ej: 80" />
+          </div>
+          <div class="form-group">
+            <label for="fr-vacas-positivas">Vacas positivas</label>
+            <input type="number" id="fr-vacas-positivas" name="vacas_positivas" min="0" placeholder="Ej: 65" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="fr-ia" name="ia_realizada" />
+            Se realizó Inseminación Artificial (IA)
+          </label>
+        </div>
+        <div id="ia-section" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fr-ia-fecha">Fecha IA</label>
+              <input type="date" id="fr-ia-fecha" name="ia_fecha" />
+            </div>
+            <div class="form-group">
+              <label for="fr-ia-toro">Toro IA</label>
+              <input type="text" id="fr-ia-toro" name="ia_toro" placeholder="Nombre o código del toro" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fr-ia-prenez">% Preñez IA</label>
+              <input type="number" id="fr-ia-prenez" name="ia_prenez_pct" min="0" max="100" step="0.1" placeholder="Ej: 45" />
+            </div>
+            <div class="form-group"><!-- spacer --></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="fr-obs">Observaciones</label>
+          <textarea id="fr-obs" name="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-repro">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Cultivo -->
+  <div class="modal-overlay hidden" id="modal-cultivo">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-cultivo-title">Agregar cultivo</h2>
+        <button class="modal-close" id="modal-cultivo-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-cultivo">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fc-potrero">Potrero *</label>
+            <select id="fc-potrero" name="potrero_id" required></select>
+          </div>
+          <div class="form-group">
+            <label for="fc-año">Año *</label>
+            <input type="number" id="fc-año" name="año" required min="1990" max="2100" placeholder="Ej: 2024" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fc-tipo">Tipo *</label>
+            <select id="fc-tipo" name="tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="cultivo">Cultivo</option>
+              <option value="pastura">Pastura</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="fc-detalle">Detalle *</label>
+            <input type="text" id="fc-detalle" name="detalle" required placeholder="Ej: Soja, Alfalfa 80% / Festuca 20%" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="fc-notas">Notas</label>
+          <textarea id="fc-notas" name="notas" rows="2" placeholder="Antigüedad, observaciones..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-cultivo">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Forraje -->
+  <div class="modal-overlay hidden" id="modal-forraje">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-forraje-title">Agregar forraje</h2>
+        <button class="modal-close" id="modal-forraje-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-forraje">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ffo-potrero">Potrero *</label>
+            <select id="ffo-potrero" name="potrero_id" required></select>
+          </div>
+          <div class="form-group">
+            <label for="ffo-año">Año *</label>
+            <input type="number" id="ffo-año" name="año" required min="1990" max="2100" placeholder="Ej: 2024" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ffo-tipo">Tipo *</label>
+            <select id="ffo-tipo" name="tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="rollo">Rollo</option>
+              <option value="fardo">Fardo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ffo-cantidad">Cantidad *</label>
+            <input type="number" id="ffo-cantidad" name="cantidad" required min="0" placeholder="Ej: 120" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ffo-cortes">Cortes</label>
+            <input type="number" id="ffo-cortes" name="cortes" min="0" placeholder="Cantidad de cortes" />
+          </div>
+          <div class="form-group"><!-- spacer --></div>
+        </div>
+        <div class="form-group">
+          <label for="ffo-obs">Observaciones</label>
+          <textarea id="ffo-obs" name="observaciones" rows="2" placeholder="Ej: relación ha/rollos..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-forraje">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Amortización -->
+  <div class="modal-overlay hidden" id="modal-amortization">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-amort-title">Nueva amortización</h2>
+        <button class="modal-close" id="modal-amort-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-amortization">
+        <div class="form-group">
+          <label for="fa-nombre">Nombre *</label>
+          <input type="text" id="fa-nombre" name="nombre" required placeholder="Ej: Tractor John Deere 6110J" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fa-tipo">Tipo *</label>
+            <select id="fa-tipo" name="tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="Maquinaria">Maquinaria</option>
+              <option value="Instalaciones">Instalaciones</option>
+              <option value="Rodado">Rodado</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="fa-año-inicio">Año inicio *</label>
+            <input type="number" id="fa-año-inicio" name="año_inicio" required min="1980" max="2100" placeholder="Ej: 2022" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fa-valor">Valor original *</label>
+            <input type="number" id="fa-valor" name="valor_original" required min="0" step="0.01" placeholder="Ej: 8000000" />
+          </div>
+          <div class="form-group">
+            <label for="fa-vida-util">Vida útil (años) *</label>
+            <input type="number" id="fa-vida-util" name="vida_util" required min="1" placeholder="Ej: 10" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="fa-obs">Observaciones</label>
+          <textarea id="fa-obs" name="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-amort">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar</button>
         </div>
       </form>
