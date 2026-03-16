@@ -36,7 +36,25 @@ const ui = (() => {
     });
   });
 
-  return { toast, confirm };
+  // --- Pagination ---
+  function pagination(containerId, total, page, pageSize, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const totalPages = Math.ceil(total / pageSize);
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    container.innerHTML = `
+      <div class="pagination">
+        <button class="pg-btn" ${page <= 1 ? 'disabled' : ''} data-page="${page - 1}">&#8249; Anterior</button>
+        <span class="pg-info">Página ${page} de ${totalPages} <span class="pg-total">(${total} registros)</span></span>
+        <button class="pg-btn" ${page >= totalPages ? 'disabled' : ''} data-page="${page + 1}">Siguiente &#8250;</button>
+      </div>
+    `;
+    container.querySelectorAll('.pg-btn:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', () => onPageChange(Number(btn.dataset.page)));
+    });
+  }
+
+  return { toast, confirm, pagination };
 })();
 
 // ===== App Bootstrap =====

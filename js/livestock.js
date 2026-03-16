@@ -20,6 +20,12 @@ const Livestock = (() => {
     saveData(KEYS.history, history);
   };
 
+  // --- Pagination state ---
+  const PAGE_SIZE = 20;
+  let animalsPage = 1;
+  let movementsPage = 1;
+  let historyPage = 1;
+
   // --- Render helpers ---
   const formatDate = iso => iso ? new Date(iso).toLocaleDateString('es-AR') : '—';
 
@@ -60,10 +66,12 @@ const Livestock = (() => {
     const tbody = document.getElementById('animals-tbody');
     if (!animals.length) {
       tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No hay animales que coincidan.</td></tr>`;
+      ui.pagination('animals-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
 
-    tbody.innerHTML = animals.map(a => `
+    const paged = animals.slice((animalsPage - 1) * PAGE_SIZE, animalsPage * PAGE_SIZE);
+    tbody.innerHTML = paged.map(a => `
       <tr data-id="${a.id}">
         <td><strong>${a.caravana}</strong></td>
         <td>${a.nombre || '—'}</td>
@@ -78,6 +86,7 @@ const Livestock = (() => {
         </td>
       </tr>
     `).join('');
+    ui.pagination('animals-pagination', animals.length, animalsPage, PAGE_SIZE, p => { animalsPage = p; renderAnimals(); });
   };
 
   // --- Render movements table ---
@@ -89,9 +98,11 @@ const Livestock = (() => {
     const tbody = document.getElementById('movements-tbody');
     if (!movements.length) {
       tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No hay movimientos registrados.</td></tr>`;
+      ui.pagination('movements-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
-    tbody.innerHTML = movements.map(m => `
+    const paged = movements.slice((movementsPage - 1) * PAGE_SIZE, movementsPage * PAGE_SIZE);
+    tbody.innerHTML = paged.map(m => `
       <tr>
         <td>${formatDate(m.fecha)}</td>
         <td><strong>${m.caravana}</strong>${m.animalNombre ? `<br><span class="cell-sub">${m.animalNombre}</span>` : ''}</td>
@@ -101,6 +112,7 @@ const Livestock = (() => {
         <td>${m.observaciones || '—'}</td>
       </tr>
     `).join('');
+    ui.pagination('movements-pagination', movements.length, movementsPage, PAGE_SIZE, p => { movementsPage = p; renderMovements(); });
   };
 
   // --- Render history table ---
@@ -109,9 +121,11 @@ const Livestock = (() => {
     const tbody = document.getElementById('history-tbody');
     if (!history.length) {
       tbody.innerHTML = `<tr class="empty-row"><td colspan="5">No hay registros en el historial.</td></tr>`;
+      ui.pagination('history-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
-    tbody.innerHTML = history.map(h => `
+    const paged = history.slice((historyPage - 1) * PAGE_SIZE, historyPage * PAGE_SIZE);
+    tbody.innerHTML = paged.map(h => `
       <tr>
         <td>${formatDate(h.fecha)}</td>
         <td>
@@ -123,6 +137,7 @@ const Livestock = (() => {
         <td>—</td>
       </tr>
     `).join('');
+    ui.pagination('history-pagination', history.length, historyPage, PAGE_SIZE, p => { historyPage = p; renderHistory(); });
   };
 
   // --- Full render ---
@@ -488,8 +503,8 @@ const Livestock = (() => {
     document.getElementById('form-animal').addEventListener('submit', saveAnimal);
 
     // Filters
-    document.getElementById('search-animals').addEventListener('input', renderAnimals);
-    document.getElementById('filter-type').addEventListener('change', renderAnimals);
+    document.getElementById('search-animals').addEventListener('input', () => { animalsPage = 1; renderAnimals(); });
+    document.getElementById('filter-type').addEventListener('change', () => { animalsPage = 1; renderAnimals(); });
 
     // Movement modal open/close
     document.getElementById('btn-new-movement').addEventListener('click', openMovementModal);

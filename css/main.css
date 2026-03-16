@@ -474,3 +474,43 @@ body {
   cursor: pointer;
   font-size: 14px;
 }
+
+/* ===== Pagination ===== */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 0 4px;
+}
+
+.pg-btn {
+  padding: 5px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.pg-btn:hover:not([disabled]) {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.pg-btn[disabled] {
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.pg-info {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.pg-total {
+  font-size: 12px;
+}

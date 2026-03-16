@@ -8,6 +8,8 @@ const Finance = (() => {
   };
 
   let editingId = null;
+  const PAGE_SIZE = 20;
+  let transactionsPage = 1;
 
   // --- Helpers ---
   function getAll() { return Storage.get(KEY) || []; }
@@ -66,10 +68,12 @@ const Finance = (() => {
     const tbody = document.getElementById('transactions-tbody');
     if (data.length === 0) {
       tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay transacciones registradas.</td></tr>';
+      ui.pagination('transactions-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
 
-    tbody.innerHTML = data.map(t => `
+    const paged = data.slice((transactionsPage - 1) * PAGE_SIZE, transactionsPage * PAGE_SIZE);
+    tbody.innerHTML = paged.map(t => `
       <tr>
         <td>${fmt(t.fecha)}</td>
         <td><span class="badge badge-tx-${t.tipo}">${t.tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}</span></td>
@@ -82,6 +86,7 @@ const Finance = (() => {
         </td>
       </tr>
     `).join('');
+    ui.pagination('transactions-pagination', data.length, transactionsPage, PAGE_SIZE, p => { transactionsPage = p; renderTable(); });
   }
 
   // --- Tab: Resumen ---
@@ -336,8 +341,8 @@ const Finance = (() => {
 
     document.getElementById('ft-tipo').addEventListener('change', e => updateCategories(e.target.value));
     document.getElementById('form-transaction').addEventListener('submit', saveTransaction);
-    document.getElementById('search-transactions').addEventListener('input', renderTable);
-    document.getElementById('filter-tipo-fin').addEventListener('change', renderTable);
+    document.getElementById('search-transactions').addEventListener('input', () => { transactionsPage = 1; renderTable(); });
+    document.getElementById('filter-tipo-fin').addEventListener('change', () => { transactionsPage = 1; renderTable(); });
 
     document.getElementById('transactions-tbody').addEventListener('click', e => {
       const btn = e.target.closest('[data-action]');

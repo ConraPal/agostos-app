@@ -32,7 +32,7 @@ agostos-app/
 │   ├── finance.js      # Módulo finanzas — se carga tercero
 │   ├── fields.js       # Módulo potreros — se carga cuarto
 │   ├── reports.js      # Módulo reportes — se carga quinto
-│   └── app.js          # Bootstrap + ui.toast() + ui.confirm() — se carga último
+│   └── app.js          # Bootstrap + ui.toast() + ui.confirm() + ui.pagination() — se carga último
 └── assets/
     └── icons/
 ```
@@ -309,6 +309,21 @@ Muestra una notificación flotante en la esquina inferior derecha. `type` puede 
 ### `ui.confirm(msg, okLabel?)`
 
 Abre un modal de confirmación y devuelve una Promise que resuelve `true` (confirmó) o `false` (canceló). Reemplaza todos los `confirm()` nativos del navegador.
+
+### `ui.pagination(containerId, total, page, pageSize, onPageChange)`
+
+Renderiza controles de paginación dentro del elemento `containerId`. Si `total <= pageSize` (una sola página), vacía el contenedor y no muestra nada. `onPageChange` recibe el número de página destino.
+
+**Tablas paginadas (20 filas por página):**
+
+| Tabla         | containerId               | Estado de página   | Módulo       |
+|---------------|---------------------------|--------------------|--------------|
+| Animales      | `animals-pagination`      | `animalsPage`      | livestock.js |
+| Movimientos   | `movements-pagination`    | `movementsPage`    | livestock.js |
+| Historial     | `history-pagination`      | `historyPage`      | livestock.js |
+| Transacciones | `transactions-pagination` | `transactionsPage` | finance.js   |
+
+Al cambiar filtro o búsqueda, el módulo resetea la página a 1 antes de renderizar.
 
 ## Integración entre módulos
 
