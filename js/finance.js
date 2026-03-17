@@ -16,6 +16,7 @@ const Finance = (() => {
   let editingId = null;
   const PAGE_SIZE = 20;
   let transactionsPage = 1;
+  let amortPage = 1;
 
   // --- Helpers ---
   function getAll() { return Storage.get(KEY) || []; }
@@ -89,8 +90,8 @@ const Finance = (() => {
         <td>${t.descripcion || '—'}</td>
         <td class="monto-cell monto-${t.tipo}">${fmtMoney(t.monto)}</td>
         <td class="actions-cell">
-          <button class="action-btn" data-action="edit" data-id="${t.id}" title="Editar">✏️</button>
-          <button class="action-btn danger" data-action="delete" data-id="${t.id}" title="Eliminar">🗑️</button>
+          <button class="action-btn" data-action="edit" data-id="${t.id}" title="Editar" aria-label="Editar transacción ${t.categoria}">✏️</button>
+          <button class="action-btn danger" data-action="delete" data-id="${t.id}" title="Eliminar" aria-label="Eliminar transacción ${t.categoria}">🗑️</button>
         </td>
       </tr>
     `).join('');
@@ -249,9 +250,11 @@ const Finance = (() => {
     const tbody = document.getElementById('amort-tbody');
     if (!data.length) {
       tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay amortizaciones registradas.</td></tr>';
+      ui.pagination('amort-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
-    tbody.innerHTML = data.map(a => `
+    const paged = data.slice((amortPage - 1) * PAGE_SIZE, amortPage * PAGE_SIZE);
+    tbody.innerHTML = paged.map(a => `
       <tr>
         <td>${a.nombre}</td>
         <td><span class="badge badge-amort-tipo">${a.tipo}</span></td>
@@ -260,11 +263,12 @@ const Finance = (() => {
         <td class="monto-cell">${fmtMoney(a.cuota_anual)}</td>
         <td>${a.año_inicio}</td>
         <td class="actions-cell">
-          <button class="action-btn" data-action="edit" data-id="${a.id}" title="Editar">✏️</button>
-          <button class="action-btn danger" data-action="delete" data-id="${a.id}" title="Eliminar">🗑️</button>
+          <button class="action-btn" data-action="edit" data-id="${a.id}" title="Editar" aria-label="Editar amortización ${a.nombre}">✏️</button>
+          <button class="action-btn danger" data-action="delete" data-id="${a.id}" title="Eliminar" aria-label="Eliminar amortización ${a.nombre}">🗑️</button>
         </td>
       </tr>
     `).join('');
+    ui.pagination('amort-pagination', data.length, amortPage, PAGE_SIZE, p => { amortPage = p; renderAmortizaciones(); });
   }
 
   function openModalAmort(id = null) {
@@ -296,9 +300,9 @@ const Finance = (() => {
     e.preventDefault();
     const nombre         = document.getElementById('fa-nombre').value.trim();
     const tipo           = document.getElementById('fa-tipo').value;
-    const año_inicio     = parseInt(document.getElementById('fa-año-inicio').value);
+    const año_inicio     = parseInt(document.getElementById('fa-año-inicio').value, 10);
     const valor_original = parseFloat(document.getElementById('fa-valor').value);
-    const vida_util      = parseInt(document.getElementById('fa-vida-util').value);
+    const vida_util      = parseInt(document.getElementById('fa-vida-util').value, 10);
     const cuota_anual    = vida_util > 0 ? valor_original / vida_util : 0;
     const observaciones  = document.getElementById('fa-obs').value.trim();
 
@@ -310,6 +314,7 @@ const Finance = (() => {
       data.push({ id: String(Date.now()), nombre, tipo, año_inicio, valor_original, vida_util, cuota_anual, observaciones });
     }
     Storage.set(AMORT_KEY, data);
+    amortPage = 1;
     closeModalAmort();
     renderAmortizaciones();
     ui.toast(editingAmortId ? 'Amortización actualizada.' : 'Amortización registrada.');
@@ -319,6 +324,7 @@ const Finance = (() => {
     ui.confirm('¿Eliminar esta amortización?').then(ok => {
       if (!ok) return;
       Storage.set(AMORT_KEY, (Storage.get(AMORT_KEY) || []).filter(a => a.id !== id));
+      amortPage = 1;
       renderAmortizaciones();
       ui.toast('Amortización eliminada.');
     });
@@ -362,7 +368,7 @@ const Finance = (() => {
     for (let y = currentYear; y >= currentYear - 5; y--) {
       sel.innerHTML += `<option value="${y}">${y}</option>`;
     }
-    sel.addEventListener('change', () => renderMargen(parseInt(sel.value)));
+    sel.addEventListener('change', () => renderMargen(parseInt(sel.value, 10)));
     renderMargen(currentYear);
   }
 
@@ -382,7 +388,7 @@ const Finance = (() => {
     document.getElementById('ft-cantidad').addEventListener('input', calcMonto);
     document.getElementById('ft-precio-unit').addEventListener('input', calcMonto);
     document.getElementById('form-transaction').addEventListener('submit', saveTransaction);
-    document.getElementById('search-transactions').addEventListener('input', () => { transactionsPage = 1; renderTable(); });
+    document.getElementById('search-transactions').addEventListener('input', ui.debounce(() => { transactionsPage = 1; renderTable(); }, 300));
     document.getElementById('filter-tipo-fin').addEventListener('change', () => { transactionsPage = 1; renderTable(); });
 
     document.getElementById('transactions-tbody').addEventListener('click', e => {

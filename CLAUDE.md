@@ -417,7 +417,9 @@ Resúmenes cruzados entre módulos y exportación de datos a CSV.
 
 - **Hacienda** — stock activo por tipo (con %) y por potrero (con %), total al pie ✓
 - **Finanzas** — balance mensual del año en curso: ingresos, gastos, balance por mes con fila de totales ✓
-- **Exportar** — descarga CSV de animales, movimientos, transacciones y potreros ✓
+- **Reproducción** — tabla de ciclos reproductivos por año: preñez, partos, destete, mortalidad ✓
+- **Forraje** — totales de rollos y fardos + desglose por potrero ✓
+- **Exportar** — descarga CSV de animales, movimientos, transacciones y potreros; importar CSV de animales; backup/restore JSON completo ✓
 
 ### Notas
 
@@ -446,8 +448,15 @@ Renderiza controles de paginación dentro del elemento `containerId`. Si `total 
 | Movimientos   | `movements-pagination`    | `movementsPage`    | livestock.js |
 | Historial     | `history-pagination`      | `historyPage`      | livestock.js |
 | Transacciones | `transactions-pagination` | `transactionsPage` | finance.js   |
+| Cultivos      | `cultivos-pagination`     | `cultivosPage`     | fields.js    |
+| Forraje       | `forraje-pagination`      | `forrajePage`      | fields.js    |
+| Amortizaciones| `amort-pagination`        | `amortPage`        | finance.js   |
 
 Al cambiar filtro o búsqueda, el módulo resetea la página a 1 antes de renderizar.
+
+### `ui.debounce(fn, ms?)`
+
+Retorna una versión con debounce de la función `fn`. Por defecto `ms = 300`. Usado en los inputs de búsqueda para evitar renders en cada keystroke.
 
 ## Integración entre módulos
 
@@ -479,3 +488,69 @@ La imagen se ubica al pie del sidebar (`<div class="sidebar-art">`). Estilos en 
 - **Sin build step**: se puede abrir `index.html` directo en el navegador para desarrollo local.
 - **IDs**: se usan timestamps (`Date.now()`) como IDs. Suficiente para localStorage; cambiar a UUIDs si se migra a backend.
 - **`.hidden`**: clase utilitaria en `main.css` (`display: none !important`) usada para ocultar elementos del topbar al cambiar de módulo.
+
+---
+
+## Actualizaciones 17/03/2026
+
+### Dark mode
+
+- Botón `#btn-dark-toggle` (🌙/☀️) en el topbar, junto a los botones de acción.
+- Al hacer click, alterna `body.dark` y persiste en `localStorage` bajo la key `ag_dark_mode`.
+- Los overrides de dark mode están en `main.css` bajo `body.dark { ... }`.
+- Las variables CSS de color (`--color-bg`, `--color-surface`, etc.) y de badges (`--c-*-bg/fg`) se redefinen en el bloque `body.dark`.
+
+### Badge color tokens (CSS variables)
+
+Definidas en `:root` en `main.css`:
+
+| Variable         | Uso                          |
+|------------------|------------------------------|
+| `--c-ok-bg/fg`   | Verde — activo, alta, éxito  |
+| `--c-warn-bg/fg` | Amarillo — advertencia       |
+| `--c-danger-bg/fg` | Rojo — error, baja         |
+| `--c-info-bg/fg` | Azul — info, movimiento      |
+| `--c-purple-bg/fg` | Violeta — amortizaciones   |
+| `--c-orange-bg/fg` | Naranja — rollos, impuestos|
+| `--c-pink-bg/fg`   | Rosa — fardos              |
+
+Todos los módulos (livestock.css, finance.css, fields.css) usan estas variables en lugar de colores hardcoded. Se adaptan automáticamente al dark mode.
+
+### Sort en tabla de Animales
+
+- Las columnas **Tipo** y **Peso** tienen la clase `.sortable-th` y `data-sort="tipo"` / `data-sort="peso"`.
+- El estado de sort (`animalsSort.by` y `animalsSort.dir`) vive en `livestock.js`.
+- Al hacer click en un header ya ordenado, alterna `asc` ↔ `desc`.
+- La flecha `⇅/▲/▼` se renderiza dentro del `<span class="sort-arrow">`.
+- La columna **Peso** fue agregada a la tabla (antes de Estado).
+
+### Filtros por año
+
+- **Reproducción** (`#repro-year-filter`) — en `livestock.js`, estado `reproYear`.
+- **Cultivos** (`#cultivos-year-filter`) — en `fields.js`, state implícito en el select.
+- **Forraje** (`#forraje-year-filter`) — en `fields.js`, state implícito en el select.
+- Los selects se pueblan dinámicamente con los años existentes en los datos.
+
+### Paginación nueva
+
+Cultivos, Forraje y Amortizaciones ahora usan `ui.pagination()` con `PAGE_SIZE = 20`.
+
+### Backup / Restore
+
+- **Exportar JSON** (`#btn-export-backup`): descarga un `.json` con todos los arrays de localStorage + `_version` y `_date`.
+- **Restaurar JSON** (`#btn-import-backup`): lee el archivo y restaura todas las keys. El usuario debe recargar la página para ver los datos.
+- Manejado en `reports.js`.
+
+### Importar CSV animales
+
+- **Importar CSV** (`#btn-import-csv`): lee un CSV con el formato del exportado (header en fila 1, caravana en col 2).
+- Las caravanas ya existentes se omiten.
+- Muestra toast con conteo de importados y omitidos.
+- Manejado en `livestock.js` — función `importCSV(file)`.
+
+### Tooltips
+
+Implementados con `<span class="tooltip-trigger" tabindex="0" data-tip="...">?</span>` dentro del label. Muestran el tooltip en hover/focus via CSS puro (`::after` con `opacity` transition). Ubicados en:
+- Modal amortización: Año inicio y Vida útil
+- Modal reproducción: % Preñez IA
+- Modal movimientos: Potrero origen

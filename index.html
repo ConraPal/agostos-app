@@ -55,6 +55,7 @@
         <h1 class="topbar-title" id="page-title">Hacienda</h1>
       </div>
       <div class="topbar-actions">
+        <button class="btn-icon" id="btn-dark-toggle" title="Modo oscuro" aria-label="Alternar modo oscuro">🌙</button>
         <button class="btn btn-primary" id="btn-new-animal">+ Nuevo animal</button>
         <button class="btn btn-primary hidden" id="btn-new-field">+ Nuevo potrero</button>
         <button class="btn btn-primary hidden" id="btn-new-transaction">+ Nueva transacción</button>
@@ -112,17 +113,18 @@
               <tr>
                 <th>Caravana</th>
                 <th>Nombre</th>
-                <th>Tipo</th>
+                <th class="sortable-th" data-sort="tipo">Tipo <span class="sort-arrow">⇅</span></th>
                 <th>Raza</th>
                 <th>Nacimiento</th>
                 <th>Potrero</th>
+                <th class="sortable-th" data-sort="peso">Peso <span class="sort-arrow">⇅</span></th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="animals-tbody">
               <tr class="empty-row">
-                <td colspan="8">No hay animales registrados.</td>
+                <td colspan="9">No hay animales registrados.</td>
               </tr>
             </tbody>
           </table>
@@ -201,6 +203,9 @@
           </div>
         </div>
         <div class="table-toolbar">
+          <select class="filter-select" id="repro-year-filter">
+            <option value="">Todos los años</option>
+          </select>
           <button class="btn btn-secondary" id="btn-new-repro">+ Nuevo ciclo</button>
         </div>
         <div class="table-wrapper">
@@ -308,6 +313,9 @@
       <!-- Tab: Cultivos -->
       <div id="tab-cultivos" class="tab-content">
         <div class="table-toolbar">
+          <select class="filter-select" id="cultivos-year-filter">
+            <option value="">Todos los años</option>
+          </select>
           <select class="filter-select" id="cultivos-potrero-filter">
             <option value="">Todos los potreros</option>
           </select>
@@ -331,12 +339,16 @@
               </tr>
             </tbody>
           </table>
+          <div id="cultivos-pagination"></div>
         </div>
       </div>
 
       <!-- Tab: Forraje -->
       <div id="tab-forraje" class="tab-content">
         <div class="table-toolbar">
+          <select class="filter-select" id="forraje-year-filter">
+            <option value="">Todos los años</option>
+          </select>
           <select class="filter-select" id="forraje-potrero-filter">
             <option value="">Todos los potreros</option>
           </select>
@@ -361,6 +373,7 @@
               </tr>
             </tbody>
           </table>
+          <div id="forraje-pagination"></div>
         </div>
       </div>
 
@@ -478,6 +491,7 @@
               </tr>
             </tbody>
           </table>
+          <div id="amort-pagination"></div>
         </div>
       </div>
 
@@ -499,6 +513,8 @@
       <div class="tabs">
         <button class="tab active" data-tab="rpt-hacienda">Hacienda</button>
         <button class="tab" data-tab="rpt-finanzas">Finanzas</button>
+        <button class="tab" data-tab="rpt-reproduccion">Reproducción</button>
+        <button class="tab" data-tab="rpt-forraje">Forraje</button>
         <button class="tab" data-tab="rpt-exportar">Exportar</button>
       </div>
 
@@ -553,8 +569,41 @@
         </div>
       </div>
 
+      <!-- Tab: Reproducción -->
+      <div id="tab-rpt-reproduccion" class="tab-content">
+        <div class="rpt-section">
+          <h3>Ciclos reproductivos por año</h3>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Año</th>
+                  <th>Vacas servidas</th>
+                  <th>% Preñez</th>
+                  <th>Partos</th>
+                  <th>% Destete</th>
+                  <th>Mortalidad</th>
+                </tr>
+              </thead>
+              <tbody id="rpt-repro-tbody">
+                <tr class="empty-row"><td colspan="6">Sin ciclos registrados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Forraje -->
+      <div id="tab-rpt-forraje" class="tab-content">
+        <div class="rpt-section">
+          <h3>Stock de forraje</h3>
+          <div id="rpt-forraje-content"></div>
+        </div>
+      </div>
+
       <!-- Tab: Exportar -->
       <div id="tab-rpt-exportar" class="tab-content">
+        <h3 class="export-section-title">Exportar CSV</h3>
         <div class="export-grid">
           <div class="export-card">
             <span class="export-card-title">Animales</span>
@@ -575,6 +624,29 @@
             <span class="export-card-title">Potreros</span>
             <span class="export-card-desc">Registro de potreros con hectáreas, pastura y estado.</span>
             <button class="btn btn-secondary" id="btn-export-fields">Descargar CSV</button>
+          </div>
+        </div>
+        <h3 class="export-section-title">Importar animales</h3>
+        <div class="export-grid">
+          <div class="export-card">
+            <span class="export-card-title">Importar CSV animales</span>
+            <span class="export-card-desc">Cargá un CSV con el formato del exportado. Las caravanas duplicadas se omiten.</span>
+            <button class="btn btn-secondary" id="btn-import-csv">Importar CSV</button>
+            <input type="file" id="import-csv-input" accept=".csv" class="hidden" />
+          </div>
+        </div>
+        <h3 class="export-section-title">Backup completo</h3>
+        <div class="export-grid">
+          <div class="export-card">
+            <span class="export-card-title">Exportar backup</span>
+            <span class="export-card-desc">Descarga todos los datos como un archivo JSON.</span>
+            <button class="btn btn-secondary" id="btn-export-backup">Exportar JSON</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Restaurar backup</span>
+            <span class="export-card-desc">Restaura los datos desde un archivo JSON de backup previo.</span>
+            <button class="btn btn-secondary" id="btn-import-backup">Restaurar JSON</button>
+            <input type="file" id="import-backup-input" accept=".json" class="hidden" />
           </div>
         </div>
       </div>
@@ -663,7 +735,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="fm-origen">Potrero origen</label>
+            <label for="fm-origen">Potrero origen <span class="tooltip-trigger" tabindex="0" data-tip="Se completa automáticamente al seleccionar un animal">?</span></label>
             <input type="text" id="fm-origen" name="origen" placeholder="Se completa automático" />
           </div>
           <div class="form-group">
@@ -899,7 +971,7 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="fr-ia-prenez">% Preñez IA</label>
+              <label for="fr-ia-prenez">% Preñez IA <span class="tooltip-trigger" tabindex="0" data-tip="Porcentaje de preñez de las vacas que recibieron IA solamente">?</span></label>
               <input type="number" id="fr-ia-prenez" name="ia_prenez_pct" min="0" max="100" step="0.1" placeholder="Ej: 45" />
             </div>
             <div class="form-group"><!-- spacer --></div>
@@ -1084,7 +1156,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="fa-año-inicio">Año inicio *</label>
+            <label for="fa-año-inicio">Año inicio * <span class="tooltip-trigger" tabindex="0" data-tip="Año en que se activó el bien en la empresa">?</span></label>
             <input type="number" id="fa-año-inicio" name="año_inicio" required min="1980" max="2100" placeholder="Ej: 2022" />
           </div>
         </div>
@@ -1094,7 +1166,7 @@
             <input type="number" id="fa-valor" name="valor_original" required min="0" step="0.01" placeholder="Ej: 8000000" />
           </div>
           <div class="form-group">
-            <label for="fa-vida-util">Vida útil (años) *</label>
+            <label for="fa-vida-util">Vida útil (años) * <span class="tooltip-trigger" tabindex="0" data-tip="Años sobre los que se distribuye el costo del activo. Cuota anual = Valor ÷ Vida útil">?</span></label>
             <input type="number" id="fa-vida-util" name="vida_util" required min="1" placeholder="Ej: 10" />
           </div>
         </div>

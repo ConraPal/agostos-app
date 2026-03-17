@@ -3,6 +3,8 @@ const Reports = (() => {
   function getMovements()    { return Storage.get('ag_movements')     || []; }
   function getTransactions() { return Storage.get('ag_transactions')  || []; }
   function getFields()       { return Storage.get('ag_fields')        || []; }
+  function getReproduction() { return Storage.get('ag_reproduction')  || []; }
+  function getForraje()      { return Storage.get('ag_forraje')       || []; }
 
   const TIPO_LABELS  = { vaca: 'Vaca', toro: 'Toro', ternero: 'Ternero', vaquillona: 'Vaquillona', novillo: 'Novillo' };
   const TIPO_ORDER   = ['vaca', 'toro', 'ternero', 'vaquillona', 'novillo'];
@@ -74,7 +76,7 @@ const Reports = (() => {
       totalGastos   += v.gastos;
       const bal = v.ingresos - v.gastos;
       const cls = bal < 0 ? 'monto-gasto' : bal > 0 ? 'monto-ingreso' : '';
-      const monthIdx = parseInt(key.split('-')[1]) - 1;
+      const monthIdx = parseInt(key.split('-')[1], 10) - 1;
       return `<tr>
         <td>${MONTH_NAMES[monthIdx]}</td>
         <td class="monto-cell monto-ingreso">${fmtMoney(v.ingresos)}</td>
@@ -93,6 +95,62 @@ const Reports = (() => {
     </tr>`);
 
     document.getElementById('rpt-finanzas-tbody').innerHTML = rows.join('');
+  }
+
+  // --- Tab: Reproducción ---
+  function renderReproduccion() {
+    const data = [...getReproduction()].sort((a, b) => b.año - a.año);
+    const tbody = document.getElementById('rpt-repro-tbody');
+    if (!tbody) return;
+    if (!data.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin ciclos registrados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td><strong>${r.año}</strong></td>
+        <td>${r.vacas_total ?? '—'}</td>
+        <td>${r.prenez_pct != null ? r.prenez_pct.toFixed(1) + '%' : '—'}</td>
+        <td>${r.partos ?? '—'}</td>
+        <td>${r.indice_destete != null ? r.indice_destete.toFixed(1) + '%' : '—'}</td>
+        <td>${r.mortalidad_total ?? '—'}</td>
+      </tr>
+    `).join('');
+  }
+
+  // --- Tab: Forraje ---
+  function renderForraje() {
+    const data = getForraje();
+    const el = document.getElementById('rpt-forraje-content');
+    if (!el) return;
+    if (!data.length) {
+      el.innerHTML = '<p class="resumen-empty">Sin datos de forraje registrados.</p>';
+      return;
+    }
+
+    const rollos = data.filter(f => f.tipo === 'rollo').reduce((s, f) => s + (Number(f.cantidad) || 0), 0);
+    const fardos = data.filter(f => f.tipo === 'fardo').reduce((s, f) => s + (Number(f.cantidad) || 0), 0);
+
+    const byPotrero = {};
+    data.forEach(f => {
+      if (!byPotrero[f.potrero]) byPotrero[f.potrero] = { rollo: 0, fardo: 0 };
+      byPotrero[f.potrero][f.tipo] = (byPotrero[f.potrero][f.tipo] || 0) + (Number(f.cantidad) || 0);
+    });
+
+    el.innerHTML = `
+      <div class="rpt-forraje-totales">
+        <div class="stat-card"><span class="stat-label">Total rollos</span><span class="stat-value">${rollos}</span></div>
+        <div class="stat-card"><span class="stat-label">Total fardos</span><span class="stat-value">${fardos}</span></div>
+      </div>
+      <table class="data-table" style="margin-top:16px">
+        <thead><tr><th>Potrero</th><th>Rollos</th><th>Fardos</th></tr></thead>
+        <tbody>
+          ${Object.entries(byPotrero).sort(([a], [b]) => a.localeCompare(b, 'es')).map(([p, v]) =>
+            `<tr><td>${p}</td><td>${v.rollo || 0}</td><td>${v.fardo || 0}</td></tr>`
+          ).join('')}
+        </tbody>
+      </table>
+    `;
   }
 
   // --- CSV export ---
@@ -138,10 +196,46 @@ const Reports = (() => {
     );
   }
 
+  // --- Backup / Restore ---
+  const ALL_KEYS = ['ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction',
+                    'ag_transactions', 'ag_amortizations',
+                    'ag_fields', 'ag_crop_history', 'ag_forraje'];
+
+  function exportBackup() {
+    const backup = {};
+    ALL_KEYS.forEach(k => { backup[k] = Storage.get(k) || []; });
+    backup._version = 1;
+    backup._date = new Date().toISOString();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `agostos-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importBackup(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        ALL_KEYS.forEach(k => { if (data[k]) Storage.set(k, data[k]); });
+        ui.toast('Backup restaurado. Recargá la página para ver los datos.');
+      } catch (_) {
+        ui.toast('Archivo inválido. Usá un backup de Agostos.', 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // --- Public ---
   function refresh() {
     renderHacienda();
     renderFinanzas();
+    renderReproduccion();
+    renderForraje();
   }
 
   function init() {
@@ -149,6 +243,16 @@ const Reports = (() => {
     document.getElementById('btn-export-movements').addEventListener('click', exportMovements);
     document.getElementById('btn-export-transactions').addEventListener('click', exportTransactions);
     document.getElementById('btn-export-fields').addEventListener('click', exportFields);
+
+    document.getElementById('btn-export-backup')?.addEventListener('click', exportBackup);
+    document.getElementById('import-backup-input')?.addEventListener('change', e => {
+      importBackup(e.target.files[0]);
+      e.target.value = '';
+    });
+    document.getElementById('btn-import-backup')?.addEventListener('click', () => {
+      document.getElementById('import-backup-input')?.click();
+    });
+
     refresh();
   }
 

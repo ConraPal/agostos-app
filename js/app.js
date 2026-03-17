@@ -54,7 +54,13 @@ const ui = (() => {
     });
   }
 
-  return { toast, confirm, pagination };
+  // --- Debounce ---
+  function debounce(fn, ms = 300) {
+    let timer;
+    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+  }
+
+  return { toast, confirm, pagination, debounce };
 })();
 
 // ===== App Bootstrap =====
@@ -110,6 +116,19 @@ document.addEventListener('DOMContentLoaded', () => {
   sidebarOverlay?.addEventListener('click', closeSidebar);
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', closeSidebar);
+  });
+
+  // --- Dark mode ---
+  const darkBtn = document.getElementById('btn-dark-toggle');
+  function applyDark(on) {
+    document.body.classList.toggle('dark', on);
+    if (darkBtn) darkBtn.textContent = on ? '☀️' : '🌙';
+  }
+  applyDark(!!Storage.get('ag_dark_mode'));
+  darkBtn?.addEventListener('click', () => {
+    const next = !document.body.classList.contains('dark');
+    Storage.set('ag_dark_mode', next);
+    applyDark(next);
   });
 
   // --- Init modules ---

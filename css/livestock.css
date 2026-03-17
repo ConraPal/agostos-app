@@ -40,9 +40,9 @@
   text-transform: capitalize;
 }
 
-.badge-activo   { background: #e6f4e7; color: #2d6a30; }
-.badge-vendido  { background: #e8f0fe; color: #1a56a0; }
-.badge-muerto   { background: #fce8e6; color: #a12b1f; }
+.badge-activo   { background: var(--c-ok-bg);     color: var(--c-ok-fg); }
+.badge-vendido  { background: var(--c-info-bg);   color: var(--c-info-fg); }
+.badge-muerto   { background: var(--c-danger-bg); color: var(--c-danger-fg); }
 
 /* ===== Cell sub-text (animal name in movements table) ===== */
 .cell-sub { font-size: 11px; color: var(--color-muted); display: block; }
@@ -85,10 +85,10 @@
 .di-potrero  { font-size: 11px; color: var(--color-primary); margin-left: auto; }
 
 /* ===== Event badges (historial) ===== */
-.badge-evento-alta        { background: #e6f4e7; color: #2d6a30; }
-.badge-evento-baja        { background: #fce8e6; color: #a12b1f; }
-.badge-evento-edicion     { background: #fff8e1; color: #7a5c00; }
-.badge-evento-movimiento  { background: #e8f0fe; color: #1a56a0; }
+.badge-evento-alta        { background: var(--c-ok-bg);     color: var(--c-ok-fg); }
+.badge-evento-baja        { background: var(--c-danger-bg); color: var(--c-danger-fg); }
+.badge-evento-edicion     { background: var(--c-warn-bg);   color: var(--c-warn-fg); }
+.badge-evento-movimiento  { background: var(--c-info-bg);   color: var(--c-info-fg); }
 .badge-evento-default     { background: #f0f0f0; color: #555; }
 
 /* ===== Action buttons in table ===== */

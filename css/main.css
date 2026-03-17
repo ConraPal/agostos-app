@@ -585,3 +585,121 @@ body {
 .pg-total {
   font-size: 12px;
 }
+
+/* ===== Badge color tokens ===== */
+:root {
+  --c-ok-bg: #e8f5e9;    --c-ok-fg: #2e7d32;
+  --c-warn-bg: #fff8e1;  --c-warn-fg: #7a5c00;
+  --c-danger-bg: #fce4ec; --c-danger-fg: #c0392b;
+  --c-info-bg: #e8f0fe;  --c-info-fg: #1a56a0;
+  --c-purple-bg: #ede7f6; --c-purple-fg: #4527a0;
+  --c-orange-bg: #fff3e0; --c-orange-fg: #e65100;
+  --c-pink-bg: #fce4ec;   --c-pink-fg: #880e4f;
+}
+
+/* Generic badge utilities */
+.badge-ok      { background: var(--c-ok-bg);     color: var(--c-ok-fg); }
+.badge-warn    { background: var(--c-warn-bg);    color: var(--c-warn-fg); }
+.badge-danger  { background: var(--c-danger-bg);  color: var(--c-danger-fg); }
+.badge-neutral { background: var(--c-info-bg);    color: var(--c-info-fg); }
+
+/* ===== Dark mode ===== */
+body.dark {
+  --color-bg:      #161616;
+  --color-surface: #1f1f1f;
+  --color-border:  #2e2e2e;
+  --color-text:    #ddd8cc;
+  --color-muted:   #8a8a82;
+
+  --c-ok-bg: #1a3320;     --c-ok-fg: #5cba60;
+  --c-warn-bg: #2d2400;   --c-warn-fg: #d4a800;
+  --c-danger-bg: #2d1015; --c-danger-fg: #e06060;
+  --c-info-bg: #0e1d38;   --c-info-fg: #6090e0;
+  --c-purple-bg: #1e1530; --c-purple-fg: #a080e0;
+  --c-orange-bg: #2d1800; --c-orange-fg: #e09040;
+  --c-pink-bg: #2d1020;   --c-pink-fg: #e080a0;
+}
+
+body.dark .data-table th        { background: #1a1a1a; }
+body.dark .data-table tbody tr:hover { background: #252525; }
+body.dark .stat-card            { background: var(--color-surface); }
+body.dark .topbar               { background: var(--color-surface); }
+body.dark .search-input,
+body.dark .filter-select        { background: var(--color-surface); color: var(--color-text); }
+body.dark .btn-secondary        { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border); }
+body.dark .modal                { background: var(--color-surface); }
+body.dark .form-group input,
+body.dark .form-group select,
+body.dark .form-group textarea  { background: #161616; color: var(--color-text); border-color: var(--color-border); }
+body.dark .table-wrapper        { background: var(--color-surface); border-color: var(--color-border); }
+body.dark .tabs                 { border-color: var(--color-border); }
+body.dark .sidebar-art::before  { background: linear-gradient(to bottom, var(--color-sidebar), transparent); }
+body.dark .animal-dropdown      { background: var(--color-surface); border-color: var(--color-border); }
+body.dark .dropdown-item:hover,
+body.dark .dropdown-item.active { background: #252525; }
+body.dark .export-card          { border-color: var(--color-border); }
+body.dark .pg-btn               { background: var(--color-surface); border-color: var(--color-border); color: var(--color-primary); }
+
+/* ===== Sort headers ===== */
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.sortable-th:hover { color: var(--color-primary); }
+.sort-arrow { font-size: 10px; margin-left: 3px; }
+
+/* ===== Tooltip ===== */
+.tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: var(--color-muted);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: help;
+  margin-left: 4px;
+  position: relative;
+  flex-shrink: 0;
+}
+.tooltip-trigger::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2c2c2c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 5px 10px;
+  border-radius: 6px;
+  min-width: 160px;
+  max-width: 240px;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 500;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.tooltip-trigger:hover::after,
+.tooltip-trigger:focus::after { opacity: 1; }
+
+/* ===== Icon button ===== */
+.btn-icon {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--color-muted);
+  transition: background .15s;
+  line-height: 1;
+}
+.btn-icon:hover { background: var(--color-bg); }

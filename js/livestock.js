@@ -26,6 +26,10 @@ const Livestock = (() => {
   let movementsPage = 1;
   let historyPage = 1;
 
+  // --- Sort and filter state ---
+  let animalsSort = { by: null, dir: 'asc' };
+  let reproYear = '';
+
   // --- Render helpers ---
   const formatDate = iso => iso ? new Date(iso).toLocaleDateString('es-AR') : '—';
 
@@ -63,9 +67,33 @@ const Livestock = (() => {
     );
     if (typeFilter) animals = animals.filter(a => a.tipo === typeFilter);
 
+    // Sort
+    if (animalsSort.by === 'tipo') {
+      animals.sort((a, b) => {
+        const r = (a.tipo || '').localeCompare(b.tipo || '', 'es');
+        return animalsSort.dir === 'asc' ? r : -r;
+      });
+    } else if (animalsSort.by === 'peso') {
+      animals.sort((a, b) => {
+        const r = (Number(a.peso) || 0) - (Number(b.peso) || 0);
+        return animalsSort.dir === 'asc' ? r : -r;
+      });
+    }
+
+    // Update sort arrows in headers
+    document.querySelectorAll('#animals-table .sortable-th').forEach(th => {
+      const arrow = th.querySelector('.sort-arrow');
+      if (!arrow) return;
+      if (th.dataset.sort === animalsSort.by) {
+        arrow.textContent = animalsSort.dir === 'asc' ? '▲' : '▼';
+      } else {
+        arrow.textContent = '⇅';
+      }
+    });
+
     const tbody = document.getElementById('animals-tbody');
     if (!animals.length) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No hay animales que coincidan.</td></tr>`;
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="9">No hay animales que coincidan.</td></tr>`;
       ui.pagination('animals-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -79,10 +107,11 @@ const Livestock = (() => {
         <td>${a.raza || '—'}</td>
         <td>${formatDate(a.nacimiento)}</td>
         <td>${a.potrero || '—'}</td>
+        <td>${a.peso ? a.peso + ' kg' : '—'}</td>
         <td>${badge(a.estado)}</td>
         <td>
-          <button class="action-btn" onclick="Livestock.edit('${a.id}')" title="Editar">✏️</button>
-          <button class="action-btn danger" onclick="Livestock.remove('${a.id}')" title="Eliminar">🗑️</button>
+          <button class="action-btn" onclick="Livestock.edit('${a.id}')" title="Editar" aria-label="Editar animal ${a.caravana}">✏️</button>
+          <button class="action-btn danger" onclick="Livestock.remove('${a.id}')" title="Eliminar" aria-label="Eliminar animal ${a.caravana}">🗑️</button>
         </td>
       </tr>
     `).join('');
@@ -360,14 +389,27 @@ const Livestock = (() => {
   let editingReproId = null;
 
   const renderReproduccion = () => {
-    const data = [...getData(KEYS.reproduction)].sort((a, b) => b.año - a.año);
+    const allData = [...getData(KEYS.reproduction)].sort((a, b) => b.año - a.año);
 
-    // Stats: último ciclo
-    const last = data[0];
+    // Populate year filter
+    const years = [...new Set(allData.map(r => r.año))].sort((a, b) => b - a);
+    const yrSel = document.getElementById('repro-year-filter');
+    if (yrSel) {
+      const cur = yrSel.value;
+      yrSel.innerHTML = '<option value="">Todos los años</option>' +
+        years.map(y => `<option value="${y}">${y}</option>`).join('');
+      if (cur) yrSel.value = cur;
+    }
+
+    // Stats: último ciclo sin filtro
+    const last = allData[0];
     document.getElementById('stat-repro-prenez').textContent     = last ? (last.prenez_pct != null ? last.prenez_pct.toFixed(1) + '%' : '—') : '—';
     document.getElementById('stat-repro-destete').textContent    = last ? (last.indice_destete != null ? last.indice_destete.toFixed(1) + '%' : '—') : '—';
     document.getElementById('stat-repro-positivas').textContent  = last ? (last.vacas_positivas ?? '—') : '—';
     document.getElementById('stat-repro-mortalidad').textContent = last ? (last.mortalidad_total ?? '—') : '—';
+
+    // Apply year filter to table
+    const data = reproYear ? allData.filter(r => String(r.año) === reproYear) : allData;
 
     const tbody = document.getElementById('repro-tbody');
     if (!data.length) {
@@ -384,8 +426,8 @@ const Livestock = (() => {
         <td>${r.mortalidad_total ?? '—'}</td>
         <td>${r.ia_realizada ? '<span class="badge badge-evento-alta">Sí</span>' : '<span class="badge badge-evento-baja">No</span>'}</td>
         <td>
-          <button class="action-btn" onclick="Livestock.editRepro('${r.id}')" title="Editar">✏️</button>
-          <button class="action-btn danger" onclick="Livestock.removeRepro('${r.id}')" title="Eliminar">🗑️</button>
+          <button class="action-btn" onclick="Livestock.editRepro('${r.id}')" title="Editar" aria-label="Editar ciclo ${r.año}">✏️</button>
+          <button class="action-btn danger" onclick="Livestock.removeRepro('${r.id}')" title="Eliminar" aria-label="Eliminar ciclo ${r.año}">🗑️</button>
         </td>
       </tr>
     `).join('');
@@ -499,6 +541,45 @@ const Livestock = (() => {
     });
   };
 
+  // --- Import CSV ---
+  const importCSV = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const lines = e.target.result.split('\n').filter(l => l.trim());
+      if (lines.length < 2) { ui.toast('El archivo no tiene datos.', 'error'); return; }
+      const animals = getData(KEYS.animals);
+      const existing = new Set(animals.map(a => a.caravana));
+      let added = 0, skipped = 0;
+      // Espera header: ID, Caravana, Nombre, Tipo, Raza, Nacimiento, Potrero, Estado, Peso, Observaciones
+      lines.slice(1).forEach(line => {
+        const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+        const caravana = (cols[1] || '').toUpperCase();
+        if (!caravana) return;
+        if (existing.has(caravana)) { skipped++; return; }
+        animals.unshift({
+          id: String(Date.now() + added),
+          caravana,
+          nombre:       cols[2] || '',
+          tipo:         cols[3] || '',
+          raza:         cols[4] || '',
+          nacimiento:   cols[5] || '',
+          potrero:      cols[6] || '',
+          estado:       cols[7] || 'activo',
+          peso:         cols[8] ? Number(cols[8]) : null,
+          observaciones: cols[9] || '',
+          castracion_fecha: null,
+        });
+        existing.add(caravana);
+        added++;
+      });
+      saveData(KEYS.animals, animals);
+      render();
+      ui.toast(`Importados: ${added} animales. Omitidos (duplicados): ${skipped}.`);
+    };
+    reader.readAsText(file);
+  };
+
   // --- Edit ---
   const edit = id => {
     const animal = getData(KEYS.animals).find(a => a.id === id);
@@ -532,9 +613,23 @@ const Livestock = (() => {
     // Form submit
     document.getElementById('form-animal').addEventListener('submit', saveAnimal);
 
-    // Filters
-    document.getElementById('search-animals').addEventListener('input', () => { animalsPage = 1; renderAnimals(); });
+    // Filters (debounced search)
+    document.getElementById('search-animals').addEventListener('input', ui.debounce(() => { animalsPage = 1; renderAnimals(); }, 300));
     document.getElementById('filter-type').addEventListener('change', () => { animalsPage = 1; renderAnimals(); });
+
+    // Sort headers
+    document.querySelectorAll('#animals-table .sortable-th').forEach(th => {
+      th.addEventListener('click', () => {
+        if (animalsSort.by === th.dataset.sort) {
+          animalsSort.dir = animalsSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          animalsSort.by = th.dataset.sort;
+          animalsSort.dir = 'asc';
+        }
+        animalsPage = 1;
+        renderAnimals();
+      });
+    });;
 
     // Movement modal open/close
     document.getElementById('btn-new-movement').addEventListener('click', openMovementModal);
@@ -593,6 +688,21 @@ const Livestock = (() => {
       document.getElementById('ia-section').style.display = e.target.checked ? '' : 'none';
     });
     document.getElementById('form-reproduction').addEventListener('submit', saveRepro);
+
+    // Reproducción year filter
+    document.getElementById('repro-year-filter')?.addEventListener('change', e => {
+      reproYear = e.target.value;
+      renderReproduccion();
+    });
+
+    // Import CSV
+    document.getElementById('import-csv-input')?.addEventListener('change', e => {
+      importCSV(e.target.files[0]);
+      e.target.value = '';
+    });
+    document.getElementById('btn-import-csv')?.addEventListener('click', () => {
+      document.getElementById('import-csv-input')?.click();
+    });
 
     render();
   };

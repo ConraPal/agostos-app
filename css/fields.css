@@ -1,9 +1,9 @@
 /* ===== Fields Module ===== */
 
 /* Estado badges */
-.badge-field-activo     { background: #e8f5e9; color: #2e7d32; }
-.badge-field-descanso   { background: #fff8e1; color: #f57f17; }
-.badge-field-clausurado { background: #fce4ec; color: #c0392b; }
+.badge-field-activo     { background: var(--c-ok-bg);     color: var(--c-ok-fg); }
+.badge-field-descanso   { background: var(--c-warn-bg);   color: var(--c-warn-fg); }
+.badge-field-clausurado { background: var(--c-danger-bg); color: var(--c-danger-fg); }
 
 /* Stock tab */
 .caravanas-cell {
@@ -24,9 +24,9 @@
 .text-muted { color: var(--color-muted); }
 
 /* Cultivos */
-.badge-cultivo-cultivo { background: #e8f5e9; color: #2e7d32; }
-.badge-cultivo-pastura { background: #e3f2fd; color: #1565c0; }
+.badge-cultivo-cultivo { background: var(--c-ok-bg);     color: var(--c-ok-fg); }
+.badge-cultivo-pastura { background: var(--c-info-bg);   color: var(--c-info-fg); }
 
 /* Forraje */
-.badge-forraje-rollo { background: #fff8e1; color: #e65100; }
-.badge-forraje-fardo { background: #fce4ec; color: #880e4f; }
+.badge-forraje-rollo { background: var(--c-orange-bg); color: var(--c-orange-fg); }
+.badge-forraje-fardo { background: var(--c-pink-bg);   color: var(--c-pink-fg); }

@@ -1,51 +1,26 @@
 # TODO — Agostos
 
-Mejoras priorizadas de menor a mayor esfuerzo/riesgo.
+Todos los ítems han sido implementados. Ver historial de commits para detalles.
 
 ---
 
-## A — Bugs / Correcciones menores
+## Completado
 
-1. Agregar `radix` a todos los `parseInt()` sin él → `parseInt(x, 10)`
-2. Agregar `aria-label` a botones de acción (editar/eliminar) que usan solo emojis
-3. Agregar `overflow-x: auto` a tablas en mobile (indicador de scroll horizontal)
-
----
-
-## B — Validaciones y UX
-
-4. Validar nombres duplicados al crear potreros
-5. Limpiar `castracion_fecha` al guardar animales que no sean terneros
-6. Agregar debounce (~300ms) al input de búsqueda en todas las tablas
-7. Responsive para `.resumen-grid` y `.export-grid` en ≤768px (falta breakpoint)
-
----
-
-## C — Features nuevas simples
-
-8. **Búsqueda en Reproducción** — filtro por año
-9. **Ordenamiento de columnas** en tabla de Animales (por tipo, peso)
-10. **Filtro por año** en tabs Cultivos y Forraje
-11. **Paginación en Cultivos, Forraje, Amortizaciones** (consistencia con el resto)
-
----
-
-## D — Features de datos
-
-12. **Backup/Restore** — exportar todo localStorage como JSON + importar
-13. **Importar CSV de animales** — carga masiva desde planilla
-
----
-
-## E — Reportes adicionales
-
-14. **Reporte de Reproducción** en módulo Reportes — % preñez y % destete por año (cruce de ciclos)
-15. **Reporte de Forraje** — stock total por tipo (rollos/fardos)
-
----
-
-## F — Mejoras visuales / UX avanzado
-
-16. **Dark mode** — variable CSS swap con `prefers-color-scheme` + toggle manual
-17. **Tooltips de ayuda** en campos no obvios (ej: vida útil en amortizaciones)
-18. **Badge consolidado** — crear clases CSS utilitarias `.badge-ok`, `.badge-warn`, `.badge-neutral` y eliminar las definiciones duplicadas de verde/rojo en cada módulo
+- [x] 1. Radix en todos los `parseInt()` → `parseInt(x, 10)`
+- [x] 2. `aria-label` en botones de acción (editar/eliminar)
+- [x] 3. `overflow-x: auto` en tablas (table-wrapper ya lo tenía)
+- [x] 4. Validación de nombres duplicados al crear/editar potreros
+- [x] 5. Limpieza de `castracion_fecha` para no-terneros en `saveAnimal`
+- [x] 6. Debounce (~300ms) en búsqueda de animales, potreros y transacciones
+- [x] 7. Responsive para `.resumen-grid` y `.export-grid`
+- [x] 8. Filtro por año en tab Reproducción de Hacienda
+- [x] 9. Ordenamiento de columnas en tabla de Animales (Tipo y Peso)
+- [x] 10. Filtro por año en tabs Cultivos y Forraje
+- [x] 11. Paginación en Cultivos, Forraje y Amortizaciones
+- [x] 12. Backup/Restore — exportar/importar JSON completo
+- [x] 13. Importar CSV de animales — carga masiva desde planilla
+- [x] 14. Reporte de Reproducción en módulo Reportes
+- [x] 15. Reporte de Forraje en módulo Reportes
+- [x] 16. Dark mode — toggle manual con persistencia en localStorage
+- [x] 17. Tooltips de ayuda en campos no obvios
+- [x] 18. Badge consolidado — variables CSS en `:root` y `body.dark`, badges usan `var(--c-*)`
