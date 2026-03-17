@@ -4,13 +4,15 @@
 .stat-negativo { color: var(--color-danger) !important; }
 
 /* Type badges */
-.badge-tx-ingreso { background: #e8f5e9; color: #2e7d32; }
-.badge-tx-gasto   { background: #fce4ec; color: #c0392b; }
+.badge-tx-ingreso  { background: #e8f5e9; color: #2e7d32; }
+.badge-tx-gasto    { background: #fce4ec; color: #c0392b; }
+.badge-tx-impuesto { background: #fff3e0; color: #e65100; }
 
 /* Monto column */
-.monto-cell    { text-align: right; font-weight: 600; white-space: nowrap; }
-.monto-ingreso { color: #2e7d32; }
-.monto-gasto   { color: #c0392b; }
+.monto-cell      { text-align: right; font-weight: 600; white-space: nowrap; }
+.monto-ingreso   { color: #2e7d32; }
+.monto-gasto     { color: #c0392b; }
+.monto-impuesto  { color: #e65100; }
 
 .actions-cell { white-space: nowrap; }
 

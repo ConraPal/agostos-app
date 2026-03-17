@@ -39,7 +39,7 @@ Mejoras priorizadas de menor a mayor esfuerzo/riesgo.
 
 ## E — Reportes adicionales
 
-14. **Reporte de Reproducción** en módulo Reportes — % preñez por año
+14. **Reporte de Reproducción** en módulo Reportes — % preñez y % destete por año (cruce de ciclos)
 15. **Reporte de Forraje** — stock total por tipo (rollos/fardos)
 
 ---

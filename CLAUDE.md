@@ -155,22 +155,43 @@ Registro, seguimiento y gestión del stock de animales del campo.
 
 ```js
 {
-  id:                   String,   // Date.now()
-  año:                  Number,
-  fecha_entrada_toros:  String,   // ISO date
-  fecha_salida_toros:   String,   // ISO date
-  ia_realizada:         Boolean,
-  ia_fecha:             String,   // ISO date (opcional)
-  ia_toro:              String,
-  ia_prenez_pct:        Number,   // % preñez solo de IA
-  tacto_fecha:          String,   // ISO date
-  vacas_total:          Number,
-  vacas_positivas:      Number,
-  vacas_negativas:      Number,   // calculado: total - positivas
-  prenez_pct:           Number,   // calculado: positivas / total * 100
-  observaciones:        String
+  id:                      String,   // Date.now()
+  año:                     Number,
+  // Servicio
+  fecha_entrada_toros:     String,   // ISO date
+  fecha_salida_toros:      String,   // ISO date
+  // Tacto
+  tacto_fecha:             String,   // ISO date
+  vacas_total:             Number,   // vacas servidas
+  vacas_positivas:         Number,
+  vacas_negativas:         Number,   // calculado: total - positivas
+  prenez_pct:              Number,   // calculado: positivas / total * 100
+  // IA (opcional)
+  ia_realizada:            Boolean,
+  ia_fecha:                String,   // ISO date
+  ia_toro:                 String,
+  ia_prenez_pct:           Number,   // % preñez solo de IA
+  // Parición
+  paricion_inicio:         String,   // ISO date
+  paricion_fin:            String,   // ISO date
+  partos:                  Number,
+  muertes_paricion:        Number,
+  // Destete
+  destete_fecha:           String,   // ISO date
+  terneros_machos_destete: Number,
+  terneras_hembras_destete:Number,
+  muertes_destete:         Number,
+  // Calculados
+  indice_destete:          Number,   // (machos+hembras) / partos * 100
+  mortalidad_total:        Number,   // muertes_paricion + muertes_destete
+  observaciones:           String
 }
 ```
+
+**Índices clave:**
+- **Índice de preñez** = vacas_positivas / vacas_total × 100
+- **Índice de destete** = (terneros_machos + terneras_hembras) / partos × 100
+- **Mortalidad total** = muertes_paricion + muertes_destete
 
 ### Funcionalidades implementadas
 
@@ -196,9 +217,9 @@ Registro, seguimiento y gestión del stock de animales del campo.
 - Entradas anteriores sin campo `nombre` se muestran sin problema (campo opcional)
 
 **Tab Reproducción**
-- Stats: % preñez del último ciclo, vacas positivas, vacas negativas
-- Tabla: Año, Entrada toros, Salida toros, IA (sí/no), % Preñez, Acciones
-- Modal con sección IA que se muestra/oculta con checkbox `#fr-ia`
+- Stats (4 cards): % preñez último ciclo, % destete último ciclo, vacas positivas, mortalidad total
+- Tabla: Año, Vacas servidas, % Preñez, Partos, % Destete, Mortalidad, IA (sí/no), Acciones
+- Modal con sección IA (toggle con `#fr-ia`), sección Parición, sección Destete
 - Funciones: `renderReproduccion()`, `openModalRepro(id?)`, `closeModalRepro()`, `saveRepro(e)`, `editRepro(id)`, `removeRepro(id)`
 
 ### `logHistory(caravana, evento, detalle, nombre = '')`
@@ -217,7 +238,7 @@ Función interna del módulo. Llamada desde los 4 puntos de escritura:
 - **Registro** — tabla de animales con búsqueda y filtro por tipo ✓
 - **Movimientos** — registro de traslados/entradas/salidas entre potreros ✓
 - **Historial** — log cronológico con badges por tipo de evento ✓
-- **Reproducción** — ciclos reproductivos anuales con datos de IA y preñez ✓
+- **Reproducción** — ciclo productivo biológico completo: servicio, tacto, parición, destete; con índices de preñez, destete y mortalidad ✓
 
 ## Módulo: Finanzas
 
@@ -236,13 +257,18 @@ Registro de ingresos y gastos del campo, con resumen por categoría, amortizacio
 
 ```js
 {
-  id:            String,   // timestamp como string
-  fecha:         String,   // ISO date elegida por el usuario
-  tipo:          String,   // "ingreso" | "gasto"
-  categoria:     String,
-  monto:         Number,
-  descripcion:   String,
-  observaciones: String
+  id:             String,   // timestamp como string
+  fecha:          String,   // ISO date elegida por el usuario
+  tipo:           String,   // "ingreso" | "gasto" | "impuesto"
+  categoria:      String,
+  monto:          Number,
+  descripcion:    String,
+  observaciones:  String,
+  // Campos opcionales para ventas (auto-calculan monto)
+  cantidad:       Number,   // cabezas o toneladas
+  precio_unitario:Number,   // precio por cabeza/unidad
+  peso_kg:        Number,   // peso total en kg (ventas por peso)
+  precio_kg:      Number    // precio por kg
 }
 ```
 
@@ -263,11 +289,17 @@ Registro de ingresos y gastos del campo, con resumen por categoría, amortizacio
 
 ### Categorías
 
-**Ingreso:** Venta de animales · Arrendamiento · Subsidios · Otro ingreso
+**Ingreso (ventas):** Toros · Vacas vacías · Terneros machos · Terneras hembras · Novillos · Vaquillonas · Cereales · Arrendamiento · Subsidios · Otro ingreso
 
-**Gasto:** Compra de animales · Veterinaria · Alimentación · Combustible · Maquinaria · Sueldos · Impuestos · Otro gasto
+**Gasto (costos operativos):** Personal · Vacunas · Semillas · Agroquímicos · Labranzas · Cosechas · Almacenamiento · Enfardados · Gastos veterinarios · Reparaciones maquinaria · Reparaciones generales · Aplicaciones agroquímicos · Varios · Combustibles · Electricidad · Materiales y herramientas
 
-Las categorías se cargan dinámicamente en el modal según el tipo seleccionado. `"Impuestos"` se trata por separado en el cálculo del margen.
+**Impuesto/Retención:** Ganancias · Impuesto inmobiliario · Tasas municipales · Patentes · Seguros
+
+Las categorías se cargan dinámicamente en el modal según el tipo seleccionado.
+
+**Campos opcionales en ventas de animales:**
+- Por peso (Terneros machos, Terneras hembras, Novillos, Vaquillonas): `peso_kg` + `precio_kg` → auto-calcula `monto`
+- Por cabeza (Toros, Vacas vacías, Cereales): `cantidad` + `precio_unitario` → auto-calcula `monto`
 
 ### Stats
 
@@ -278,7 +310,7 @@ Las categorías se cargan dinámicamente en el modal según el tipo seleccionado
 
 ### Tabs del módulo
 
-- **Transacciones** — CRUD con búsqueda por descripción/categoría y filtro por tipo ✓
+- **Transacciones** — CRUD con búsqueda por descripción/categoría y filtro por tipo (ingreso/gasto/impuesto) ✓
 - **Resumen** — breakdown de totales por categoría, separado en ingresos y gastos ✓
 - **Amortizaciones** — CRUD de activos; stats de total activos y cuota anual total ✓
   - Funciones: `renderAmortizaciones()`, `openModalAmort(id?)`, `saveAmort(e)`, `removeAmort(id)`
@@ -288,10 +320,10 @@ Las categorías se cargan dinámicamente en el modal según el tipo seleccionado
 ### Fórmulas del margen
 
 - **Ingresos** = Σ transacciones tipo `ingreso` del año
-- **Costos** = Σ transacciones tipo `gasto` excl. `"Impuestos"` del año
+- **Costos** = Σ transacciones tipo `gasto` del año
 - **Amortizaciones año** = Σ `cuota_anual` de activos con `año >= año_inicio` y `año < año_inicio + vida_util`
 - **Margen Bruto** = Ingresos − Costos − Amortizaciones
-- **Impuestos** = Σ transacciones categoría `"Impuestos"` del año
+- **Impuestos** = Σ transacciones tipo `impuesto` del año
 - **Margen Neto** = Margen Bruto − Impuestos
 
 Cards con color verde/rojo según signo.

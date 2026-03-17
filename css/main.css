@@ -300,6 +300,17 @@ body {
 
 .modal-form { padding: 20px 24px; }
 
+.form-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+  margin: 16px 0 12px;
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;

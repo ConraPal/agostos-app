@@ -364,22 +364,25 @@ const Livestock = (() => {
 
     // Stats: último ciclo
     const last = data[0];
-    document.getElementById('stat-repro-prenez').textContent    = last ? (last.prenez_pct != null ? last.prenez_pct.toFixed(1) + '%' : '—') : '—';
-    document.getElementById('stat-repro-positivas').textContent = last ? (last.vacas_positivas ?? '—') : '—';
-    document.getElementById('stat-repro-negativas').textContent = last ? (last.vacas_negativas ?? '—') : '—';
+    document.getElementById('stat-repro-prenez').textContent     = last ? (last.prenez_pct != null ? last.prenez_pct.toFixed(1) + '%' : '—') : '—';
+    document.getElementById('stat-repro-destete').textContent    = last ? (last.indice_destete != null ? last.indice_destete.toFixed(1) + '%' : '—') : '—';
+    document.getElementById('stat-repro-positivas').textContent  = last ? (last.vacas_positivas ?? '—') : '—';
+    document.getElementById('stat-repro-mortalidad').textContent = last ? (last.mortalidad_total ?? '—') : '—';
 
     const tbody = document.getElementById('repro-tbody');
     if (!data.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay ciclos reproductivos registrados.</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No hay ciclos reproductivos registrados.</td></tr>';
       return;
     }
     tbody.innerHTML = data.map(r => `
       <tr>
         <td><strong>${r.año}</strong></td>
-        <td>${formatDate(r.fecha_entrada_toros)}</td>
-        <td>${formatDate(r.fecha_salida_toros)}</td>
-        <td>${r.ia_realizada ? '<span class="badge badge-evento-alta">Sí</span>' : '<span class="badge badge-evento-baja">No</span>'}</td>
+        <td>${r.vacas_total ?? '—'}</td>
         <td>${r.prenez_pct != null ? r.prenez_pct.toFixed(1) + '%' : '—'}</td>
+        <td>${r.partos ?? '—'}</td>
+        <td>${r.indice_destete != null ? r.indice_destete.toFixed(1) + '%' : '—'}</td>
+        <td>${r.mortalidad_total ?? '—'}</td>
+        <td>${r.ia_realizada ? '<span class="badge badge-evento-alta">Sí</span>' : '<span class="badge badge-evento-baja">No</span>'}</td>
         <td>
           <button class="action-btn" onclick="Livestock.editRepro('${r.id}')" title="Editar">✏️</button>
           <button class="action-btn danger" onclick="Livestock.removeRepro('${r.id}')" title="Eliminar">🗑️</button>
@@ -398,17 +401,25 @@ const Livestock = (() => {
     if (id) {
       const r = getData(KEYS.reproduction).find(x => x.id === id);
       if (!r) return;
-      form.año.value              = r.año;
-      form.fecha_entrada_toros.value = r.fecha_entrada_toros || '';
-      form.fecha_salida_toros.value  = r.fecha_salida_toros || '';
-      form.tacto_fecha.value      = r.tacto_fecha || '';
-      form.vacas_total.value      = r.vacas_total ?? '';
-      form.vacas_positivas.value  = r.vacas_positivas ?? '';
-      form.ia_realizada.checked   = !!r.ia_realizada;
-      form.ia_fecha.value         = r.ia_fecha || '';
-      form.ia_toro.value          = r.ia_toro || '';
-      form.ia_prenez_pct.value    = r.ia_prenez_pct ?? '';
-      form.observaciones.value    = r.observaciones || '';
+      form.año.value                    = r.año;
+      form.fecha_entrada_toros.value    = r.fecha_entrada_toros || '';
+      form.fecha_salida_toros.value     = r.fecha_salida_toros || '';
+      form.tacto_fecha.value            = r.tacto_fecha || '';
+      form.vacas_total.value            = r.vacas_total ?? '';
+      form.vacas_positivas.value        = r.vacas_positivas ?? '';
+      form.ia_realizada.checked         = !!r.ia_realizada;
+      form.ia_fecha.value               = r.ia_fecha || '';
+      form.ia_toro.value                = r.ia_toro || '';
+      form.ia_prenez_pct.value          = r.ia_prenez_pct ?? '';
+      form.paricion_inicio.value        = r.paricion_inicio || '';
+      form.paricion_fin.value           = r.paricion_fin || '';
+      form.partos.value                 = r.partos ?? '';
+      form.muertes_paricion.value       = r.muertes_paricion ?? '';
+      form.destete_fecha.value          = r.destete_fecha || '';
+      form.terneros_machos_destete.value = r.terneros_machos_destete ?? '';
+      form.terneras_hembras_destete.value = r.terneras_hembras_destete ?? '';
+      form.muertes_destete.value        = r.muertes_destete ?? '';
+      form.observaciones.value          = r.observaciones || '';
       if (r.ia_realizada) document.getElementById('ia-section').style.display = '';
     }
 
@@ -423,26 +434,45 @@ const Livestock = (() => {
   const saveRepro = e => {
     e.preventDefault();
     const form = e.target;
-    const vacas_total     = parseInt(form.vacas_total.value) || null;
-    const vacas_positivas = parseInt(form.vacas_positivas.value) || null;
-    const vacas_negativas = (vacas_total != null && vacas_positivas != null) ? vacas_total - vacas_positivas : null;
-    const prenez_pct      = (vacas_total && vacas_positivas != null) ? (vacas_positivas / vacas_total * 100) : null;
-    const ia_realizada    = form.ia_realizada.checked;
+    const vacas_total              = parseInt(form.vacas_total.value, 10) || null;
+    const vacas_positivas          = parseInt(form.vacas_positivas.value, 10) || null;
+    const vacas_negativas          = (vacas_total != null && vacas_positivas != null) ? vacas_total - vacas_positivas : null;
+    const prenez_pct               = (vacas_total && vacas_positivas != null) ? (vacas_positivas / vacas_total * 100) : null;
+    const ia_realizada             = form.ia_realizada.checked;
+    const partos                   = parseInt(form.partos.value, 10) || null;
+    const muertes_paricion         = parseInt(form.muertes_paricion.value, 10) || null;
+    const terneros_machos_destete  = parseInt(form.terneros_machos_destete.value, 10) || null;
+    const terneras_hembras_destete = parseInt(form.terneras_hembras_destete.value, 10) || null;
+    const muertes_destete          = parseInt(form.muertes_destete.value, 10) || null;
+
+    const terneros_destete = (terneros_machos_destete ?? 0) + (terneras_hembras_destete ?? 0);
+    const indice_destete   = (partos && terneros_destete != null) ? (terneros_destete / partos * 100) : null;
+    const mortalidad_total = ((muertes_paricion ?? 0) + (muertes_destete ?? 0)) || null;
 
     const entry = {
-      año:                  parseInt(form.año.value),
-      fecha_entrada_toros:  form.fecha_entrada_toros.value || null,
-      fecha_salida_toros:   form.fecha_salida_toros.value || null,
-      tacto_fecha:          form.tacto_fecha.value || null,
+      año:                       parseInt(form.año.value, 10),
+      fecha_entrada_toros:       form.fecha_entrada_toros.value || null,
+      fecha_salida_toros:        form.fecha_salida_toros.value || null,
+      tacto_fecha:               form.tacto_fecha.value || null,
       vacas_total,
       vacas_positivas,
       vacas_negativas,
       prenez_pct,
       ia_realizada,
-      ia_fecha:             ia_realizada ? (form.ia_fecha.value || null) : null,
-      ia_toro:              ia_realizada ? form.ia_toro.value.trim() : '',
-      ia_prenez_pct:        ia_realizada ? (parseFloat(form.ia_prenez_pct.value) || null) : null,
-      observaciones:        form.observaciones.value.trim()
+      ia_fecha:                  ia_realizada ? (form.ia_fecha.value || null) : null,
+      ia_toro:                   ia_realizada ? form.ia_toro.value.trim() : '',
+      ia_prenez_pct:             ia_realizada ? (parseFloat(form.ia_prenez_pct.value) || null) : null,
+      paricion_inicio:           form.paricion_inicio.value || null,
+      paricion_fin:              form.paricion_fin.value || null,
+      partos,
+      muertes_paricion,
+      destete_fecha:             form.destete_fecha.value || null,
+      terneros_machos_destete,
+      terneras_hembras_destete,
+      muertes_destete,
+      indice_destete,
+      mortalidad_total,
+      observaciones:             form.observaciones.value.trim()
     };
 
     const data = getData(KEYS.reproduction);

@@ -3,9 +3,15 @@ const Finance = (() => {
   const AMORT_KEY = 'ag_amortizations';
 
   const CATEGORIES = {
-    ingreso: ['Venta de animales', 'Arrendamiento', 'Subsidios', 'Otro ingreso'],
-    gasto:   ['Compra de animales', 'Veterinaria', 'Alimentación', 'Combustible', 'Maquinaria', 'Sueldos', 'Impuestos', 'Otro gasto'],
+    ingreso:  ['Toros', 'Vacas vacías', 'Terneros machos', 'Terneras hembras', 'Novillos', 'Vaquillonas', 'Cereales', 'Arrendamiento', 'Subsidios', 'Otro ingreso'],
+    gasto:    ['Personal', 'Vacunas', 'Semillas', 'Agroquímicos', 'Labranzas', 'Cosechas', 'Almacenamiento', 'Enfardados', 'Gastos veterinarios', 'Reparaciones maquinaria', 'Reparaciones generales', 'Aplicaciones agroquímicos', 'Varios', 'Combustibles', 'Electricidad', 'Materiales y herramientas'],
+    impuesto: ['Ganancias', 'Impuesto inmobiliario', 'Tasas municipales', 'Patentes', 'Seguros'],
   };
+
+  // Categorías que usan peso total + precio/kg para calcular monto
+  const PESO_CATS = new Set(['Terneros machos', 'Terneras hembras', 'Novillos', 'Vaquillonas']);
+  // Categorías que usan cantidad + precio unitario para calcular monto
+  const CANT_CATS = new Set(['Toros', 'Vacas vacías', 'Cereales']);
 
   let editingId = null;
   const PAGE_SIZE = 20;
@@ -65,6 +71,8 @@ const Finance = (() => {
       return d !== 0 ? d : b.id.localeCompare(a.id);
     });
 
+    const TIPO_LABEL = { ingreso: 'Ingreso', gasto: 'Gasto', impuesto: 'Impuesto' };
+
     const tbody = document.getElementById('transactions-tbody');
     if (data.length === 0) {
       tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay transacciones registradas.</td></tr>';
@@ -76,7 +84,7 @@ const Finance = (() => {
     tbody.innerHTML = paged.map(t => `
       <tr>
         <td>${fmt(t.fecha)}</td>
-        <td><span class="badge badge-tx-${t.tipo}">${t.tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}</span></td>
+        <td><span class="badge badge-tx-${t.tipo}">${TIPO_LABEL[t.tipo] || t.tipo}</span></td>
         <td>${t.categoria}</td>
         <td>${t.descripcion || '—'}</td>
         <td class="monto-cell monto-${t.tipo}">${fmtMoney(t.monto)}</td>
@@ -126,6 +134,25 @@ const Finance = (() => {
     const sel = document.getElementById('ft-categoria');
     const cats = CATEGORIES[tipo] || [];
     sel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    updateCategoryFields(sel.value);
+  }
+
+  function updateCategoryFields(categoria) {
+    document.getElementById('row-peso-precio').classList.toggle('hidden', !PESO_CATS.has(categoria));
+    document.getElementById('row-cantidad-precio').classList.toggle('hidden', !CANT_CATS.has(categoria));
+  }
+
+  function calcMonto() {
+    const cat = document.getElementById('ft-categoria').value;
+    if (PESO_CATS.has(cat)) {
+      const peso = parseFloat(document.getElementById('ft-peso-kg').value) || 0;
+      const precioKg = parseFloat(document.getElementById('ft-precio-kg').value) || 0;
+      if (peso && precioKg) document.getElementById('ft-monto').value = (peso * precioKg).toFixed(2);
+    } else if (CANT_CATS.has(cat)) {
+      const cant = parseFloat(document.getElementById('ft-cantidad').value) || 0;
+      const precioUnit = parseFloat(document.getElementById('ft-precio-unit').value) || 0;
+      if (cant && precioUnit) document.getElementById('ft-monto').value = (cant * precioUnit).toFixed(2);
+    }
   }
 
   // --- Modal ---
@@ -142,9 +169,14 @@ const Finance = (() => {
       document.getElementById('ft-tipo').value = tx.tipo;
       updateCategories(tx.tipo);
       document.getElementById('ft-categoria').value = tx.categoria;
+      updateCategoryFields(tx.categoria);
       document.getElementById('ft-monto').value = tx.monto;
       document.getElementById('ft-descripcion').value = tx.descripcion || '';
       document.getElementById('ft-obs').value = tx.observaciones || '';
+      if (tx.cantidad)       document.getElementById('ft-cantidad').value   = tx.cantidad;
+      if (tx.precio_unitario) document.getElementById('ft-precio-unit').value = tx.precio_unitario;
+      if (tx.peso_kg)        document.getElementById('ft-peso-kg').value    = tx.peso_kg;
+      if (tx.precio_kg)      document.getElementById('ft-precio-kg').value  = tx.precio_kg;
     } else {
       document.getElementById('modal-tx-title').textContent = 'Nueva transacción';
       document.getElementById('ft-fecha').value = new Date().toISOString().split('T')[0];
@@ -162,20 +194,24 @@ const Finance = (() => {
   // --- Save ---
   function saveTransaction(e) {
     e.preventDefault();
-    const fecha       = document.getElementById('ft-fecha').value;
-    const tipo        = document.getElementById('ft-tipo').value;
-    const categoria   = document.getElementById('ft-categoria').value;
-    const monto       = parseFloat(document.getElementById('ft-monto').value);
-    const descripcion = document.getElementById('ft-descripcion').value.trim();
-    const observaciones = document.getElementById('ft-obs').value.trim();
+    const fecha           = document.getElementById('ft-fecha').value;
+    const tipo            = document.getElementById('ft-tipo').value;
+    const categoria       = document.getElementById('ft-categoria').value;
+    const monto           = parseFloat(document.getElementById('ft-monto').value);
+    const descripcion     = document.getElementById('ft-descripcion').value.trim();
+    const observaciones   = document.getElementById('ft-obs').value.trim();
+    const cantidad        = parseFloat(document.getElementById('ft-cantidad').value) || null;
+    const precio_unitario = parseFloat(document.getElementById('ft-precio-unit').value) || null;
+    const peso_kg         = parseFloat(document.getElementById('ft-peso-kg').value) || null;
+    const precio_kg       = parseFloat(document.getElementById('ft-precio-kg').value) || null;
 
     const data = getAll();
 
     if (editingId) {
       const idx = data.findIndex(t => t.id === editingId);
-      if (idx !== -1) data[idx] = { ...data[idx], fecha, tipo, categoria, monto, descripcion, observaciones };
+      if (idx !== -1) data[idx] = { ...data[idx], fecha, tipo, categoria, monto, descripcion, observaciones, cantidad, precio_unitario, peso_kg, precio_kg };
     } else {
-      data.push({ id: String(Date.now()), fecha, tipo, categoria, monto, descripcion, observaciones });
+      data.push({ id: String(Date.now()), fecha, tipo, categoria, monto, descripcion, observaciones, cantidad, precio_unitario, peso_kg, precio_kg });
     }
 
     const isNew = !editingId;
@@ -294,8 +330,8 @@ const Finance = (() => {
     const amorts = Storage.get(AMORT_KEY) || [];
 
     const ingresos = txAll.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + Number(t.monto), 0);
-    const costos   = txAll.filter(t => t.tipo === 'gasto' && t.categoria !== 'Impuestos').reduce((s, t) => s + Number(t.monto), 0);
-    const impuestos = txAll.filter(t => t.tipo === 'gasto' && t.categoria === 'Impuestos').reduce((s, t) => s + Number(t.monto), 0);
+    const costos   = txAll.filter(t => t.tipo === 'gasto').reduce((s, t) => s + Number(t.monto), 0);
+    const impuestos = txAll.filter(t => t.tipo === 'impuesto').reduce((s, t) => s + Number(t.monto), 0);
 
     const amortizacionesAño = amorts
       .filter(a => año >= a.año_inicio && año < a.año_inicio + a.vida_util)
@@ -340,6 +376,11 @@ const Finance = (() => {
     });
 
     document.getElementById('ft-tipo').addEventListener('change', e => updateCategories(e.target.value));
+    document.getElementById('ft-categoria').addEventListener('change', e => updateCategoryFields(e.target.value));
+    document.getElementById('ft-peso-kg').addEventListener('input', calcMonto);
+    document.getElementById('ft-precio-kg').addEventListener('input', calcMonto);
+    document.getElementById('ft-cantidad').addEventListener('input', calcMonto);
+    document.getElementById('ft-precio-unit').addEventListener('input', calcMonto);
     document.getElementById('form-transaction').addEventListener('submit', saveTransaction);
     document.getElementById('search-transactions').addEventListener('input', () => { transactionsPage = 1; renderTable(); });
     document.getElementById('filter-tipo-fin').addEventListener('change', () => { transactionsPage = 1; renderTable(); });
