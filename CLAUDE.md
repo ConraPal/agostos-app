@@ -93,28 +93,33 @@ Registro, seguimiento y gestión del stock de animales del campo.
 
 ### Datos persistidos en localStorage
 
-| Key               | Contenido                              |
-|-------------------|----------------------------------------|
-| `ag_animals`      | Array de animales registrados          |
-| `ag_movements`    | Array de movimientos entre potreros    |
-| `ag_history`      | Log automático de eventos por animal   |
+| Key                | Contenido                              |
+|--------------------|----------------------------------------|
+| `ag_animals`       | Array de animales registrados          |
+| `ag_movements`     | Array de movimientos entre potreros    |
+| `ag_history`       | Log automático de eventos por animal   |
+| `ag_reproduction`  | Array de ciclos reproductivos          |
 
 ### Estructura de un animal
 
 ```js
 {
-  id:            String,   // timestamp como string
-  caravana:      String,   // identificador único, ej: "AR-0042"
-  nombre:        String,
-  tipo:          String,   // "vaca" | "toro" | "ternero" | "vaquillona" | "novillo"
-  raza:          String,
-  nacimiento:    String,   // ISO date
-  potrero:       String,
-  estado:        String,   // "activo" | "vendido" | "muerto"
-  peso:          Number,   // kg
-  observaciones: String
+  id:               String,   // timestamp como string
+  caravana:         String,   // identificador único, ej: "AR-0042"
+  nombre:           String,
+  tipo:             String,   // "vaca" | "toro" | "ternero" | "vaquillona" | "novillo"
+  raza:             String,
+  nacimiento:       String,   // ISO date
+  potrero:          String,
+  estado:           String,   // "activo" | "vendido" | "muerto"
+  peso:             Number,   // kg
+  castracion_fecha: String,   // ISO date — solo relevante para terneros; null si no aplica
+  observaciones:    String
 }
 ```
+
+- `#row-castracion` en el modal se muestra/oculta según el tipo seleccionado (solo visible para `ternero`).
+- En la tabla se muestra "Castrado" como subtexto debajo del tipo cuando `castracion_fecha` existe.
 
 ### Estructura de un movimiento
 
@@ -146,6 +151,27 @@ Registro, seguimiento y gestión del stock de animales del campo.
 }
 ```
 
+### Estructura de un ciclo reproductivo
+
+```js
+{
+  id:                   String,   // Date.now()
+  año:                  Number,
+  fecha_entrada_toros:  String,   // ISO date
+  fecha_salida_toros:   String,   // ISO date
+  ia_realizada:         Boolean,
+  ia_fecha:             String,   // ISO date (opcional)
+  ia_toro:              String,
+  ia_prenez_pct:        Number,   // % preñez solo de IA
+  tacto_fecha:          String,   // ISO date
+  vacas_total:          Number,
+  vacas_positivas:      Number,
+  vacas_negativas:      Number,   // calculado: total - positivas
+  prenez_pct:           Number,   // calculado: positivas / total * 100
+  observaciones:        String
+}
+```
+
 ### Funcionalidades implementadas
 
 **Tab Registro**
@@ -169,6 +195,12 @@ Registro, seguimiento y gestión del stock de animales del campo.
 - Cubre los 4 eventos del módulo: Alta, Actualización, Baja y Movimiento
 - Entradas anteriores sin campo `nombre` se muestran sin problema (campo opcional)
 
+**Tab Reproducción**
+- Stats: % preñez del último ciclo, vacas positivas, vacas negativas
+- Tabla: Año, Entrada toros, Salida toros, IA (sí/no), % Preñez, Acciones
+- Modal con sección IA que se muestra/oculta con checkbox `#fr-ia`
+- Funciones: `renderReproduccion()`, `openModalRepro(id?)`, `closeModalRepro()`, `saveRepro(e)`, `editRepro(id)`, `removeRepro(id)`
+
 ### `logHistory(caravana, evento, detalle, nombre = '')`
 
 Función interna del módulo. Llamada desde los 4 puntos de escritura:
@@ -185,18 +217,20 @@ Función interna del módulo. Llamada desde los 4 puntos de escritura:
 - **Registro** — tabla de animales con búsqueda y filtro por tipo ✓
 - **Movimientos** — registro de traslados/entradas/salidas entre potreros ✓
 - **Historial** — log cronológico con badges por tipo de evento ✓
+- **Reproducción** — ciclos reproductivos anuales con datos de IA y preñez ✓
 
 ## Módulo: Finanzas
 
 ### Propósito
 
-Registro de ingresos y gastos del campo, con resumen por categoría.
+Registro de ingresos y gastos del campo, con resumen por categoría, amortizaciones y cálculo de margen.
 
 ### Datos persistidos en localStorage
 
-| Key                | Contenido                        |
-|--------------------|----------------------------------|
-| `ag_transactions`  | Array de transacciones           |
+| Key                 | Contenido                        |
+|---------------------|----------------------------------|
+| `ag_transactions`   | Array de transacciones           |
+| `ag_amortizations`  | Array de activos amortizables    |
 
 ### Estructura de una transacción
 
@@ -212,13 +246,28 @@ Registro de ingresos y gastos del campo, con resumen por categoría.
 }
 ```
 
+### Estructura de una amortización
+
+```js
+{
+  id:             String,
+  nombre:         String,
+  tipo:           String,   // "Maquinaria" | "Instalaciones" | "Rodado" | "Otro"
+  valor_original: Number,
+  vida_util:      Number,   // años
+  año_inicio:     Number,
+  cuota_anual:    Number,   // calculado: valor_original / vida_util
+  observaciones:  String
+}
+```
+
 ### Categorías
 
 **Ingreso:** Venta de animales · Arrendamiento · Subsidios · Otro ingreso
 
-**Gasto:** Compra de animales · Veterinaria · Alimentación · Combustible · Maquinaria · Sueldos · Otro gasto
+**Gasto:** Compra de animales · Veterinaria · Alimentación · Combustible · Maquinaria · Sueldos · Impuestos · Otro gasto
 
-Las categorías se cargan dinámicamente en el modal según el tipo seleccionado.
+Las categorías se cargan dinámicamente en el modal según el tipo seleccionado. `"Impuestos"` se trata por separado en el cálculo del margen.
 
 ### Stats
 
@@ -231,18 +280,35 @@ Las categorías se cargan dinámicamente en el modal según el tipo seleccionado
 
 - **Transacciones** — CRUD con búsqueda por descripción/categoría y filtro por tipo ✓
 - **Resumen** — breakdown de totales por categoría, separado en ingresos y gastos ✓
+- **Amortizaciones** — CRUD de activos; stats de total activos y cuota anual total ✓
+  - Funciones: `renderAmortizaciones()`, `openModalAmort(id?)`, `saveAmort(e)`, `removeAmort(id)`
+- **Margen** — cálculo del margen agropecuario filtrado por año ✓
+  - Funciones: `renderMargen(año)`, `initMargenYear()`
+
+### Fórmulas del margen
+
+- **Ingresos** = Σ transacciones tipo `ingreso` del año
+- **Costos** = Σ transacciones tipo `gasto` excl. `"Impuestos"` del año
+- **Amortizaciones año** = Σ `cuota_anual` de activos con `año >= año_inicio` y `año < año_inicio + vida_util`
+- **Margen Bruto** = Ingresos − Costos − Amortizaciones
+- **Impuestos** = Σ transacciones categoría `"Impuestos"` del año
+- **Margen Neto** = Margen Bruto − Impuestos
+
+Cards con color verde/rojo según signo.
 
 ## Módulo: Potreros
 
 ### Propósito
 
-Gestión de campos y pasturas del establecimiento, con visibilidad de stock por potrero.
+Gestión de campos y pasturas del establecimiento, con visibilidad de stock, historial de cultivos y registro de forraje por potrero.
 
 ### Datos persistidos en localStorage
 
-| Key          | Contenido                  |
-|--------------|----------------------------|
-| `ag_fields`  | Array de potreros          |
+| Key               | Contenido                       |
+|-------------------|---------------------------------|
+| `ag_fields`       | Array de potreros               |
+| `ag_crop_history` | Array de registros de cultivos  |
+| `ag_forraje`      | Array de registros de forraje   |
 
 ### Estructura de un potrero
 
@@ -253,6 +319,35 @@ Gestión de campos y pasturas del establecimiento, con visibilidad de stock por 
   hectareas:     Number,   // puede ser null
   pastura:       String,   // "Natural" | "Mejorada" | "Verdeo" | "Otro"
   estado:        String,   // "activo" | "descanso" | "clausurado"
+  observaciones: String
+}
+```
+
+### Estructura de un registro de cultivo
+
+```js
+{
+  id:          String,
+  potrero_id:  String,   // referencia a ag_fields
+  potrero:     String,   // nombre (desnormalizado)
+  año:         Number,
+  tipo:        String,   // "cultivo" | "pastura"
+  detalle:     String,   // "Soja", "Alfalfa 80% / Festuca 20%"
+  notas:       String
+}
+```
+
+### Estructura de un registro de forraje
+
+```js
+{
+  id:            String,
+  potrero_id:    String,
+  potrero:       String,
+  año:           Number,
+  tipo:          String,   // "rollo" | "fardo"
+  cantidad:      Number,
+  cortes:        Number,
   observaciones: String
 }
 ```
@@ -268,20 +363,17 @@ Gestión de campos y pasturas del establecimiento, con visibilidad de stock por 
 
 - **Potreros** — CRUD con búsqueda por nombre/pastura, badges de estado ✓
 - **Stock** — tabla que cruza `ag_animals` activos con potreros; muestra cantidad y caravanas; potreros con animales pero sin registrar aparecen marcados como "sin registrar" ✓
+- **Cultivos** — historial de cultivos/pasturas por potrero con filtro por potrero ✓
+  - Badges CSS: `.badge-cultivo-cultivo` (verde), `.badge-cultivo-pastura` (azul)
+  - Funciones: `renderCultivos()`, `openModalCultivo(id?)`, `saveCultivo(e)`, `removeCultivo(id)`
+- **Forraje** — registro de rollos y fardos por potrero ✓
+  - Badges CSS: `.badge-forraje-rollo` (naranja), `.badge-forraje-fardo` (rosa)
+  - Funciones: `renderForraje()`, `openModalForraje(id?)`, `saveForraje(e)`, `removeForraje(id)`
 
 ### Notas de integración
 
 - `Fields.refresh()` está expuesto y es llamado desde `app.js` cada vez que el usuario navega al módulo, para mantener el tab Stock actualizado con cambios hechos en Hacienda.
 - El campo `potrero` de los animales es texto libre; el cruce con `ag_fields` se hace por coincidencia exacta de nombre.
-
-## Módulos planificados
-
-| Módulo     | Estado    | Descripción                                        |
-|------------|-----------|----------------------------------------------------|
-| Hacienda   | Completo  | Registro, movimientos e historial funcionando      |
-| Finanzas   | Completo  | Transacciones, stats y resumen por categoría       |
-| Potreros   | Completo  | CRUD de potreros y stock por potrero               |
-| Reportes   | Completo  | Stock por tipo/potrero, balance mensual, exportar CSV |
 
 ## Módulo: Reportes
 
@@ -355,135 +447,3 @@ La imagen se ubica al pie del sidebar (`<div class="sidebar-art">`). Estilos en 
 - **Sin build step**: se puede abrir `index.html` directo en el navegador para desarrollo local.
 - **IDs**: se usan timestamps (`Date.now()`) como IDs. Suficiente para localStorage; cambiar a UUIDs si se migra a backend.
 - **`.hidden`**: clase utilitaria en `main.css` (`display: none !important`) usada para ocultar elementos del topbar al cambiar de módulo.
-
----
-
-## Actualizaciones 14/03/2026
-
-### Campo castración (Hacienda)
-
-- Nuevo campo `castracion_fecha` (String, ISO date) en la estructura del animal.
-- El campo `#row-castracion` se muestra u oculta en el modal según el tipo seleccionado (solo visible para `ternero`).
-- En la tabla de animales se muestra "Castrado" como subtexto debajo del tipo cuando la fecha existe.
-
-### Módulo Hacienda — Tab Reproducción
-
-**localStorage key:** `ag_reproduction`
-
-**Estructura de un ciclo reproductivo:**
-```js
-{
-  id:                   String,   // Date.now()
-  año:                  Number,
-  fecha_entrada_toros:  String,   // ISO date
-  fecha_salida_toros:   String,   // ISO date
-  ia_realizada:         Boolean,
-  ia_fecha:             String,   // ISO date (opcional)
-  ia_toro:              String,
-  ia_prenez_pct:        Number,   // % preñez solo de IA
-  tacto_fecha:          String,   // ISO date
-  vacas_total:          Number,
-  vacas_positivas:      Number,
-  vacas_negativas:      Number,   // calculado: total - positivas
-  prenez_pct:           Number,   // calculado: positivas / total * 100
-  observaciones:        String
-}
-```
-
-**Stats:** % preñez del último ciclo, vacas positivas, vacas negativas.
-**Tabla:** Año, Entrada toros, Salida toros, IA (sí/no), % Preñez, Acciones.
-**Modal:** Sección IA se muestra/oculta con checkbox `#fr-ia`.
-
-**Funciones en `livestock.js`:** `renderReproduccion()`, `openModalRepro(id?)`, `closeModalRepro()`, `saveRepro(e)`, `editRepro(id)`, `removeRepro(id)`.
-
----
-
-### Módulo Potreros — Tab Cultivos
-
-**localStorage key:** `ag_crop_history`
-
-**Estructura:**
-```js
-{
-  id:          String,
-  potrero_id:  String,   // referencia a ag_fields
-  potrero:     String,   // nombre (desnormalizado)
-  año:         Number,
-  tipo:        String,   // "cultivo" | "pastura"
-  detalle:     String,   // "Soja", "Alfalfa 80% / Festuca 20%"
-  notas:       String
-}
-```
-
-**Filtro:** selector por potrero (o "Todos").
-**Badges CSS:** `.badge-cultivo-cultivo` (verde), `.badge-cultivo-pastura` (azul).
-**Funciones en `fields.js`:** `renderCultivos()`, `openModalCultivo(id?)`, `saveCultivo(e)`, `removeCultivo(id)`.
-
----
-
-### Módulo Potreros — Tab Forraje
-
-**localStorage key:** `ag_forraje`
-
-**Estructura:**
-```js
-{
-  id:            String,
-  potrero_id:    String,
-  potrero:       String,
-  año:           Number,
-  tipo:          String,   // "rollo" | "fardo"
-  cantidad:      Number,
-  cortes:        Number,
-  observaciones: String
-}
-```
-
-**Badges CSS:** `.badge-forraje-rollo` (naranja), `.badge-forraje-fardo` (rosa).
-**Funciones en `fields.js`:** `renderForraje()`, `openModalForraje(id?)`, `saveForraje(e)`, `removeForraje(id)`.
-
----
-
-### Módulo Finanzas — Categoría Impuestos
-
-Se agregó `"Impuestos"` al array `CATEGORIES.gasto` en `finance.js`. Se usa para separar impuestos del resto de costos en el cálculo del margen.
-
----
-
-### Módulo Finanzas — Tab Amortizaciones
-
-**localStorage key:** `ag_amortizations`
-
-**Estructura:**
-```js
-{
-  id:             String,
-  nombre:         String,
-  tipo:           String,   // "Maquinaria" | "Instalaciones" | "Rodado" | "Otro"
-  valor_original: Number,
-  vida_util:      Number,   // años
-  año_inicio:     Number,
-  cuota_anual:    Number,   // calculado: valor_original / vida_util
-  observaciones:  String
-}
-```
-
-**Stats:** total activos, cuota anual total.
-**Funciones en `finance.js`:** `renderAmortizaciones()`, `openModalAmort(id?)`, `saveAmort(e)`, `removeAmort(id)`.
-
----
-
-### Módulo Finanzas — Tab Margen
-
-Cálculo del margen agropecuario filtrado por año.
-
-**Fórmulas:**
-- **Ingresos** = Σ transacciones tipo `ingreso` del año
-- **Costos** = Σ transacciones tipo `gasto` excl. `"Impuestos"` del año
-- **Amortizaciones año** = Σ `cuota_anual` de activos con `año >= año_inicio` y `año < año_inicio + vida_util`
-- **Margen Bruto** = Ingresos − Costos − Amortizaciones
-- **Impuestos** = Σ transacciones categoría `"Impuestos"` del año
-- **Margen Neto** = Margen Bruto − Impuestos
-
-Cards con color verde/rojo según signo.
-**Función en `finance.js`:** `renderMargen(año)`, `initMargenYear()`.
