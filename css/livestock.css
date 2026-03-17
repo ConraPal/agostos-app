@@ -11,7 +11,9 @@
 }
 
 @media (max-width: 480px) {
-  .stats-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { padding: 14px 16px; }
+  .stat-value { font-size: 22px; }
 }
 
 .stat-card {

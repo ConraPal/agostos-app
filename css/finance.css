@@ -96,13 +96,10 @@
 .margen-card.negativo .margen-value { color: #c0392b; }
 
 @media (max-width: 768px) {
-  .margen-cards {
-    grid-template-columns: 1fr 1fr;
-  }
+  .resumen-grid { grid-template-columns: 1fr; }
+  .margen-cards { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 480px) {
-  .margen-cards {
-    grid-template-columns: 1fr;
-  }
+  .margen-cards { grid-template-columns: 1fr; }
 }
