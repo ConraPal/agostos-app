@@ -7,7 +7,7 @@ App web de gestión de campo construida con tecnologías vanilla, sin frameworks
 - **HTML5** — estructura semántica, un `index.html` por ahora (SPA sin build step)
 - **CSS3** — variables CSS, sin preprocesador ni utilidades externas
 - **JavaScript vanilla (ES6+)** — módulos como IIFEs, sin bundler
-- **localStorage** — persistencia local por ahora (sin backend)
+- **Supabase** — backend principal (tabla `app_data`); `localStorage` como fallback automático
 
 ## Configuración Claude Code
 
@@ -27,7 +27,7 @@ agostos-app/
 │   ├── fields.css      # Estilos específicos del módulo potreros
 │   └── reports.css     # Estilos específicos del módulo reportes
 ├── js/
-│   ├── storage.js      # Wrapper de localStorage — se carga primero
+│   ├── storage.js      # Supabase + localStorage fallback — se carga primero
 │   ├── livestock.js    # Módulo hacienda — se carga segundo
 │   ├── finance.js      # Módulo finanzas — se carga tercero
 │   ├── fields.js       # Módulo potreros — se carga cuarto
@@ -490,9 +490,9 @@ Retorna una versión con debounce de la función `fn`. Por defecto `ms = 300`. U
 
 ## Notas de desarrollo
 
-- **localStorage es temporal**: cuando se incorpore backend, `storage.js` es el único archivo a reemplazar. Los módulos llaman solo a `Storage.get()` y `Storage.set()`.
+- **Capa de storage aislada**: los módulos solo llaman `Storage.get()` y `Storage.set()`. El backend vive enteramente en `storage.js`.
 - **Sin build step**: se puede abrir `index.html` directo en el navegador para desarrollo local.
-- **IDs**: se usan timestamps (`Date.now()`) como IDs. Suficiente para localStorage; cambiar a UUIDs si se migra a backend.
+- **IDs**: se usan timestamps (`Date.now()`) como IDs.
 - **`.hidden`**: clase utilitaria en `main.css` (`display: none !important`) usada para ocultar elementos del topbar al cambiar de módulo.
 
 ---
@@ -560,3 +560,30 @@ Implementados con `<span class="tooltip-trigger" tabindex="0" data-tip="...">?</
 - Modal amortización: Año inicio y Vida útil
 - Modal reproducción: % Preñez IA
 - Modal movimientos: Potrero origen
+
+## Actualizaciones 18/03/2026
+
+### Supabase — backend persistente
+
+- **Proyecto:** `zetsiitizxrtgmlkkuqo` (us-west-2) — activo y saludable.
+- **Tabla:** `app_data` — `key text PK`, `value jsonb`. RLS habilitado con política "Allow all" (app de uso personal).
+- **CDN:** `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2` cargado antes de `storage.js` en `index.html`.
+
+### `Storage` — arquitectura nueva (`storage.js`)
+
+`Storage` es ahora una IIFE con cuatro métodos públicos: `init()`, `get()`, `set()`, `remove()`.
+
+**Flujo de `init()` (async, llamado desde `app.js` con `await`):**
+1. Intenta conectar a Supabase con la publishable key.
+2. Si `app_data` está vacío → migra arrays no vacíos de `localStorage` a Supabase (one-time).
+3. Si hay datos → los carga al cache en memoria.
+4. Si falla → modo fallback: carga `localStorage` al cache y opera offline.
+
+**Flujo de `set(key, value)`:**
+- Actualiza el cache inmediatamente (lectura síncrona).
+- Si Supabase activo: `upsert` fire-and-forget en background.
+- Si fallback: escribe en `localStorage`.
+
+**Keys LOCAL_ONLY** (nunca van a Supabase): `ag_dark_mode`.
+
+**Loading overlay:** `#app-loading` (spinner CSS) se muestra durante `Storage.init()` y se oculta al resolverse.
