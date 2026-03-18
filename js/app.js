@@ -64,7 +64,12 @@ const ui = (() => {
 })();
 
 // ===== App Bootstrap =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  // --- Init storage (Supabase o fallback localStorage) ---
+  const loadingEl = document.getElementById('app-loading');
+  await Storage.init();
+  if (loadingEl) loadingEl.classList.add('hidden');
 
   // --- Tabs (scoped to parent module) ---
   document.querySelectorAll('.tab').forEach(tab => {

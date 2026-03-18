@@ -12,6 +12,12 @@
 </head>
 <body>
 
+  <!-- Loading overlay -->
+  <div id="app-loading">
+    <div class="app-loading-spinner"></div>
+    <p>Cargando datos…</p>
+  </div>
+
   <!-- Sidebar overlay (mobile) -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
@@ -1199,6 +1205,7 @@
   <!-- Toast -->
   <div id="toast" class="toast hidden"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/storage.js"></script>
   <script src="js/livestock.js"></script>
   <script src="js/finance.js"></script>
