@@ -466,14 +466,20 @@ Retorna una versión con debounce de la función `fn`. Por defecto `ms = 300`. U
 
 ## Assets
 
-| Archivo              | Uso                                                       |
-|----------------------|-----------------------------------------------------------|
-| `assets/gaucho.png`  | Ilustración estilo Molina Campos — gaucho a caballo       |
+| Archivo                   | Uso                                                              |
+|---------------------------|------------------------------------------------------------------|
+| `assets/vaca-sidebar.jpg` | Foto de vaca Hereford — imagen al pie del sidebar                |
+| `assets/campo-bg.jpg`     | Foto de campo con molino — fondo general de la app               |
 
-La imagen se ubica al pie del sidebar (`<div class="sidebar-art">`). Estilos en `main.css`:
+**Sidebar art** (`<div class="sidebar-art">`). Estilos en `main.css`:
 - `margin-top: auto` la empuja al fondo del sidebar
 - `::before` aplica un gradiente de `--color-sidebar` a transparente para fundirla con la navegación
-- `height: 148px`, `object-fit: cover`, `object-position: center 30%`, `opacity: .82`
+- `height: 190px`, `object-fit: cover`, `object-position: center 20%`, `opacity: .9`
+
+**Fondo de la app** (`body`). Estilos en `main.css`:
+- `background: var(--color-bg) url('../assets/campo-bg.jpg') center center / cover fixed no-repeat`
+- El topbar usa `backdrop-filter: blur(10px)` con fondo semitransparente para efecto vidrio esmerilado
+- En dark mode: overlay `rgba(0,0,0,0.72)` sobre la imagen para mantener legibilidad
 
 ## Git y deploy
 
