@@ -652,24 +652,64 @@ Implementados con `<span class="tooltip-trigger" tabindex="0" data-tip="...">?</
 ### Supabase — backend persistente
 
 - **Proyecto:** `zetsiitizxrtgmlkkuqo` (us-west-2) — activo y saludable.
-- **Tabla:** `app_data` — `key text PK`, `value jsonb`. RLS habilitado con política "Allow all" (app de uso personal).
+- **Tabla:** `app_data` — PK compuesta `(user_id, key)`, columna `value jsonb`. RLS habilitado con política por usuario.
 - **CDN:** `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2` cargado antes de `storage.js` en `index.html`.
 
-### `Storage` — arquitectura nueva (`storage.js`)
+### `Storage` — arquitectura (`storage.js`)
 
-`Storage` es ahora una IIFE con cuatro métodos públicos: `init()`, `get()`, `set()`, `remove()`.
+`Storage` es una IIFE con métodos públicos: `init()`, `login()`, `logout()`, `getUser()`, `get()`, `set()`, `remove()`.
 
 **Flujo de `init()` (async, llamado desde `app.js` con `await`):**
-1. Intenta conectar a Supabase con la publishable key.
-2. Si `app_data` está vacío → migra arrays no vacíos de `localStorage` a Supabase (one-time).
-3. Si hay datos → los carga al cache en memoria.
-4. Si falla → modo fallback: carga `localStorage` al cache y opera offline.
+1. Crea el cliente Supabase y verifica sesión activa con `sb.auth.getUser()`.
+2. Si no hay sesión → retorna `{ needsAuth: true }` (app muestra login screen).
+3. Si hay sesión → llama `_loadUserData()`: carga filas filtradas por `user_id`.
+4. Si `app_data` vacío para el usuario → migra arrays de `localStorage` a Supabase (one-time).
+5. Si Supabase falla → modo fallback: carga `localStorage` al cache y opera offline.
+
+**Flujo de `login(email, password)`:**
+- Llama `sb.auth.signInWithPassword()`.
+- Guarda `currentUser` y llama `_loadUserData()`.
 
 **Flujo de `set(key, value)`:**
 - Actualiza el cache inmediatamente (lectura síncrona).
-- Si Supabase activo: `upsert` fire-and-forget en background.
+- Si Supabase activo: `upsert({ key, value, user_id: currentUser.id })` fire-and-forget.
 - Si fallback: escribe en `localStorage`.
+- Error de upsert → toast visible al usuario.
 
 **Keys LOCAL_ONLY** (nunca van a Supabase): `ag_dark_mode`.
 
 **Loading overlay:** `#app-loading` (spinner CSS) se muestra durante `Storage.init()` y se oculta al resolverse.
+
+**Login screen:** `#login-screen` (fixed, z-index 10000) se muestra si `needsAuth`. Estilos en `main.css`.
+
+## Actualizaciones 19/03/2026 (cont.)
+
+### Autenticación (Supabase Auth)
+
+- **Pantalla de login** (`#login-screen`) — se muestra antes de la app si no hay sesión activa. Form con email + contraseña.
+- **Botón Salir** (`#btn-logout`) en topbar — cierra sesión y recarga la página.
+- **Email del usuario** — se muestra en `.topbar-user` junto al botón Salir.
+- **RLS por usuario** — política `"Users access own data"`: `auth.uid() = user_id`. Cada usuario solo ve sus datos.
+- **PK de `app_data`** — cambiada de `(key)` a `(user_id, key)` para soportar múltiples usuarios con las mismas keys.
+- **Crear usuarios** — desde Supabase Dashboard → Authentication → Users → Add user.
+- Flujo en `app.js`: `Storage.init()` → si `needsAuth`, registra submit del form → login → `_initApp()`. Si no, llama `_initApp()` directamente.
+
+### Bug fixes
+
+- `saveSanidad`: `sanidadPage = 1` antes de renderizar; logging de "Actualización"/"Baja" en historial; toast usa `wasEditing` capturado antes de `closeModalSanidad()`
+- `saveRepro`: helper `toInt()` reemplaza `parseInt() || null` (0 dejaba de guardarse); guards en `prenez_pct` e `indice_destete` usan `!= null && > 0`
+- `storage.js`: errores de upsert muestran toast al usuario (antes solo `console.error`)
+- `livestock.js`: doble `;;` eliminado
+
+### Export CSV ampliado (reports.js)
+
+- `exportSanidad()` — descarga `sanidad.csv`: fecha, caravana, tipo, descripción, producto, dosis
+- `exportReproduccion()` — descarga `reproduccion.csv`: año, vacas, % preñez, partos, % destete, mortalidad, IA
+- Botones `#btn-export-sanidad` y `#btn-export-reproduccion` en tab Exportar
+
+### Validación import CSV animales
+
+- Rechaza filas con `tipo` no válido (acepta: vaca, toro, ternero, vaquillona, novillo)
+- Rechaza filas con `estado` no válido (acepta: activo, vendido, muerto)
+- Rechaza filas con fecha de nacimiento que no sea formato ISO `YYYY-MM-DD`
+- Toast muestra tres contadores separados: importados · duplicados omitidos · filas inválidas
