@@ -61,6 +61,7 @@
         <h1 class="topbar-title" id="page-title">Hacienda</h1>
       </div>
       <div class="topbar-actions">
+        <button class="btn-icon bell-btn" id="btn-alertas" title="Recordatorios" aria-label="Recordatorios">🔔<span class="bell-badge" id="bell-badge" style="display:none"></span></button>
         <button class="btn-icon" id="btn-dark-toggle" title="Modo oscuro" aria-label="Alternar modo oscuro">🌙</button>
         <button class="btn btn-primary" id="btn-new-animal">+ Nuevo animal</button>
         <button class="btn btn-primary hidden" id="btn-new-field">+ Nuevo potrero</button>
@@ -97,6 +98,7 @@
         <button class="tab" data-tab="movements">Movimientos</button>
         <button class="tab" data-tab="history">Historial</button>
         <button class="tab" data-tab="reproduccion">Reproducción</button>
+        <button class="tab" data-tab="sanidad">Sanidad</button>
       </div>
 
       <!-- Tab: Registro -->
@@ -234,6 +236,60 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Tab: Sanidad -->
+      <div id="tab-sanidad" class="tab-content">
+        <div class="stats-grid sanidad-stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Eventos este mes</span>
+            <span class="stat-value" id="stat-sanidad-mes">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Vacunaciones</span>
+            <span class="stat-value" id="stat-sanidad-vacunacion">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Desparasitaciones</span>
+            <span class="stat-value" id="stat-sanidad-desparasitacion">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Atenciones vet.</span>
+            <span class="stat-value" id="stat-sanidad-veterinario">—</span>
+          </div>
+        </div>
+        <div class="table-toolbar">
+          <input type="search" class="search-input" id="search-sanidad" placeholder="Buscar por caravana, descripción o producto..." />
+          <select class="filter-select" id="filter-sanidad-tipo">
+            <option value="">Todos los tipos</option>
+            <option value="vacunación">Vacunación</option>
+            <option value="desparasitación">Desparasitación</option>
+            <option value="veterinario">Veterinario</option>
+            <option value="otro">Otro</option>
+          </select>
+          <button class="btn btn-secondary" id="btn-new-sanidad">+ Registrar evento</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="sanidad-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Caravana</th>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Producto / Dosis</th>
+                <th>Observaciones</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="sanidad-tbody">
+              <tr class="empty-row">
+                <td colspan="7">No hay eventos de sanidad registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="sanidad-pagination"></div>
         </div>
       </div>
 
@@ -414,6 +470,7 @@
         <button class="tab" data-tab="resumen">Resumen</button>
         <button class="tab" data-tab="amortizaciones">Amortizaciones</button>
         <button class="tab" data-tab="margen">Margen</button>
+        <button class="tab" data-tab="presupuesto">Presupuesto</button>
       </div>
 
       <!-- Tab: Transacciones -->
@@ -460,6 +517,10 @@
             <h3>Gastos por categoría</h3>
             <div id="resumen-gastos"></div>
           </div>
+        </div>
+        <div class="resumen-section" style="margin-top:24px">
+          <h3>Gastos por potrero</h3>
+          <div id="resumen-potrero"></div>
         </div>
       </div>
 
@@ -510,6 +571,35 @@
         <div class="margen-cards" id="margen-cards"></div>
       </div>
 
+      <!-- Tab: Presupuesto -->
+      <div id="tab-presupuesto" class="tab-content">
+        <div class="table-toolbar">
+          <label for="presupuesto-year" style="font-size:13px;font-weight:500">Año:</label>
+          <select id="presupuesto-year" class="filter-select"></select>
+          <button class="btn btn-secondary" id="btn-new-presup">+ Agregar ítem</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="presupuesto-table">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th style="text-align:right">Presupuestado</th>
+                <th style="text-align:right">Real</th>
+                <th style="text-align:right">Diferencia</th>
+                <th>% Ejec.</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="presupuesto-tbody">
+              <tr class="empty-row">
+                <td colspan="7">Sin presupuesto para este año.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </section>
 
     <!-- Módulo Reportes -->
@@ -540,6 +630,7 @@
                 <tr><td><strong>Total</strong></td><td><strong id="rpt-tipo-total">0</strong></td><td></td></tr>
               </tfoot>
             </table>
+            <div class="chart-container"><canvas id="chart-hacienda"></canvas></div>
           </div>
           <div class="rpt-section">
             <h3>Stock activo por potrero</h3>
@@ -572,6 +663,7 @@
               <tbody id="rpt-finanzas-tbody"></tbody>
             </table>
           </div>
+          <div class="chart-container"><canvas id="chart-finanzas"></canvas></div>
         </div>
       </div>
 
@@ -596,6 +688,7 @@
               </tbody>
             </table>
           </div>
+          <div class="chart-container"><canvas id="chart-repro"></canvas></div>
         </div>
       </div>
 
@@ -660,6 +753,26 @@
     </section>
 
   </main>
+
+  <!-- Panel: Recordatorios -->
+  <div class="alerts-panel hidden" id="alerts-panel">
+    <div class="alerts-panel-header">
+      <h3>Recordatorios</h3>
+      <button class="modal-close" id="alerts-panel-close">&times;</button>
+    </div>
+    <div class="alerts-list" id="alerts-list">
+      <p class="alerts-empty">Sin recordatorios pendientes.</p>
+    </div>
+    <div class="alerts-add">
+      <form id="form-alerta" autocomplete="off">
+        <div class="alerts-add-row">
+          <input type="text" id="alerta-titulo" placeholder="Nuevo recordatorio..." required />
+          <input type="date" id="alerta-fecha" required />
+          <button type="submit" class="btn btn-primary">+</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Modal: Nuevo potrero -->
   <div class="modal-overlay hidden" id="modal-field">
@@ -904,9 +1017,16 @@
             <input type="number" id="ft-precio-unit" name="precio_unitario" min="0" step="0.01" placeholder="Ej: 120000" />
           </div>
         </div>
-        <div class="form-group">
-          <label for="ft-descripcion">Descripción</label>
-          <input type="text" id="ft-descripcion" name="descripcion" placeholder="Ej: Venta 5 novillos" />
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ft-descripcion">Descripción</label>
+            <input type="text" id="ft-descripcion" name="descripcion" placeholder="Ej: Venta 5 novillos" />
+          </div>
+          <div class="form-group">
+            <label for="ft-potrero">Potrero <span class="form-hint">(opcional)</span></label>
+            <input type="text" id="ft-potrero" name="potrero" list="tx-potrero-options" placeholder="Ej: Potrero Norte" autocomplete="off" />
+            <datalist id="tx-potrero-options"></datalist>
+          </div>
         </div>
         <div class="form-group">
           <label for="ft-obs">Observaciones</label>
@@ -1043,6 +1163,67 @@
     </div>
   </div>
 
+  <!-- Modal: Sanidad -->
+  <div class="modal-overlay hidden" id="modal-sanidad">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-sanidad-title">Nuevo evento sanitario</h2>
+        <button class="modal-close" id="modal-sanidad-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-sanidad">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fs-fecha">Fecha *</label>
+            <input type="date" id="fs-fecha" name="fecha" required />
+          </div>
+          <div class="form-group">
+            <label for="fs-tipo">Tipo *</label>
+            <select id="fs-tipo" name="tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="vacunación">Vacunación</option>
+              <option value="desparasitación">Desparasitación</option>
+              <option value="veterinario">Veterinario</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fs-animal">Animal <span class="form-hint">(vacío = rodeo completo)</span></label>
+            <div class="animal-search-wrap">
+              <input type="text" id="fs-animal" name="animal"
+                placeholder="Buscar por caravana o nombre..."
+                autocomplete="off" />
+              <ul class="animal-dropdown hidden" id="sanidad-animal-dropdown"></ul>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fs-descripcion">Descripción *</label>
+            <input type="text" id="fs-descripcion" name="descripcion" required placeholder="Ej: Aftosa, Ivermectina..." />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fs-producto">Producto</label>
+            <input type="text" id="fs-producto" name="producto" placeholder="Ej: Ivermec" />
+          </div>
+          <div class="form-group">
+            <label for="fs-dosis">Dosis</label>
+            <input type="text" id="fs-dosis" name="dosis" placeholder="Ej: 10 ml" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="fs-obs">Observaciones</label>
+          <textarea id="fs-obs" name="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-sanidad">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal: Cultivo -->
   <div class="modal-overlay hidden" id="modal-cultivo">
     <div class="modal">
@@ -1138,6 +1319,45 @@
     </div>
   </div>
 
+  <!-- Modal: Presupuesto -->
+  <div class="modal-overlay hidden" id="modal-presupuesto">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-presup-title">Nuevo ítem de presupuesto</h2>
+        <button class="modal-close" id="modal-presup-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-presupuesto">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fp-año">Año *</label>
+            <input type="number" id="fp-año" name="año" required min="2000" max="2100" placeholder="Ej: 2025" />
+          </div>
+          <div class="form-group">
+            <label for="fp-tipo">Tipo *</label>
+            <select id="fp-tipo" name="tipo" required>
+              <option value="ingreso">Ingreso</option>
+              <option value="gasto">Gasto</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fp-categoria">Categoría *</label>
+            <select id="fp-categoria" name="categoria" required></select>
+          </div>
+          <div class="form-group">
+            <label for="fp-monto">Monto presupuestado *</label>
+            <input type="number" id="fp-monto" name="monto" required min="0" step="0.01" placeholder="Ej: 500000" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-presup">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal: Amortización -->
   <div class="modal-overlay hidden" id="modal-amortization">
     <div class="modal">
@@ -1206,6 +1426,7 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/livestock.js"></script>
   <script src="js/finance.js"></script>

@@ -99,6 +99,7 @@ Registro, seguimiento y gestión del stock de animales del campo.
 | `ag_movements`     | Array de movimientos entre potreros    |
 | `ag_history`       | Log automático de eventos por animal   |
 | `ag_reproduction`  | Array de ciclos reproductivos          |
+| `ag_sanidad`       | Array de eventos sanitarios            |
 
 ### Estructura de un animal
 
@@ -222,9 +223,46 @@ Registro, seguimiento y gestión del stock de animales del campo.
 - Modal con sección IA (toggle con `#fr-ia`), sección Parición, sección Destete
 - Funciones: `renderReproduccion()`, `openModalRepro(id?)`, `closeModalRepro()`, `saveRepro(e)`, `editRepro(id)`, `removeRepro(id)`
 
+**Tab Sanidad**
+- Stats (4 cards): eventos este mes, total vacunaciones, total desparasitaciones, atenciones veterinarias
+- Tabla: Fecha, Caravana (o "Rodeo completo" si aplica a todos), Tipo (badge), Descripción, Producto/Dosis, Observaciones, Acciones
+- Búsqueda por caravana, nombre, descripción o producto; filtro por tipo
+- Campo animal opcional — si queda vacío, el evento es para el rodeo completo
+- Animal search con mismo dropdown navegable que Movimientos (`id="sanidad-animal-dropdown"`)
+- Solo loguea a `ag_history` cuando el evento es para un animal individual (no rodeo completo)
+- Funciones: `renderSanidad()`, `openModalSanidad(id?)`, `closeModalSanidad()`, `saveSanidad(e)`, `editSanidad(id)`, `removeSanidad(id)`
+- Estado: `editingSanidadId`, `selectedSanidadAnimalId`, `sanidadPage`
+
+### Estructura de un evento sanitario
+
+```js
+{
+  id:            String,   // Date.now()
+  fecha:         String,   // ISO date
+  animalId:      String,   // null si aplica al rodeo completo
+  caravana:      String,   // '' si rodeo completo
+  animalNombre:  String,   // '' si rodeo completo
+  tipo:          String,   // "vacunación" | "desparasitación" | "veterinario" | "otro"
+  descripcion:   String,   // e.g., "Aftosa", "Ivermectina"
+  producto:      String,   // e.g., "Ivermec"
+  dosis:         String,   // e.g., "10 ml"
+  observaciones: String
+}
+```
+
+### Badge tokens de sanidad (CSS)
+
+| Clase                          | Color   | Tipo             |
+|-------------------------------|---------|------------------|
+| `.badge-sanidad-vacunacion`   | Verde   | vacunación       |
+| `.badge-sanidad-desparasitacion` | Azul | desparasitación  |
+| `.badge-sanidad-veterinario`  | Naranja | veterinario      |
+| `.badge-sanidad-otro`         | Gris    | otro             |
+| `.badge-evento-sanidad`       | Violeta | en historial     |
+
 ### `logHistory(caravana, evento, detalle, nombre = '')`
 
-Función interna del módulo. Llamada desde los 4 puntos de escritura:
+Función interna del módulo. Llamada desde los 5 puntos de escritura:
 
 | Caller        | Evento          | Detalle                          |
 |---------------|-----------------|----------------------------------|
@@ -232,6 +270,7 @@ Función interna del módulo. Llamada desde los 4 puntos de escritura:
 | `saveAnimal`  | `Actualización` | `Datos editados`                 |
 | `remove`      | `Baja`          | `Eliminado del registro`         |
 | `saveMovement`| `Movimiento`    | `{tipo} de {origen} a {destino}` |
+| `saveSanidad` | `Sanidad`       | `{tipo}: {descripcion}`          |
 
 ### Tabs del módulo
 
@@ -239,6 +278,7 @@ Función interna del módulo. Llamada desde los 4 puntos de escritura:
 - **Movimientos** — registro de traslados/entradas/salidas entre potreros ✓
 - **Historial** — log cronológico con badges por tipo de evento ✓
 - **Reproducción** — ciclo productivo biológico completo: servicio, tacto, parición, destete; con índices de preñez, destete y mortalidad ✓
+- **Sanidad** — registro de eventos sanitarios (vacunaciones, desparasitaciones, atenciones veterinarias) ✓
 
 ## Módulo: Finanzas
 
@@ -560,6 +600,52 @@ Implementados con `<span class="tooltip-trigger" tabindex="0" data-tip="...">?</
 - Modal amortización: Año inicio y Vida útil
 - Modal reproducción: % Preñez IA
 - Modal movimientos: Potrero origen
+
+## Actualizaciones 19/03/2026
+
+### Módulo Sanidad (livestock.js)
+- Tab "Sanidad" en Hacienda — CRUD de eventos sanitarios (vacunación, desparasitación, veterinario, otro)
+- Key `ag_sanidad`: `{ id, fecha, animalId, caravana, animalNombre, tipo, descripcion, producto, dosis, observaciones }`
+- Campo animal opcional: si vacío, el evento aplica al rodeo completo
+- Stats: eventos este mes, total por tipo
+- Loguea a `ag_history` con badge violeta cuando el evento es para un animal individual
+- Badge tokens: `.badge-sanidad-vacunacion` (verde), `.badge-sanidad-desparasitacion` (azul), `.badge-sanidad-veterinario` (naranja), `.badge-sanidad-otro` (gris)
+
+### Gastos por potrero (finance.js)
+- Campo `potrero` opcional en el formulario de transacciones (datalist desde ag_fields)
+- Se muestra como sub-texto bajo la descripción en la tabla de transacciones
+- Tab Resumen: sección "Gastos por potrero" muestra totales agrupados por potrero
+
+### Presupuesto (finance.js)
+- Tab "Presupuesto" en Finanzas — comparación presupuestado vs real por categoría
+- Key `ag_presupuesto`: `{ id, año, tipo, categoria, monto }`
+- Un ítem por año+tipo+categoría (se valida duplicado al crear)
+- Tabla: Categoría | Tipo | Presupuestado | Real | Diferencia | % Ejec.
+- Modal: `fp-año`, `fp-tipo`, `fp-categoria` (dinámico igual que transacciones), `fp-monto`
+- `initPresupuestoYear()` popula el selector, `renderPresupuesto(año)` calcula la comparación
+
+### Alertas / Recordatorios (app.js)
+- Botón 🔔 (`btn-alertas`) en topbar con badge rojo de items vencidos/hoy
+- Panel desplegable `alerts-panel` (fixed, z-index 200) posicionado debajo del botón
+- Key `ag_alertas`: `{ id, titulo, fecha, completado }`
+- Funciones en `app.js`: `refreshAlertBadge()`, `renderAlertsList()`, `toggleAlertsPanel()`
+- Tres categorías: vencidos (rojo), hoy (amarillo), próximos 30 días (azul)
+- Se cierra al hacer click fuera del panel
+
+### Gráficos (reports.js + Chart.js)
+- Chart.js v4 CDN: `https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js`
+- Hacienda tab: gráfico doughnut de stock activo por tipo
+- Finanzas tab: gráfico de barras de ingresos vs gastos mensuales (año actual)
+- Reproducción tab: gráfico de barras de % preñez y % destete por año
+- Variables en reports.js: `_chartHacienda`, `_chartFinanzas`, `_chartRepro` (destroy+recreate en refresh)
+- `.chart-container` en reports.css (max-width: 480px, centrado)
+
+### Bug fixes (19/03/2026)
+- `fields.js saveCultivo`: agrega `cultivosPage = 1` antes de renderizar
+- `fields.js saveForraje`: agrega `forrajePage = 1` antes de renderizar
+- `finance.js saveTransaction`: agrega `transactionsPage = 1` al guardar
+- `reports.js ALL_KEYS`: incluye `ag_sanidad`, `ag_presupuesto`, `ag_alertas`
+- `storage.js DATA_KEYS`: incluye `ag_sanidad`, `ag_presupuesto`, `ag_alertas`
 
 ## Actualizaciones 18/03/2026
 

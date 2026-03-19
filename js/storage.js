@@ -8,9 +8,10 @@ const Storage = (() => {
 
   // All data keys (used for localStorage migration)
   const DATA_KEYS = [
-    'ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction',
-    'ag_transactions', 'ag_amortizations',
-    'ag_fields', 'ag_crop_history', 'ag_forraje'
+    'ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction', 'ag_sanidad',
+    'ag_transactions', 'ag_amortizations', 'ag_presupuesto',
+    'ag_fields', 'ag_crop_history', 'ag_forraje',
+    'ag_alertas'
   ];
 
   let sb = null;

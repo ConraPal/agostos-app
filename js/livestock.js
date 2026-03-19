@@ -1,7 +1,7 @@
 // ===== Livestock Module =====
 const Livestock = (() => {
 
-  const KEYS = { animals: 'ag_animals', movements: 'ag_movements', history: 'ag_history', reproduction: 'ag_reproduction' };
+  const KEYS = { animals: 'ag_animals', movements: 'ag_movements', history: 'ag_history', reproduction: 'ag_reproduction', sanidad: 'ag_sanidad' };
 
   // --- Data helpers ---
   const getData = key => Storage.get(key, []);
@@ -25,6 +25,7 @@ const Livestock = (() => {
   let animalsPage = 1;
   let movementsPage = 1;
   let historyPage = 1;
+  let sanidadPage = 1;
 
   // --- Sort and filter state ---
   let animalsSort = { by: null, dir: 'asc' };
@@ -40,6 +41,18 @@ const Livestock = (() => {
     'Baja':          'badge-evento-baja',
     'Actualización': 'badge-evento-edicion',
     'Movimiento':    'badge-evento-movimiento',
+    'Sanidad':       'badge-evento-sanidad',
+  };
+
+  const SANIDAD_BADGE = {
+    'vacunación':      'badge-sanidad-vacunacion',
+    'desparasitación': 'badge-sanidad-desparasitacion',
+    'veterinario':     'badge-sanidad-veterinario',
+    'otro':            'badge-sanidad-otro',
+  };
+  const sanidadBadge = tipo => {
+    const cls = SANIDAD_BADGE[tipo] || 'badge-sanidad-otro';
+    return `<span class="badge ${cls}" style="text-transform:capitalize">${tipo}</span>`;
   };
   const eventBadge = evento => {
     const cls = EVENT_BADGE[evento] || 'badge-evento-default';
@@ -169,6 +182,180 @@ const Livestock = (() => {
     ui.pagination('history-pagination', history.length, historyPage, PAGE_SIZE, p => { historyPage = p; renderHistory(); });
   };
 
+  // --- Render sanidad ---
+  const renderSanidad = () => {
+    const search     = document.getElementById('search-sanidad').value.toLowerCase();
+    const tipoFilter = document.getElementById('filter-sanidad-tipo').value;
+    let data = [...getData(KEYS.sanidad)].sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+    if (search) data = data.filter(s =>
+      (s.caravana || '').toLowerCase().includes(search) ||
+      (s.animalNombre || '').toLowerCase().includes(search) ||
+      (s.descripcion || '').toLowerCase().includes(search) ||
+      (s.producto || '').toLowerCase().includes(search)
+    );
+    if (tipoFilter) data = data.filter(s => s.tipo === tipoFilter);
+
+    // Stats (siempre sobre todos los datos sin filtros)
+    const all = getData(KEYS.sanidad);
+    const now = new Date();
+    const mesActual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('stat-sanidad-mes').textContent =
+      all.filter(s => s.fecha && s.fecha.startsWith(mesActual)).length;
+    document.getElementById('stat-sanidad-vacunacion').textContent =
+      all.filter(s => s.tipo === 'vacunación').length;
+    document.getElementById('stat-sanidad-desparasitacion').textContent =
+      all.filter(s => s.tipo === 'desparasitación').length;
+    document.getElementById('stat-sanidad-veterinario').textContent =
+      all.filter(s => s.tipo === 'veterinario').length;
+
+    const tbody = document.getElementById('sanidad-tbody');
+    if (!data.length) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay eventos de sanidad${tipoFilter || search ? ' que coincidan' : ' registrados'}.</td></tr>`;
+      ui.pagination('sanidad-pagination', 0, 1, PAGE_SIZE, () => {});
+      return;
+    }
+
+    const paged = data.slice((sanidadPage - 1) * PAGE_SIZE, sanidadPage * PAGE_SIZE);
+    tbody.innerHTML = paged.map(s => `
+      <tr>
+        <td>${formatDate(s.fecha)}</td>
+        <td>
+          ${s.caravana ? `<strong>${s.caravana}</strong>` : '<span class="cell-sub">Rodeo completo</span>'}
+          ${s.animalNombre ? `<br><span class="cell-sub">${s.animalNombre}</span>` : ''}
+        </td>
+        <td>${sanidadBadge(s.tipo)}</td>
+        <td>${s.descripcion || '—'}</td>
+        <td>${s.producto ? `${s.producto}${s.dosis ? ` / ${s.dosis}` : ''}` : (s.dosis || '—')}</td>
+        <td>${s.observaciones || '—'}</td>
+        <td>
+          <button class="action-btn" onclick="Livestock.editSanidad('${s.id}')" title="Editar" aria-label="Editar evento sanitario">✏️</button>
+          <button class="action-btn danger" onclick="Livestock.removeSanidad('${s.id}')" title="Eliminar" aria-label="Eliminar evento sanitario">🗑️</button>
+        </td>
+      </tr>
+    `).join('');
+    ui.pagination('sanidad-pagination', data.length, sanidadPage, PAGE_SIZE, p => { sanidadPage = p; renderSanidad(); });
+  };
+
+  // --- Sanidad Modal ---
+  let editingSanidadId = null;
+  let selectedSanidadAnimalId = null;
+
+  const buildSanidadDropdown = query => {
+    const dropdown = document.getElementById('sanidad-animal-dropdown');
+    const q = query.toLowerCase().trim();
+    if (!q) { dropdown.classList.add('hidden'); return; }
+
+    const matches = getData(KEYS.animals)
+      .filter(a => a.estado === 'activo' &&
+        (a.caravana.toLowerCase().includes(q) || (a.nombre || '').toLowerCase().includes(q))
+      )
+      .slice(0, 8);
+
+    if (!matches.length) { dropdown.classList.add('hidden'); return; }
+
+    dropdown.innerHTML = matches.map(a => `
+      <li class="dropdown-item" data-id="${a.id}" data-caravana="${a.caravana}"
+          data-nombre="${a.nombre || ''}">
+        <span class="di-caravana">${a.caravana}</span>
+        ${a.nombre ? `<span class="di-nombre">${a.nombre}</span>` : ''}
+      </li>
+    `).join('');
+    dropdown.classList.remove('hidden');
+  };
+
+  const selectSanidadAnimal = li => {
+    selectedSanidadAnimalId = li.dataset.id;
+    document.getElementById('fs-animal').value = li.dataset.caravana + (li.dataset.nombre ? ` — ${li.dataset.nombre}` : '');
+    document.getElementById('sanidad-animal-dropdown').classList.add('hidden');
+  };
+
+  const openModalSanidad = (id = null) => {
+    editingSanidadId = id;
+    selectedSanidadAnimalId = null;
+    const form = document.getElementById('form-sanidad');
+    form.reset();
+    document.getElementById('modal-sanidad-title').textContent = id ? 'Editar evento sanitario' : 'Nuevo evento sanitario';
+    form.fecha.value = new Date().toISOString().slice(0, 10);
+
+    if (id) {
+      const s = getData(KEYS.sanidad).find(x => x.id === id);
+      if (!s) return;
+      form.fecha.value        = s.fecha || '';
+      form.tipo.value         = s.tipo || '';
+      form.descripcion.value  = s.descripcion || '';
+      form.producto.value     = s.producto || '';
+      form.dosis.value        = s.dosis || '';
+      form.observaciones.value = s.observaciones || '';
+      if (s.animalId) {
+        selectedSanidadAnimalId = s.animalId;
+        form.animal.value = s.caravana + (s.animalNombre ? ` — ${s.animalNombre}` : '');
+      }
+    }
+
+    document.getElementById('modal-sanidad').classList.remove('hidden');
+    document.getElementById('fs-descripcion').focus();
+  };
+
+  const closeModalSanidad = () => {
+    document.getElementById('modal-sanidad').classList.add('hidden');
+    document.getElementById('sanidad-animal-dropdown').classList.add('hidden');
+    editingSanidadId = null;
+    selectedSanidadAnimalId = null;
+  };
+
+  const saveSanidad = e => {
+    e.preventDefault();
+    const form = e.target;
+
+    // Resolver animal
+    let animalId = null, caravana = '', animalNombre = '';
+    if (selectedSanidadAnimalId) {
+      const animal = getData(KEYS.animals).find(a => a.id === selectedSanidadAnimalId);
+      if (animal) { animalId = animal.id; caravana = animal.caravana; animalNombre = animal.nombre || ''; }
+    }
+
+    const entry = {
+      fecha:        form.fecha.value,
+      animalId,
+      caravana,
+      animalNombre,
+      tipo:         form.tipo.value,
+      descripcion:  form.descripcion.value.trim(),
+      producto:     form.producto.value.trim(),
+      dosis:        form.dosis.value.trim(),
+      observaciones: form.observaciones.value.trim()
+    };
+
+    const data = getData(KEYS.sanidad);
+    if (editingSanidadId) {
+      const idx = data.findIndex(s => s.id === editingSanidadId);
+      data[idx] = { ...data[idx], ...entry };
+    } else {
+      data.unshift({ id: String(Date.now()), ...entry });
+      // Registrar en historial del animal si aplica
+      if (caravana) {
+        logHistory(caravana, 'Sanidad', `${entry.tipo}: ${entry.descripcion}`, animalNombre);
+      }
+    }
+
+    saveData(KEYS.sanidad, data);
+    closeModalSanidad();
+    renderSanidad();
+    ui.toast(editingSanidadId ? 'Evento actualizado.' : 'Evento sanitario registrado.');
+  };
+
+  const editSanidad = id => openModalSanidad(id);
+
+  const removeSanidad = id => {
+    ui.confirm('¿Eliminar este evento sanitario?').then(ok => {
+      if (!ok) return;
+      saveData(KEYS.sanidad, getData(KEYS.sanidad).filter(s => s.id !== id));
+      renderSanidad();
+      ui.toast('Evento eliminado.');
+    });
+  };
+
   // --- Full render ---
   const render = () => {
     renderStats();
@@ -176,6 +363,7 @@ const Livestock = (() => {
     renderMovements();
     renderHistory();
     renderReproduccion();
+    renderSanidad();
   };
 
   // --- Potrero datalist ---
@@ -704,8 +892,50 @@ const Livestock = (() => {
       document.getElementById('import-csv-input')?.click();
     });
 
+    // Sanidad
+    document.getElementById('btn-new-sanidad').addEventListener('click', () => openModalSanidad());
+    document.getElementById('modal-sanidad-close').addEventListener('click', closeModalSanidad);
+    document.getElementById('btn-cancel-sanidad').addEventListener('click', closeModalSanidad);
+    document.getElementById('modal-sanidad').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModalSanidad();
+    });
+    document.getElementById('form-sanidad').addEventListener('submit', saveSanidad);
+
+    document.getElementById('search-sanidad').addEventListener('input', ui.debounce(() => { sanidadPage = 1; renderSanidad(); }, 300));
+    document.getElementById('filter-sanidad-tipo').addEventListener('change', () => { sanidadPage = 1; renderSanidad(); });
+
+    // Animal search dropdown para sanidad
+    document.getElementById('fs-animal').addEventListener('input', e => {
+      selectedSanidadAnimalId = null;
+      buildSanidadDropdown(e.target.value);
+    });
+    document.getElementById('fs-animal').addEventListener('keydown', e => {
+      const dropdown = document.getElementById('sanidad-animal-dropdown');
+      if (dropdown.classList.contains('hidden')) return;
+      const items = dropdown.querySelectorAll('.dropdown-item');
+      const active = dropdown.querySelector('.dropdown-item.active');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = active ? active.nextElementSibling : items[0];
+        if (next) { active?.classList.remove('active'); next.classList.add('active'); }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = active ? active.previousElementSibling : items[items.length - 1];
+        if (prev) { active?.classList.remove('active'); prev.classList.add('active'); }
+      } else if (e.key === 'Enter' && active) {
+        e.preventDefault();
+        selectSanidadAnimal(active);
+      } else if (e.key === 'Escape') {
+        dropdown.classList.add('hidden');
+      }
+    });
+    document.getElementById('sanidad-animal-dropdown').addEventListener('mousedown', e => {
+      const li = e.target.closest('.dropdown-item');
+      if (li) selectSanidadAnimal(li);
+    });
+
     render();
   };
 
-  return { init, edit, remove, editRepro, removeRepro };
+  return { init, edit, remove, editRepro, removeRepro, editSanidad, removeSanidad };
 })();

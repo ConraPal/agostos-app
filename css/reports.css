@@ -69,6 +69,16 @@
   .rpt-forraje-totales { grid-template-columns: 1fr; }
 }
 
+/* ===== Chart containers ===== */
+.chart-container {
+  max-width: 480px;
+  margin: 20px auto 0;
+}
+
+@media (max-width: 768px) {
+  .chart-container { max-width: 100%; }
+}
+
 /* Export section headings */
 .export-section-title {
   font-size: 12px;

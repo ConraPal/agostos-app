@@ -1,6 +1,7 @@
 const Finance = (() => {
   const KEY = 'ag_transactions';
   const AMORT_KEY = 'ag_amortizations';
+  const PRESUPUESTO_KEY = 'ag_presupuesto';
 
   const CATEGORIES = {
     ingreso:  ['Toros', 'Vacas vacías', 'Terneros machos', 'Terneras hembras', 'Novillos', 'Vaquillonas', 'Cereales', 'Arrendamiento', 'Subsidios', 'Otro ingreso'],
@@ -17,6 +18,8 @@ const Finance = (() => {
   const PAGE_SIZE = 20;
   let transactionsPage = 1;
   let amortPage = 1;
+  let presupuestoYear = new Date().getFullYear();
+  let editingPresupuestoId = null;
 
   // --- Helpers ---
   function getAll() { return Storage.get(KEY) || []; }
@@ -30,6 +33,18 @@ const Finance = (() => {
 
   function fmtMoney(n) {
     return '$\u00a0' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // --- Potrero datalist for transactions ---
+  function populateTxPotreroOptions() {
+    const fields = Storage.get('ag_fields') || [];
+    const dl = document.getElementById('tx-potrero-options');
+    if (!dl) return;
+    dl.innerHTML = fields
+      .filter(f => f.estado === 'activo')
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map(f => `<option value="${f.nombre}">`)
+      .join('');
   }
 
   // --- Stats ---
@@ -87,7 +102,7 @@ const Finance = (() => {
         <td>${fmt(t.fecha)}</td>
         <td><span class="badge badge-tx-${t.tipo}">${TIPO_LABEL[t.tipo] || t.tipo}</span></td>
         <td>${t.categoria}</td>
-        <td>${t.descripcion || '—'}</td>
+        <td>${t.descripcion || '—'}${t.potrero ? `<br><span class="cell-sub">${t.potrero}</span>` : ''}</td>
         <td class="monto-cell monto-${t.tipo}">${fmtMoney(t.monto)}</td>
         <td class="actions-cell">
           <button class="action-btn" data-action="edit" data-id="${t.id}" title="Editar" aria-label="Editar transacción ${t.categoria}">✏️</button>
@@ -128,6 +143,21 @@ const Finance = (() => {
 
     document.getElementById('resumen-ingresos').innerHTML = renderGroup(ingresos, 'Sin ingresos registrados.');
     document.getElementById('resumen-gastos').innerHTML = renderGroup(gastos, 'Sin gastos registrados.');
+
+    // Gastos por potrero
+    const gastosPorPotrero = {};
+    all.filter(t => t.tipo === 'gasto' && t.potrero).forEach(t => {
+      gastosPorPotrero[t.potrero] = (gastosPorPotrero[t.potrero] || 0) + Number(t.monto);
+    });
+    const potreroEntries = Object.entries(gastosPorPotrero).sort((a, b) => b[1] - a[1]);
+    const resumenPotrero = document.getElementById('resumen-potrero');
+    if (resumenPotrero) {
+      resumenPotrero.innerHTML = potreroEntries.length
+        ? `<table class="data-table"><thead><tr><th>Potrero</th><th style="text-align:right">Total gastos</th></tr></thead><tbody>${
+            potreroEntries.map(([p, v]) => `<tr><td>${p}</td><td class="monto-cell monto-gasto">${fmtMoney(v)}</td></tr>`).join('')
+          }</tbody></table>`
+        : '<p class="resumen-empty">Sin gastos asignados a potreros.</p>';
+    }
   }
 
   // --- Categories select ---
@@ -173,6 +203,7 @@ const Finance = (() => {
       updateCategoryFields(tx.categoria);
       document.getElementById('ft-monto').value = tx.monto;
       document.getElementById('ft-descripcion').value = tx.descripcion || '';
+      document.getElementById('ft-potrero').value = tx.potrero || '';
       document.getElementById('ft-obs').value = tx.observaciones || '';
       if (tx.cantidad)       document.getElementById('ft-cantidad').value   = tx.cantidad;
       if (tx.precio_unitario) document.getElementById('ft-precio-unit').value = tx.precio_unitario;
@@ -184,6 +215,7 @@ const Finance = (() => {
       updateCategories('ingreso');
     }
 
+    populateTxPotreroOptions();
     document.getElementById('modal-transaction').classList.remove('hidden');
   }
 
@@ -201,6 +233,7 @@ const Finance = (() => {
     const monto           = parseFloat(document.getElementById('ft-monto').value);
     const descripcion     = document.getElementById('ft-descripcion').value.trim();
     const observaciones   = document.getElementById('ft-obs').value.trim();
+    const potrero         = document.getElementById('ft-potrero').value.trim() || null;
     const cantidad        = parseFloat(document.getElementById('ft-cantidad').value) || null;
     const precio_unitario = parseFloat(document.getElementById('ft-precio-unit').value) || null;
     const peso_kg         = parseFloat(document.getElementById('ft-peso-kg').value) || null;
@@ -210,13 +243,14 @@ const Finance = (() => {
 
     if (editingId) {
       const idx = data.findIndex(t => t.id === editingId);
-      if (idx !== -1) data[idx] = { ...data[idx], fecha, tipo, categoria, monto, descripcion, observaciones, cantidad, precio_unitario, peso_kg, precio_kg };
+      if (idx !== -1) data[idx] = { ...data[idx], fecha, tipo, categoria, monto, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg };
     } else {
-      data.push({ id: String(Date.now()), fecha, tipo, categoria, monto, descripcion, observaciones, cantidad, precio_unitario, peso_kg, precio_kg });
+      data.push({ id: String(Date.now()), fecha, tipo, categoria, monto, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg });
     }
 
     const isNew = !editingId;
     saveAll(data);
+    transactionsPage = 1;
     closeModal();
     renderStats();
     renderTable();
@@ -372,6 +406,122 @@ const Finance = (() => {
     renderMargen(currentYear);
   }
 
+  // --- Tab: Presupuesto ---
+  function renderPresupuesto(año) {
+    const presup = (Storage.get(PRESUPUESTO_KEY) || []).filter(p => p.año === año);
+    const txAll  = getAll().filter(t => t.fecha && t.fecha.startsWith(String(año)));
+    const tbody  = document.getElementById('presupuesto-tbody');
+    if (!tbody) return;
+
+    if (!presup.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin presupuesto para este año. Agregá ítems con el botón.</td></tr>';
+      return;
+    }
+
+    const TIPO_LABEL = { ingreso: 'Ingreso', gasto: 'Gasto' };
+    tbody.innerHTML = presup.map(p => {
+      const real   = txAll.filter(t => t.tipo === p.tipo && t.categoria === p.categoria).reduce((s, t) => s + Number(t.monto), 0);
+      const diff   = p.monto - real;
+      const pct    = p.monto > 0 ? (real / p.monto * 100).toFixed(0) + '%' : '—';
+      // Para gastos: si real > presup → rojo (sobrepasó); para ingresos: si real < presup → rojo
+      const diffCls = p.tipo === 'gasto'
+        ? (diff < 0 ? 'monto-gasto' : 'monto-ingreso')
+        : (diff > 0 ? 'monto-ingreso' : 'monto-gasto');
+      return `
+        <tr>
+          <td>${p.categoria}</td>
+          <td><span class="badge badge-tx-${p.tipo}">${TIPO_LABEL[p.tipo] || p.tipo}</span></td>
+          <td class="monto-cell">${fmtMoney(p.monto)}</td>
+          <td class="monto-cell monto-${p.tipo}">${fmtMoney(real)}</td>
+          <td class="monto-cell ${diffCls}">${fmtMoney(Math.abs(diff))}</td>
+          <td>${pct}</td>
+          <td class="actions-cell">
+            <button class="action-btn" data-action="edit-presup" data-id="${p.id}" title="Editar" aria-label="Editar presupuesto ${p.categoria}">✏️</button>
+            <button class="action-btn danger" data-action="delete-presup" data-id="${p.id}" title="Eliminar" aria-label="Eliminar presupuesto ${p.categoria}">🗑️</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function initPresupuestoYear() {
+    const sel = document.getElementById('presupuesto-year');
+    if (!sel) return;
+    const cur = new Date().getFullYear();
+    sel.innerHTML = '';
+    for (let y = cur + 1; y >= cur - 3; y--) {
+      sel.innerHTML += `<option value="${y}"${y === cur ? ' selected' : ''}>${y}</option>`;
+    }
+    sel.addEventListener('change', () => { presupuestoYear = parseInt(sel.value, 10); renderPresupuesto(presupuestoYear); });
+    renderPresupuesto(cur);
+  }
+
+  function updatePresupuestoCategorias(tipo) {
+    const sel  = document.getElementById('fp-categoria');
+    if (!sel) return;
+    const cats = CATEGORIES[tipo] || [];
+    sel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
+  function openModalPresupuesto(id = null) {
+    editingPresupuestoId = id;
+    document.getElementById('form-presupuesto').reset();
+    document.getElementById('modal-presup-title').textContent = id ? 'Editar presupuesto' : 'Nuevo ítem de presupuesto';
+    const yearSel = document.getElementById('presupuesto-year');
+    document.getElementById('fp-año').value = yearSel ? yearSel.value : new Date().getFullYear();
+
+    if (id) {
+      const p = (Storage.get(PRESUPUESTO_KEY) || []).find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('fp-año').value = p.año;
+      document.getElementById('fp-tipo').value = p.tipo;
+      updatePresupuestoCategorias(p.tipo);
+      document.getElementById('fp-categoria').value = p.categoria;
+      document.getElementById('fp-monto').value = p.monto;
+    } else {
+      updatePresupuestoCategorias('ingreso');
+    }
+    document.getElementById('modal-presupuesto').classList.remove('hidden');
+  }
+
+  function closeModalPresupuesto() {
+    document.getElementById('modal-presupuesto').classList.add('hidden');
+    editingPresupuestoId = null;
+  }
+
+  function savePresupuesto(e) {
+    e.preventDefault();
+    const año      = parseInt(document.getElementById('fp-año').value, 10);
+    const tipo     = document.getElementById('fp-tipo').value;
+    const categoria = document.getElementById('fp-categoria').value;
+    const monto    = parseFloat(document.getElementById('fp-monto').value);
+
+    const data = Storage.get(PRESUPUESTO_KEY) || [];
+    if (!editingPresupuestoId) {
+      if (data.some(p => p.año === año && p.tipo === tipo && p.categoria === categoria)) {
+        ui.toast(`Ya hay presupuesto para "${categoria}" en ${año}. Editalo directamente.`, 'error');
+        return;
+      }
+      data.push({ id: String(Date.now()), año, tipo, categoria, monto });
+    } else {
+      const idx = data.findIndex(p => p.id === editingPresupuestoId);
+      if (idx !== -1) data[idx] = { ...data[idx], año, tipo, categoria, monto };
+    }
+    Storage.set(PRESUPUESTO_KEY, data);
+    closeModalPresupuesto();
+    renderPresupuesto(presupuestoYear);
+    ui.toast(editingPresupuestoId ? 'Presupuesto actualizado.' : 'Presupuesto registrado.');
+  }
+
+  function removePresupuesto(id) {
+    ui.confirm('¿Eliminar este ítem del presupuesto?').then(ok => {
+      if (!ok) return;
+      Storage.set(PRESUPUESTO_KEY, (Storage.get(PRESUPUESTO_KEY) || []).filter(p => p.id !== id));
+      renderPresupuesto(presupuestoYear);
+      ui.toast('Ítem eliminado.');
+    });
+  }
+
   // --- Init ---
   function init() {
     document.getElementById('btn-new-transaction').addEventListener('click', () => openModal());
@@ -419,6 +569,23 @@ const Finance = (() => {
     renderResumen();
     renderAmortizaciones();
     initMargenYear();
+
+    // Presupuesto
+    document.getElementById('btn-new-presup')?.addEventListener('click', () => openModalPresupuesto());
+    document.getElementById('modal-presup-close')?.addEventListener('click', closeModalPresupuesto);
+    document.getElementById('btn-cancel-presup')?.addEventListener('click', closeModalPresupuesto);
+    document.getElementById('modal-presupuesto')?.addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModalPresupuesto();
+    });
+    document.getElementById('fp-tipo')?.addEventListener('change', e => updatePresupuestoCategorias(e.target.value));
+    document.getElementById('form-presupuesto')?.addEventListener('submit', savePresupuesto);
+    document.getElementById('presupuesto-tbody')?.addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'edit-presup') openModalPresupuesto(btn.dataset.id);
+      if (btn.dataset.action === 'delete-presup') removePresupuesto(btn.dataset.id);
+    });
+    initPresupuestoYear();
   }
 
   return { init };

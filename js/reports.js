@@ -6,6 +6,22 @@ const Reports = (() => {
   function getReproduction() { return Storage.get('ag_reproduction')  || []; }
   function getForraje()      { return Storage.get('ag_forraje')       || []; }
 
+  // Chart instances — destroyed and recreated on each refresh
+  let _chartHacienda = null;
+  let _chartFinanzas = null;
+  let _chartRepro    = null;
+
+  // Color palette matching app theme
+  const CHART_COLORS = ['#3d6b3f', '#7ab87d', '#2c7da0', '#c06c2b', '#7c3aed', '#c0392b'];
+  const CHART_GREEN  = '#3d6b3f';
+  const CHART_RED    = '#c0392b';
+
+  function destroyChart(ref) { if (ref) { try { ref.destroy(); } catch (_) {} } return null; }
+
+  function getTextColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#2c2c2c';
+  }
+
   const TIPO_LABELS  = { vaca: 'Vaca', toro: 'Toro', ternero: 'Ternero', vaquillona: 'Vaquillona', novillo: 'Novillo' };
   const TIPO_ORDER   = ['vaca', 'toro', 'ternero', 'vaquillona', 'novillo'];
   const MONTH_NAMES  = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -34,6 +50,26 @@ const Reports = (() => {
         </tr>`).join('')
       : '<tr class="empty-row"><td colspan="3">Sin animales activos.</td></tr>';
     document.getElementById('rpt-tipo-total').textContent = total;
+
+    // Gráfico stock por tipo (doughnut)
+    _chartHacienda = destroyChart(_chartHacienda);
+    const canvasH = document.getElementById('chart-hacienda');
+    if (canvasH && typeof Chart !== 'undefined' && tipoKeys.length) {
+      _chartHacienda = new Chart(canvasH.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: tipoKeys.map(t => TIPO_LABELS[t] || t),
+          datasets: [{ data: tipoKeys.map(t => byTipo[t]), backgroundColor: CHART_COLORS, borderWidth: 2 }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'right', labels: { color: getTextColor(), font: { size: 12 } } },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} (${total > 0 ? Math.round(ctx.parsed / total * 100) : 0}%)` } }
+          }
+        }
+      });
+    }
 
     // Por potrero
     const byPotrero = {};
@@ -95,6 +131,31 @@ const Reports = (() => {
     </tr>`);
 
     document.getElementById('rpt-finanzas-tbody').innerHTML = rows.join('');
+
+    // Gráfico balance mensual (bar)
+    _chartFinanzas = destroyChart(_chartFinanzas);
+    const canvasF = document.getElementById('chart-finanzas');
+    if (canvasF && typeof Chart !== 'undefined') {
+      const monthEntries = Object.entries(months);
+      _chartFinanzas = new Chart(canvasF.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: monthEntries.map(([k]) => MONTH_NAMES[parseInt(k.split('-')[1], 10) - 1]),
+          datasets: [
+            { label: 'Ingresos', data: monthEntries.map(([, v]) => v.ingresos), backgroundColor: CHART_GREEN + 'cc', borderColor: CHART_GREEN, borderWidth: 1 },
+            { label: 'Gastos',   data: monthEntries.map(([, v]) => v.gastos),   backgroundColor: CHART_RED   + 'cc', borderColor: CHART_RED,   borderWidth: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: getTextColor() } } },
+          scales: {
+            x: { ticks: { color: getTextColor() }, grid: { color: 'rgba(0,0,0,0.06)' } },
+            y: { ticks: { color: getTextColor(), callback: v => '$' + v.toLocaleString('es-AR') }, grid: { color: 'rgba(0,0,0,0.06)' } }
+          }
+        }
+      });
+    }
   }
 
   // --- Tab: Reproducción ---
@@ -116,6 +177,31 @@ const Reports = (() => {
         <td>${r.mortalidad_total ?? '—'}</td>
       </tr>
     `).join('');
+
+    // Gráfico % preñez por año (bar)
+    _chartRepro = destroyChart(_chartRepro);
+    const canvasR = document.getElementById('chart-repro');
+    if (canvasR && typeof Chart !== 'undefined' && data.length) {
+      const sorted = [...data].sort((a, b) => a.año - b.año);
+      _chartRepro = new Chart(canvasR.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: sorted.map(r => r.año),
+          datasets: [
+            { label: '% Preñez',  data: sorted.map(r => r.prenez_pct ?? null),    backgroundColor: CHART_GREEN + 'cc', borderColor: CHART_GREEN, borderWidth: 1 },
+            { label: '% Destete', data: sorted.map(r => r.indice_destete ?? null), backgroundColor: '#2c7da0cc',        borderColor: '#2c7da0',   borderWidth: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: getTextColor() } } },
+          scales: {
+            x: { ticks: { color: getTextColor() }, grid: { color: 'rgba(0,0,0,0.06)' } },
+            y: { min: 0, max: 100, ticks: { color: getTextColor(), callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.06)' } }
+          }
+        }
+      });
+    }
   }
 
   // --- Tab: Forraje ---
@@ -197,9 +283,10 @@ const Reports = (() => {
   }
 
   // --- Backup / Restore ---
-  const ALL_KEYS = ['ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction',
-                    'ag_transactions', 'ag_amortizations',
-                    'ag_fields', 'ag_crop_history', 'ag_forraje'];
+  const ALL_KEYS = ['ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction', 'ag_sanidad',
+                    'ag_transactions', 'ag_amortizations', 'ag_presupuesto',
+                    'ag_fields', 'ag_crop_history', 'ag_forraje',
+                    'ag_alertas'];
 
   function exportBackup() {
     const backup = {};

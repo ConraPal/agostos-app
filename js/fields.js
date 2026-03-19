@@ -293,6 +293,7 @@ const Fields = (() => {
       data.push({ id: String(Date.now()), potrero_id: potId, potrero: potNom, año, tipo, detalle, notas });
     }
     Storage.set(CULTIVOS_KEY, data);
+    cultivosPage = 1;
     closeModalCultivo();
     renderCultivos();
     ui.toast(editingCultivoId ? 'Cultivo actualizado.' : 'Cultivo registrado.');
@@ -401,6 +402,7 @@ const Fields = (() => {
       data.push({ id: String(Date.now()), potrero_id: potId, potrero: potNom, año, tipo, cantidad, cortes, observaciones });
     }
     Storage.set(FORRAJE_KEY, data);
+    forrajePage = 1;
     closeModalForraje();
     renderForraje();
     ui.toast(editingForrajeId ? 'Forraje actualizado.' : 'Forraje registrado.');
