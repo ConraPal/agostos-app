@@ -12,6 +12,26 @@
 </head>
 <body>
 
+  <!-- Login screen -->
+  <div id="login-screen" class="hidden">
+    <div class="login-card">
+      <div class="login-logo">🌾 <span>Agostos</span></div>
+      <p class="login-subtitle">Gestión de Campo</p>
+      <form id="login-form" novalidate>
+        <div class="form-row">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" required autocomplete="email" placeholder="usuario@ejemplo.com" />
+        </div>
+        <div class="form-row">
+          <label for="login-password">Contraseña</label>
+          <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" />
+        </div>
+        <p id="login-error" class="login-error hidden">Email o contraseña incorrectos.</p>
+        <button type="submit" class="btn btn-primary login-btn" id="login-submit">Ingresar</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Loading overlay -->
   <div id="app-loading">
     <div class="app-loading-spinner"></div>
@@ -63,6 +83,8 @@
       <div class="topbar-actions">
         <button class="btn-icon bell-btn" id="btn-alertas" title="Recordatorios" aria-label="Recordatorios">🔔<span class="bell-badge" id="bell-badge" style="display:none"></span></button>
         <button class="btn-icon" id="btn-dark-toggle" title="Modo oscuro" aria-label="Alternar modo oscuro">🌙</button>
+        <span class="topbar-user" id="topbar-user" title="Sesión activa"></span>
+        <button class="btn btn-secondary btn-sm" id="btn-logout" title="Cerrar sesión">Salir</button>
         <button class="btn btn-primary" id="btn-new-animal">+ Nuevo animal</button>
         <button class="btn btn-primary hidden" id="btn-new-field">+ Nuevo potrero</button>
         <button class="btn btn-primary hidden" id="btn-new-transaction">+ Nueva transacción</button>
@@ -723,6 +745,16 @@
             <span class="export-card-title">Potreros</span>
             <span class="export-card-desc">Registro de potreros con hectáreas, pastura y estado.</span>
             <button class="btn btn-secondary" id="btn-export-fields">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Sanidad</span>
+            <span class="export-card-desc">Eventos sanitarios: vacunaciones, desparasitaciones y atenciones veterinarias.</span>
+            <button class="btn btn-secondary" id="btn-export-sanidad">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Reproducción</span>
+            <span class="export-card-desc">Ciclos reproductivos con índices de preñez, destete y mortalidad.</span>
+            <button class="btn btn-secondary" id="btn-export-reproduccion">Descargar CSV</button>
           </div>
         </div>
         <h3 class="export-section-title">Importar animales</h3>

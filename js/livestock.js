@@ -328,21 +328,21 @@ const Livestock = (() => {
     };
 
     const data = getData(KEYS.sanidad);
+    const wasEditing = !!editingSanidadId;
     if (editingSanidadId) {
       const idx = data.findIndex(s => s.id === editingSanidadId);
       data[idx] = { ...data[idx], ...entry };
+      if (caravana) logHistory(caravana, 'Actualización', `Sanidad: ${entry.tipo}: ${entry.descripcion}`, animalNombre);
     } else {
       data.unshift({ id: String(Date.now()), ...entry });
-      // Registrar en historial del animal si aplica
-      if (caravana) {
-        logHistory(caravana, 'Sanidad', `${entry.tipo}: ${entry.descripcion}`, animalNombre);
-      }
+      if (caravana) logHistory(caravana, 'Sanidad', `${entry.tipo}: ${entry.descripcion}`, animalNombre);
     }
 
     saveData(KEYS.sanidad, data);
     closeModalSanidad();
+    sanidadPage = 1;
     renderSanidad();
-    ui.toast(editingSanidadId ? 'Evento actualizado.' : 'Evento sanitario registrado.');
+    ui.toast(wasEditing ? 'Evento actualizado.' : 'Evento sanitario registrado.');
   };
 
   const editSanidad = id => openModalSanidad(id);
@@ -350,7 +350,9 @@ const Livestock = (() => {
   const removeSanidad = id => {
     ui.confirm('¿Eliminar este evento sanitario?').then(ok => {
       if (!ok) return;
+      const ev = getData(KEYS.sanidad).find(s => s.id === id);
       saveData(KEYS.sanidad, getData(KEYS.sanidad).filter(s => s.id !== id));
+      if (ev && ev.caravana) logHistory(ev.caravana, 'Baja', `Sanidad eliminada: ${ev.tipo}: ${ev.descripcion}`, ev.animalNombre);
       renderSanidad();
       ui.toast('Evento eliminado.');
     });
@@ -664,20 +666,21 @@ const Livestock = (() => {
   const saveRepro = e => {
     e.preventDefault();
     const form = e.target;
-    const vacas_total              = parseInt(form.vacas_total.value, 10) || null;
-    const vacas_positivas          = parseInt(form.vacas_positivas.value, 10) || null;
+    const toInt = v => { const n = parseInt(v, 10); return isNaN(n) ? null : n; };
+    const vacas_total              = toInt(form.vacas_total.value);
+    const vacas_positivas          = toInt(form.vacas_positivas.value);
     const vacas_negativas          = (vacas_total != null && vacas_positivas != null) ? vacas_total - vacas_positivas : null;
-    const prenez_pct               = (vacas_total && vacas_positivas != null) ? (vacas_positivas / vacas_total * 100) : null;
+    const prenez_pct               = (vacas_total != null && vacas_total > 0 && vacas_positivas != null) ? (vacas_positivas / vacas_total * 100) : null;
     const ia_realizada             = form.ia_realizada.checked;
-    const partos                   = parseInt(form.partos.value, 10) || null;
-    const muertes_paricion         = parseInt(form.muertes_paricion.value, 10) || null;
-    const terneros_machos_destete  = parseInt(form.terneros_machos_destete.value, 10) || null;
-    const terneras_hembras_destete = parseInt(form.terneras_hembras_destete.value, 10) || null;
-    const muertes_destete          = parseInt(form.muertes_destete.value, 10) || null;
+    const partos                   = toInt(form.partos.value);
+    const muertes_paricion         = toInt(form.muertes_paricion.value);
+    const terneros_machos_destete  = toInt(form.terneros_machos_destete.value);
+    const terneras_hembras_destete = toInt(form.terneras_hembras_destete.value);
+    const muertes_destete          = toInt(form.muertes_destete.value);
 
     const terneros_destete = (terneros_machos_destete ?? 0) + (terneras_hembras_destete ?? 0);
-    const indice_destete   = (partos && terneros_destete != null) ? (terneros_destete / partos * 100) : null;
-    const mortalidad_total = ((muertes_paricion ?? 0) + (muertes_destete ?? 0)) || null;
+    const indice_destete   = (partos != null && partos > 0) ? (terneros_destete / partos * 100) : null;
+    const mortalidad_total = (muertes_paricion != null || muertes_destete != null) ? ((muertes_paricion ?? 0) + (muertes_destete ?? 0)) : null;
 
     const entry = {
       año:                       parseInt(form.año.value, 10),
@@ -736,24 +739,34 @@ const Livestock = (() => {
     reader.onload = e => {
       const lines = e.target.result.split('\n').filter(l => l.trim());
       if (lines.length < 2) { ui.toast('El archivo no tiene datos.', 'error'); return; }
+      const TIPOS_VALIDOS  = new Set(['vaca', 'toro', 'ternero', 'vaquillona', 'novillo']);
+      const ESTADOS_VALIDOS = new Set(['activo', 'vendido', 'muerto']);
+      const ISO_DATE_RE    = /^\d{4}-\d{2}-\d{2}$/;
+
       const animals = getData(KEYS.animals);
       const existing = new Set(animals.map(a => a.caravana));
-      let added = 0, skipped = 0;
+      let added = 0, skipped = 0, invalid = 0;
       // Espera header: ID, Caravana, Nombre, Tipo, Raza, Nacimiento, Potrero, Estado, Peso, Observaciones
       lines.slice(1).forEach(line => {
         const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
         const caravana = (cols[1] || '').toUpperCase();
-        if (!caravana) return;
+        if (!caravana) { invalid++; return; }
         if (existing.has(caravana)) { skipped++; return; }
+        const tipo   = (cols[3] || '').toLowerCase();
+        const estado = (cols[7] || 'activo').toLowerCase();
+        const nacimiento = cols[5] || '';
+        if (!TIPOS_VALIDOS.has(tipo)) { invalid++; return; }
+        if (!ESTADOS_VALIDOS.has(estado)) { invalid++; return; }
+        if (nacimiento && !ISO_DATE_RE.test(nacimiento)) { invalid++; return; }
         animals.unshift({
           id: String(Date.now() + added),
           caravana,
           nombre:       cols[2] || '',
-          tipo:         cols[3] || '',
+          tipo,
           raza:         cols[4] || '',
-          nacimiento:   cols[5] || '',
+          nacimiento,
           potrero:      cols[6] || '',
-          estado:       cols[7] || 'activo',
+          estado,
           peso:         cols[8] ? Number(cols[8]) : null,
           observaciones: cols[9] || '',
           castracion_fecha: null,
@@ -763,7 +776,10 @@ const Livestock = (() => {
       });
       saveData(KEYS.animals, animals);
       render();
-      ui.toast(`Importados: ${added} animales. Omitidos (duplicados): ${skipped}.`);
+      const parts = [`Importados: ${added}`];
+      if (skipped)  parts.push(`duplicados omitidos: ${skipped}`);
+      if (invalid)  parts.push(`filas inválidas: ${invalid}`);
+      ui.toast(parts.join(' · ') + '.');
     };
     reader.readAsText(file);
   };
@@ -817,7 +833,7 @@ const Livestock = (() => {
         animalsPage = 1;
         renderAnimals();
       });
-    });;
+    });
 
     // Movement modal open/close
     document.getElementById('btn-new-movement').addEventListener('click', openMovementModal);

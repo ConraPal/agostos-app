@@ -282,6 +282,32 @@ const Reports = (() => {
     );
   }
 
+  function exportSanidad() {
+    downloadCSV('sanidad.csv',
+      ['ID', 'Fecha', 'Caravana', 'Animal', 'Tipo', 'Descripción', 'Producto', 'Dosis', 'Observaciones'],
+      (Storage.get('ag_sanidad') || []).map(s => [
+        s.id, s.fecha, s.caravana || 'Rodeo completo', s.animalNombre,
+        s.tipo, s.descripcion, s.producto, s.dosis, s.observaciones
+      ])
+    );
+  }
+
+  function exportReproduccion() {
+    downloadCSV('reproduccion.csv',
+      ['ID', 'Año', 'Vacas servidas', '% Preñez', 'Partos', '% Destete', 'Mortalidad total', 'IA', '% Preñez IA', 'Observaciones'],
+      getReproduction().map(r => [
+        r.id, r.año, r.vacas_total,
+        r.prenez_pct != null ? r.prenez_pct.toFixed(1) : '',
+        r.partos,
+        r.indice_destete != null ? r.indice_destete.toFixed(1) : '',
+        r.mortalidad_total ?? '',
+        r.ia_realizada ? 'Sí' : 'No',
+        r.ia_prenez_pct != null ? r.ia_prenez_pct : '',
+        r.observaciones
+      ])
+    );
+  }
+
   // --- Backup / Restore ---
   const ALL_KEYS = ['ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction', 'ag_sanidad',
                     'ag_transactions', 'ag_amortizations', 'ag_presupuesto',
@@ -330,6 +356,8 @@ const Reports = (() => {
     document.getElementById('btn-export-movements').addEventListener('click', exportMovements);
     document.getElementById('btn-export-transactions').addEventListener('click', exportTransactions);
     document.getElementById('btn-export-fields').addEventListener('click', exportFields);
+    document.getElementById('btn-export-sanidad')?.addEventListener('click', exportSanidad);
+    document.getElementById('btn-export-reproduccion')?.addEventListener('click', exportReproduccion);
 
     document.getElementById('btn-export-backup')?.addEventListener('click', exportBackup);
     document.getElementById('import-backup-input')?.addEventListener('change', e => {

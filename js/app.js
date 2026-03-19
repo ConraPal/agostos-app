@@ -66,10 +66,43 @@ const ui = (() => {
 // ===== App Bootstrap =====
 document.addEventListener('DOMContentLoaded', async () => {
 
+  const loadingEl    = document.getElementById('app-loading');
+  const loginScreen  = document.getElementById('login-screen');
+
   // --- Init storage (Supabase o fallback localStorage) ---
-  const loadingEl = document.getElementById('app-loading');
-  await Storage.init();
+  const { needsAuth } = await Storage.init();
+
+  if (needsAuth) {
+    if (loadingEl) loadingEl.classList.add('hidden');
+    loginScreen?.classList.remove('hidden');
+
+    document.getElementById('login-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('login-submit');
+      const errorEl   = document.getElementById('login-error');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Ingresando…';
+      errorEl.classList.add('hidden');
+      try {
+        await Storage.login(
+          document.getElementById('login-email').value.trim(),
+          document.getElementById('login-password').value
+        );
+        loginScreen.classList.add('hidden');
+        _initApp();
+      } catch (_) {
+        errorEl.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Ingresar';
+      }
+    });
+    return; // esperar login
+  }
+
   if (loadingEl) loadingEl.classList.add('hidden');
+  _initApp();
+
+  function _initApp() {
 
   // --- Tabs (scoped to parent module) ---
   document.querySelectorAll('.tab').forEach(tab => {
@@ -134,6 +167,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const next = !document.body.classList.contains('dark');
     Storage.set('ag_dark_mode', next);
     applyDark(next);
+  });
+
+  // --- Usuario en topbar ---
+  const user = Storage.getUser();
+  if (user) {
+    const userEl = document.getElementById('topbar-user');
+    if (userEl) userEl.textContent = user.email;
+  }
+
+  // --- Logout ---
+  document.getElementById('btn-logout')?.addEventListener('click', async () => {
+    await Storage.logout();
+    location.reload();
   });
 
   // --- Init modules ---
@@ -259,4 +305,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   refreshAlertBadge();
+  } // fin _initApp
 });
