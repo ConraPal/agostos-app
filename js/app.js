@@ -118,11 +118,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Module routing (sidebar) ---
   const pageTitle = document.getElementById('page-title');
-  const moduleTitles = { livestock: 'Hacienda', fields: 'Potreros', finance: 'Finanzas', reports: 'Reportes' };
+  const moduleTitles = { livestock: 'Ganadería', agricultura: 'Agricultura', fields: 'Potreros', finance: 'Finanzas', reports: 'Reportes' };
   const moduleButtons = {
-    livestock: document.getElementById('btn-new-animal'),
-    fields:    document.getElementById('btn-new-field'),
-    finance:   document.getElementById('btn-new-transaction'),
+    livestock:   document.getElementById('btn-new-animal'),
+    agricultura: [document.getElementById('btn-new-cultivo'), document.getElementById('btn-new-forraje')],
+    fields:      document.getElementById('btn-new-field'),
+    finance:     document.getElementById('btn-new-transaction'),
   };
 
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(item => {
@@ -136,12 +137,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (pageTitle && moduleTitles[mod]) pageTitle.textContent = moduleTitles[mod];
 
-      if (mod === 'fields')   Fields.refresh();
-      if (mod === 'reports')  Reports.refresh();
+      if (mod === 'agricultura') Agricultura.refresh();
+      if (mod === 'fields')      Fields.refresh();
+      if (mod === 'reports')     Reports.refresh();
 
-      Object.entries(moduleButtons).forEach(([key, btn]) => {
-        if (!btn) return;
-        btn.classList.toggle('hidden', key !== mod);
+      Object.entries(moduleButtons).forEach(([key, val]) => {
+        const btns = Array.isArray(val) ? val : [val];
+        btns.forEach(btn => { if (btn) btn.classList.toggle('hidden', key !== mod); });
       });
     });
   });
@@ -186,6 +188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   Livestock.init();
   Finance.init();
   Fields.init();
+  Agricultura.init();
   Reports.init();
 
   // --- Alertas / Recordatorios ---

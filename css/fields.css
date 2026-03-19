@@ -23,10 +23,3 @@
 
 .text-muted { color: var(--color-muted); }
 
-/* Cultivos */
-.badge-cultivo-cultivo { background: var(--c-ok-bg);     color: var(--c-ok-fg); }
-.badge-cultivo-pastura { background: var(--c-info-bg);   color: var(--c-info-fg); }
-
-/* Forraje */
-.badge-forraje-rollo { background: var(--c-orange-bg); color: var(--c-orange-fg); }
-.badge-forraje-fardo { background: var(--c-pink-bg);   color: var(--c-pink-fg); }

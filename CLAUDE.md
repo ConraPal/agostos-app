@@ -22,16 +22,18 @@ agostos-app/
 ├── index.html          # Entry point único — contiene sidebar, topbar y todos los módulos
 ├── css/
 │   ├── main.css        # Estilos globales: layout, sidebar, tablas, modales, formularios, toast, confirm
-│   ├── livestock.css   # Estilos específicos del módulo hacienda
+│   ├── livestock.css   # Estilos específicos del módulo ganadería
 │   ├── finance.css     # Estilos específicos del módulo finanzas
 │   ├── fields.css      # Estilos específicos del módulo potreros
+│   ├── agricultura.css # Estilos específicos del módulo agricultura (badges cultivos/forraje)
 │   └── reports.css     # Estilos específicos del módulo reportes
 ├── js/
 │   ├── storage.js      # Supabase + localStorage fallback — se carga primero
-│   ├── livestock.js    # Módulo hacienda — se carga segundo
+│   ├── livestock.js    # Módulo ganadería — se carga segundo
 │   ├── finance.js      # Módulo finanzas — se carga tercero
 │   ├── fields.js       # Módulo potreros — se carga cuarto
-│   ├── reports.js      # Módulo reportes — se carga quinto
+│   ├── agricultura.js  # Módulo agricultura (cultivos + forraje) — se carga quinto
+│   ├── reports.js      # Módulo reportes — se carga sexto
 │   └── app.js          # Bootstrap + ui.toast() + ui.confirm() + ui.pagination() — se carga último
 └── assets/
     └── icons/
@@ -73,19 +75,20 @@ Breakpoints implementados en `main.css` y `livestock.css`:
 ### Orden de carga de scripts
 
 ```html
-<script src="js/storage.js"></script>   <!-- 1. utilidades base -->
-<script src="js/livestock.js"></script> <!-- 2. módulos -->
-<script src="js/finance.js"></script>   <!-- 3. módulos -->
-<script src="js/fields.js"></script>    <!-- 4. módulos -->
-<script src="js/reports.js"></script>   <!-- 5. módulos -->
-<script src="js/app.js"></script>       <!-- 6. bootstrap (inicia módulos) -->
+<script src="js/storage.js"></script>     <!-- 1. utilidades base -->
+<script src="js/livestock.js"></script>   <!-- 2. módulos -->
+<script src="js/finance.js"></script>     <!-- 3. módulos -->
+<script src="js/fields.js"></script>      <!-- 4. módulos -->
+<script src="js/agricultura.js"></script> <!-- 5. módulos -->
+<script src="js/reports.js"></script>     <!-- 6. módulos -->
+<script src="js/app.js"></script>         <!-- 7. bootstrap (inicia módulos) -->
 ```
 
 ### Tabs
 
 Los tabs están scoped al módulo padre: el handler de click en `app.js` usa `.closest('.module')` para activar/desactivar solo los tabs y tab-contents del módulo actualmente visible. Esto evita conflictos entre módulos.
 
-## Módulo: Livestock Tracking (Hacienda)
+## Módulo: Ganadería (Livestock)
 
 ### Propósito
 
@@ -435,17 +438,57 @@ Gestión de campos y pasturas del establecimiento, con visibilidad de stock, his
 
 - **Potreros** — CRUD con búsqueda por nombre/pastura, badges de estado ✓
 - **Stock** — tabla que cruza `ag_animals` activos con potreros; muestra cantidad y caravanas; potreros con animales pero sin registrar aparecen marcados como "sin registrar" ✓
-- **Cultivos** — historial de cultivos/pasturas por potrero con filtro por potrero ✓
-  - Badges CSS: `.badge-cultivo-cultivo` (verde), `.badge-cultivo-pastura` (azul)
-  - Funciones: `renderCultivos()`, `openModalCultivo(id?)`, `saveCultivo(e)`, `removeCultivo(id)`
-- **Forraje** — registro de rollos y fardos por potrero ✓
-  - Badges CSS: `.badge-forraje-rollo` (naranja), `.badge-forraje-fardo` (rosa)
-  - Funciones: `renderForraje()`, `openModalForraje(id?)`, `saveForraje(e)`, `removeForraje(id)`
 
 ### Notas de integración
 
-- `Fields.refresh()` está expuesto y es llamado desde `app.js` cada vez que el usuario navega al módulo, para mantener el tab Stock actualizado con cambios hechos en Hacienda.
+- `Fields.refresh()` está expuesto y es llamado desde `app.js` cada vez que el usuario navega al módulo, para mantener el tab Stock actualizado con cambios hechos en Ganadería.
 - El campo `potrero` de los animales es texto libre; el cruce con `ag_fields` se hace por coincidencia exacta de nombre.
+
+## Módulo: Agricultura
+
+### Propósito
+
+Historial de cultivos y registro de forraje (rollos y fardos) por potrero.
+
+### Datos persistidos
+
+| Key               | Contenido                       |
+|-------------------|---------------------------------|
+| `ag_crop_history` | Array de registros de cultivos  |
+| `ag_forraje`      | Array de registros de forraje   |
+
+> Las estructuras de `ag_crop_history` y `ag_forraje` son idénticas a las documentadas en el módulo Potreros (se mantienen las mismas keys para no romper datos existentes).
+
+### Stats
+
+| Stat ID                | Label                  | Cálculo                                    |
+|------------------------|------------------------|--------------------------------------------|
+| `stat-agro-cultivos`   | Cultivos registrados   | `ag_crop_history.length`                   |
+| `stat-agro-rollos`     | Total rollos           | Σ `ag_forraje` tipo `rollo` de `cantidad`  |
+| `stat-agro-fardos`     | Total fardos           | Σ `ag_forraje` tipo `fardo` de `cantidad`  |
+| `stat-agro-potreros`   | Potreros con cultivo   | potreros únicos en `ag_crop_history`       |
+
+### Tabs del módulo
+
+- **Cultivos** — historial de cultivos/pasturas por potrero con filtro por potrero y año ✓
+  - Badges CSS: `.badge-cultivo-cultivo` (verde), `.badge-cultivo-pastura` (azul) — en `agricultura.css`
+  - Funciones: `renderCultivos()`, `openModalCultivo(id?)`, `saveCultivo(e)`, `removeCultivo(id)`
+- **Forraje** — registro de rollos y fardos por potrero ✓
+  - Badges CSS: `.badge-forraje-rollo` (naranja), `.badge-forraje-fardo` (rosa) — en `agricultura.css`
+  - Funciones: `renderForraje()`, `openModalForraje(id?)`, `saveForraje(e)`, `removeForraje(id)`
+
+### Botones de acción en topbar
+
+- `btn-new-cultivo` — primario, visible solo cuando el módulo Agricultura está activo
+- `btn-new-forraje` — secundario, visible solo cuando el módulo Agricultura está activo
+
+### Notas
+
+- `Agricultura.refresh()` es llamado desde `app.js` al navegar al módulo.
+- `populatePotreroSelect()` lee directamente desde `Storage.get('ag_fields')` (independiente del módulo Fields).
+- Los modales `modal-cultivo` y `modal-forraje` están en `index.html` al final del body.
+
+---
 
 ## Módulo: Reportes
 
@@ -455,7 +498,7 @@ Resúmenes cruzados entre módulos y exportación de datos a CSV.
 
 ### Tabs del módulo
 
-- **Hacienda** — stock activo por tipo (con %) y por potrero (con %), total al pie ✓
+- **Ganadería** — stock activo por tipo (con %) y por potrero (con %), total al pie ✓
 - **Finanzas** — balance mensual del año en curso: ingresos, gastos, balance por mes con fila de totales ✓
 - **Reproducción** — tabla de ciclos reproductivos por año: preñez, partos, destete, mortalidad ✓
 - **Forraje** — totales de rollos y fardos + desglose por potrero ✓
@@ -713,3 +756,16 @@ Implementados con `<span class="tooltip-trigger" tabindex="0" data-tip="...">?</
 - Rechaza filas con `estado` no válido (acepta: activo, vendido, muerto)
 - Rechaza filas con fecha de nacimiento que no sea formato ISO `YYYY-MM-DD`
 - Toast muestra tres contadores separados: importados · duplicados omitidos · filas inválidas
+
+---
+
+## Actualizaciones 19/03/2026 (cont. 2)
+
+### Reestructuración: Ganadería + Agricultura
+
+- **"Hacienda" renombrado a "Ganadería"** — texto visible en sidebar, topbar y tab de Reportes. IDs internos JS/HTML (`livestock`, `module-livestock`) sin cambios.
+- **Nuevo módulo "Agricultura"** (`module-agricultura`, `js/agricultura.js`, `css/agricultura.css`) con los tabs Cultivos y Forraje, extraídos del módulo Potreros.
+- **Módulo Potreros** queda con solo dos tabs: Potreros y Stock.
+- **Botones de acción de Agricultura** (`btn-new-cultivo`, `btn-new-forraje`) movidos al topbar global (antes estaban dentro del toolbar de cada tab).
+- **`moduleButtons` en `app.js`** acepta ahora arrays de botones para manejar los dos botones de Agricultura simultáneamente.
+- **`css/agricultura.css`** contiene los badges de cultivos/forraje (antes en `fields.css`).
