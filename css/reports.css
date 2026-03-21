@@ -89,3 +89,9 @@
   margin-top: 28px;
   margin-bottom: 12px;
 }
+
+.export-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

@@ -10,6 +10,14 @@
   <link rel="stylesheet" href="css/fields.css" />
   <link rel="stylesheet" href="css/agricultura.css" />
   <link rel="stylesheet" href="css/reports.css" />
+  <link rel="stylesheet" href="css/print.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2d6a4f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Agostos" />
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.svg" />
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg" />
 </head>
 <body>
 
@@ -294,6 +302,8 @@
             <option value="vacunación">Vacunación</option>
             <option value="desparasitación">Desparasitación</option>
             <option value="veterinario">Veterinario</option>
+            <option value="raspaje">Raspaje</option>
+            <option value="accidente">Accidente</option>
             <option value="otro">Otro</option>
           </select>
           <button class="btn btn-secondary" id="btn-new-sanidad">+ Registrar evento</button>
@@ -306,7 +316,7 @@
                 <th>Caravana</th>
                 <th>Tipo</th>
                 <th>Descripción</th>
-                <th>Producto / Dosis</th>
+                <th>Producto</th>
                 <th>Observaciones</th>
                 <th>Acciones</th>
               </tr>
@@ -367,16 +377,17 @@
             <thead>
               <tr>
                 <th>Potrero</th>
-                <th>Año</th>
+                <th>Siembra</th>
                 <th>Tipo</th>
                 <th>Detalle</th>
+                <th>Rendimiento</th>
                 <th>Notas</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="cultivos-tbody">
               <tr class="empty-row">
-                <td colspan="6">No hay cultivos registrados.</td>
+                <td colspan="7">No hay cultivos registrados.</td>
               </tr>
             </tbody>
           </table>
@@ -460,13 +471,15 @@
                 <th>Nombre</th>
                 <th>Hectáreas</th>
                 <th>Pastura</th>
+                <th>Implantación</th>
+                <th>Carga</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="fields-tbody">
               <tr class="empty-row">
-                <td colspan="5">No hay potreros registrados.</td>
+                <td colspan="7">No hay potreros registrados.</td>
               </tr>
             </tbody>
           </table>
@@ -482,12 +495,13 @@
                 <th>Potrero</th>
                 <th>Hectáreas</th>
                 <th>Animales</th>
+                <th>Carga</th>
                 <th>Caravanas</th>
               </tr>
             </thead>
             <tbody id="stock-tbody">
               <tr class="empty-row">
-                <td colspan="4">Sin datos de stock.</td>
+                <td colspan="5">Sin datos de stock.</td>
               </tr>
             </tbody>
           </table>
@@ -530,6 +544,12 @@
 
       <!-- Tab: Transacciones -->
       <div id="tab-transactions" class="tab-content active">
+        <div class="cotizacion-bar" id="cotizacion-bar">
+          <span class="cotizacion-label">Cotización USD:</span>
+          <input type="number" id="cotizacion-usd" class="cotizacion-input" min="0" step="1" placeholder="Ej: 1200" />
+          <span class="cotizacion-hint" id="cotizacion-hint"></span>
+          <button class="btn btn-secondary btn-sm" id="btn-save-cotizacion">Guardar</button>
+        </div>
         <div class="table-toolbar">
           <input type="search" class="search-input" id="search-transactions" placeholder="Buscar por descripción o categoría..." />
           <select class="filter-select" id="filter-tipo-fin">
@@ -790,6 +810,33 @@
             <button class="btn btn-secondary" id="btn-export-reproduccion">Descargar CSV</button>
           </div>
         </div>
+        <h3 class="export-section-title">Imprimir / PDF</h3>
+        <div class="export-grid">
+          <div class="export-card">
+            <span class="export-card-title">Rodeo actual</span>
+            <span class="export-card-desc">Animales activos por tipo y por potrero con totales.</span>
+            <div class="export-card-actions">
+              <button class="btn btn-secondary" id="btn-print-rodeo">🖨️ Imprimir</button>
+              <button class="btn btn-secondary" id="btn-share-rodeo">🔗 Compartir</button>
+            </div>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Movimientos del mes</span>
+            <span class="export-card-desc">Traslados, entradas y salidas del mes actual.</span>
+            <div class="export-card-actions">
+              <button class="btn btn-secondary" id="btn-print-movimientos">🖨️ Imprimir</button>
+              <button class="btn btn-secondary" id="btn-share-movimientos">🔗 Compartir</button>
+            </div>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Transacciones</span>
+            <span class="export-card-desc">Ingresos y gastos del año en curso.</span>
+            <div class="export-card-actions">
+              <button class="btn btn-secondary" id="btn-print-transacciones">🖨️ Imprimir</button>
+              <button class="btn btn-secondary" id="btn-share-transacciones">🔗 Compartir</button>
+            </div>
+          </div>
+        </div>
         <h3 class="export-section-title">Importar animales</h3>
         <div class="export-grid">
           <div class="export-card">
@@ -864,6 +911,7 @@
               <option value="">Seleccionar...</option>
               <option value="Natural">Natural</option>
               <option value="Mejorada">Mejorada</option>
+              <option value="Pastura">Pastura</option>
               <option value="Verdeo">Verdeo</option>
               <option value="Otro">Otro</option>
             </select>
@@ -876,6 +924,13 @@
               <option value="clausurado">Clausurado</option>
             </select>
           </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ff-implantacion">Fecha de implantación</label>
+            <input type="date" id="ff-implantacion" name="fecha_implantacion" />
+          </div>
+          <div class="form-group"><!-- spacer --></div>
         </div>
         <div class="form-group">
           <label for="ff-obs">Observaciones</label>
@@ -1059,6 +1114,13 @@
             <label for="ft-monto">Monto *</label>
             <input type="number" id="ft-monto" name="monto" required min="0" step="0.01" placeholder="Ej: 15000" />
           </div>
+          <div class="form-group" style="flex: 0 0 auto; min-width: 90px">
+            <label for="ft-moneda">Moneda</label>
+            <select id="ft-moneda" name="moneda">
+              <option value="ARS">ARS $</option>
+              <option value="USD">USD u$s</option>
+            </select>
+          </div>
         </div>
         <!-- Campos opcionales: peso + precio/kg (Terneros, Novillos, Vaquillonas) -->
         <div class="form-row hidden" id="row-peso-precio">
@@ -1135,13 +1197,20 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="fr-vacas-total">Total vacas</label>
+            <label for="fr-vacas-total">Total vacas entoradas</label>
             <input type="number" id="fr-vacas-total" name="vacas_total" min="0" placeholder="Ej: 80" />
           </div>
           <div class="form-group">
-            <label for="fr-vacas-positivas">Vacas positivas</label>
+            <label for="fr-vacas-positivas">Vacas positivas (tacto)</label>
             <input type="number" id="fr-vacas-positivas" name="vacas_positivas" min="0" placeholder="Ej: 65" />
           </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fr-muertes-gestacion">Muertes en gestación</label>
+            <input type="number" id="fr-muertes-gestacion" name="muertes_gestacion" min="0" placeholder="Abortos / pérdidas fetales" />
+          </div>
+          <div class="form-group"><!-- spacer --></div>
         </div>
         <div class="form-group">
           <label class="checkbox-label">
@@ -1188,6 +1257,26 @@
           <div class="form-group">
             <label for="fr-muertes-paricion">Muertes en parición</label>
             <input type="number" id="fr-muertes-paricion" name="muertes_paricion" min="0" placeholder="Ej: 3" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fr-nacidos-machos">Nacidos machos</label>
+            <input type="number" id="fr-nacidos-machos" name="nacidos_machos" min="0" placeholder="Ej: 38" />
+          </div>
+          <div class="form-group">
+            <label for="fr-nacidos-hembras">Nacidas hembras</label>
+            <input type="number" id="fr-nacidos-hembras" name="nacidos_hembras" min="0" placeholder="Ej: 37" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Total aparición</label>
+            <input type="number" id="fr-total-aparicion" name="total_aparicion" readonly tabindex="-1" placeholder="0" style="background:var(--color-surface-alt,#f0f2f5);cursor:default" />
+          </div>
+          <div class="form-group">
+            <label for="fr-muertes-terneros">Muertes de terneros (post-nacimiento)</label>
+            <input type="number" id="fr-muertes-terneros" name="muertes_terneros" min="0" placeholder="Ej: 2" />
           </div>
         </div>
         <!-- Sección Destete -->
@@ -1248,6 +1337,7 @@
               <option value="vacunación">Vacunación</option>
               <option value="desparasitación">Desparasitación</option>
               <option value="veterinario">Veterinario</option>
+              <option value="accidente">Accidente</option>
               <option value="otro">Otro</option>
             </select>
           </div>
@@ -1272,10 +1362,7 @@
             <label for="fs-producto">Producto</label>
             <input type="text" id="fs-producto" name="producto" placeholder="Ej: Ivermec" />
           </div>
-          <div class="form-group">
-            <label for="fs-dosis">Dosis</label>
-            <input type="text" id="fs-dosis" name="dosis" placeholder="Ej: 10 ml" />
-          </div>
+          <div class="form-group"><!-- spacer --></div>
         </div>
         <div class="form-group">
           <label for="fs-obs">Observaciones</label>
@@ -1303,8 +1390,8 @@
             <select id="fc-potrero" name="potrero_id" required></select>
           </div>
           <div class="form-group">
-            <label for="fc-año">Año *</label>
-            <input type="number" id="fc-año" name="año" required min="1990" max="2100" placeholder="Ej: 2024" />
+            <label for="fc-fecha-siembra">Fecha de siembra *</label>
+            <input type="date" id="fc-fecha-siembra" name="fecha_siembra" required />
           </div>
         </div>
         <div class="form-row">
@@ -1320,6 +1407,26 @@
             <label for="fc-detalle">Detalle *</label>
             <input type="text" id="fc-detalle" name="detalle" required placeholder="Ej: Soja, Alfalfa 80% / Festuca 20%" />
           </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fc-kg-cosechados">Kg cosechados</label>
+            <input type="number" id="fc-kg-cosechados" name="kg_cosechados" min="0" step="1" placeholder="Ej: 250000" />
+          </div>
+          <div class="form-group">
+            <label for="fc-ha-cosechadas">Ha cosechadas</label>
+            <input type="number" id="fc-ha-cosechadas" name="ha_cosechadas" min="0" step="0.1" placeholder="Ej: 50" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rendimiento</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="fc-rendimiento" name="rendimiento" readonly tabindex="-1" placeholder="—" style="background:var(--color-surface-alt,#f0f2f5);cursor:default;flex:1" />
+              <span style="white-space:nowrap;color:var(--color-text-muted,#888);font-size:.85rem">kg/ha</span>
+            </div>
+          </div>
+          <div class="form-group"><!-- spacer --></div>
         </div>
         <div class="form-group">
           <label for="fc-notas">Notas</label>
@@ -1489,6 +1596,9 @@
 
   <!-- Toast -->
   <div id="toast" class="toast hidden"></div>
+
+  <!-- Print view (hidden normally, visible when printing) -->
+  <div id="print-view"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>

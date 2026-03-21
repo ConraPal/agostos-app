@@ -100,3 +100,39 @@
 @media (max-width: 480px) {
   .margen-cards { grid-template-columns: 1fr; }
 }
+
+/* Cotización USD bar */
+.cotizacion-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.cotizacion-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.cotizacion-input {
+  width: 110px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.cotizacion-hint {
+  font-size: 11px;
+  color: var(--color-muted);
+  flex: 1;
+}

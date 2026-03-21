@@ -284,10 +284,10 @@ const Reports = (() => {
 
   function exportSanidad() {
     downloadCSV('sanidad.csv',
-      ['ID', 'Fecha', 'Caravana', 'Animal', 'Tipo', 'Descripción', 'Producto', 'Dosis', 'Observaciones'],
+      ['ID', 'Fecha', 'Caravana', 'Animal', 'Tipo', 'Descripción', 'Producto', 'Observaciones'],
       (Storage.get('ag_sanidad') || []).map(s => [
         s.id, s.fecha, s.caravana || 'Rodeo completo', s.animalNombre,
-        s.tipo, s.descripcion, s.producto, s.dosis, s.observaciones
+        s.tipo, s.descripcion, s.producto, s.observaciones
       ])
     );
   }
@@ -308,9 +308,178 @@ const Reports = (() => {
     );
   }
 
+  // --- Print / PDF ---
+  const TIPO_LABELS_PRINT = { vaca: 'Vaca', toro: 'Toro', ternero: 'Ternero', vaquillona: 'Vaquillona', novillo: 'Novillo' };
+  const MONTH_NAMES_PRINT = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+  function printView(titulo, html) {
+    const view = document.getElementById('print-view');
+    if (!view) return;
+    view.innerHTML = `
+      <div class="print-header">
+        <h1>🌾 Agostos — Gestión de Campo</h1>
+        <h2>${titulo}</h2>
+        <p>Generado: ${new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+      </div>
+      ${html}
+    `;
+    window.print();
+  }
+
+  function printRodeo() {
+    const active = getAnimals().filter(a => a.estado === 'activo');
+    const total  = active.length;
+
+    const byTipo = {};
+    active.forEach(a => { byTipo[a.tipo] = (byTipo[a.tipo] || 0) + 1; });
+
+    const byPotrero = {};
+    active.forEach(a => {
+      const p = a.potrero || '(sin potrero)';
+      byPotrero[p] = (byPotrero[p] || 0) + 1;
+    });
+
+    const tipoRows = TIPO_ORDER.filter(t => byTipo[t])
+      .concat(Object.keys(byTipo).filter(t => !TIPO_ORDER.includes(t)))
+      .map(t => `<tr><td>${TIPO_LABELS_PRINT[t] || t}</td><td>${byTipo[t]}</td><td>${total > 0 ? Math.round(byTipo[t] / total * 100) + '%' : '—'}</td></tr>`)
+      .join('');
+
+    const potreroRows = Object.entries(byPotrero).sort((a, b) => b[1] - a[1])
+      .map(([p, c]) => `<tr><td>${p}</td><td>${c}</td><td>${total > 0 ? Math.round(c / total * 100) + '%' : '—'}</td></tr>`)
+      .join('');
+
+    const html = `
+      <div class="print-section">
+        <h3>Stock por tipo — Total: ${total} cabezas</h3>
+        <table class="data-table">
+          <thead><tr><th>Tipo</th><th>Cantidad</th><th>%</th></tr></thead>
+          <tbody>${tipoRows || '<tr><td colspan="3">Sin animales activos.</td></tr>'}</tbody>
+        </table>
+      </div>
+      <div class="print-section">
+        <h3>Stock por potrero</h3>
+        <table class="data-table">
+          <thead><tr><th>Potrero</th><th>Cantidad</th><th>%</th></tr></thead>
+          <tbody>${potreroRows || '<tr><td colspan="3">Sin animales activos.</td></tr>'}</tbody>
+        </table>
+      </div>
+    `;
+    printView('Rodeo actual', html);
+  }
+
+  function printMovimientos() {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthLabel = `${MONTH_NAMES_PRINT[now.getMonth()]} ${now.getFullYear()}`;
+    const fmtD = iso => { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+
+    const data = getMovements()
+      .filter(m => m.fecha && m.fecha.startsWith(thisMonth))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+    const rows = data.map(m => `
+      <tr>
+        <td>${fmtD(m.fecha)}</td>
+        <td>${m.caravana || '—'}</td>
+        <td>${m.animalNombre || '—'}</td>
+        <td>${m.tipo}</td>
+        <td>${m.origen || '—'}</td>
+        <td>${m.destino || '—'}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <div class="print-section">
+        <h3>Movimientos — ${monthLabel} (${data.length} registros)</h3>
+        <table class="data-table">
+          <thead><tr><th>Fecha</th><th>Caravana</th><th>Animal</th><th>Tipo</th><th>Origen</th><th>Destino</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="6">Sin movimientos este mes.</td></tr>'}</tbody>
+        </table>
+      </div>
+    `;
+    printView(`Movimientos — ${monthLabel}`, html);
+  }
+
+  function printTransacciones() {
+    const year = new Date().getFullYear();
+    const fmtD = iso => { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+    const fmtN = n => '$\u00a0' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const data = getTransactions()
+      .filter(t => t.fecha && t.fecha.startsWith(String(year)))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+    const TIPO_LABEL = { ingreso: 'Ingreso', gasto: 'Gasto', impuesto: 'Impuesto' };
+    const rows = data.map(t => `
+      <tr>
+        <td>${fmtD(t.fecha)}</td>
+        <td>${TIPO_LABEL[t.tipo] || t.tipo}</td>
+        <td>${t.categoria}</td>
+        <td>${t.descripcion || '—'}</td>
+        <td style="text-align:right">${t.moneda === 'USD' ? 'USD\u00a0' : '$\u00a0'}${Number(t.monto).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <div class="print-section">
+        <h3>Transacciones ${year} (${data.length} registros)</h3>
+        <table class="data-table">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th style="text-align:right">Monto</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="5">Sin transacciones este año.</td></tr>'}</tbody>
+        </table>
+      </div>
+    `;
+    printView(`Transacciones ${year}`, html);
+  }
+
+  // --- WhatsApp Share ---
+  function shareReport(titulo, texto) {
+    if (navigator.share) {
+      navigator.share({ title: titulo, text: texto }).catch(() => {});
+    } else {
+      const encoded = encodeURIComponent(`*${titulo}*\n\n${texto}`);
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }
+  }
+
+  function shareRodeo() {
+    const active = getAnimals().filter(a => a.estado === 'activo');
+    const total  = active.length;
+    const byTipo = {};
+    active.forEach(a => { byTipo[a.tipo] = (byTipo[a.tipo] || 0) + 1; });
+    const lines = TIPO_ORDER.filter(t => byTipo[t]).map(t => `• ${TIPO_LABELS_PRINT[t] || t}: ${byTipo[t]}`);
+    const titulo = `Resumen de Rodeo — ${new Date().toLocaleDateString('es-AR')}`;
+    const texto = `Total: ${total} cabezas\n${lines.join('\n')}`;
+    shareReport(titulo, texto);
+  }
+
+  function shareMovimientos() {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthLabel = `${MONTH_NAMES_PRINT[now.getMonth()]} ${now.getFullYear()}`;
+    const data = getMovements().filter(m => m.fecha && m.fecha.startsWith(thisMonth));
+    const byTipo = {};
+    data.forEach(m => { byTipo[m.tipo] = (byTipo[m.tipo] || 0) + 1; });
+    const lines = Object.entries(byTipo).map(([t, c]) => `• ${t.charAt(0).toUpperCase() + t.slice(1)}s: ${c}`);
+    const titulo = `Movimientos — ${monthLabel}`;
+    const texto = `${data.length} movimientos registrados\n${lines.join('\n')}`;
+    shareReport(titulo, texto);
+  }
+
+  function shareTransacciones() {
+    const year = new Date().getFullYear();
+    const data = getTransactions().filter(t => t.fecha && t.fecha.startsWith(String(year)));
+    const ingresos = data.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + Number(t.monto), 0);
+    const gastos   = data.filter(t => t.tipo === 'gasto').reduce((s, t) => s + Number(t.monto), 0);
+    const fmtN = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const titulo = `Finanzas ${year}`;
+    const texto = `Ingresos: ${fmtN(ingresos)}\nGastos: ${fmtN(gastos)}\nBalance: ${fmtN(ingresos - gastos)}`;
+    shareReport(titulo, texto);
+  }
+
   // --- Backup / Restore ---
   const ALL_KEYS = ['ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction', 'ag_sanidad',
-                    'ag_transactions', 'ag_amortizations', 'ag_presupuesto',
+                    'ag_transactions', 'ag_amortizations', 'ag_presupuesto', 'ag_cotizacion',
                     'ag_fields', 'ag_crop_history', 'ag_forraje',
                     'ag_alertas'];
 
@@ -358,6 +527,13 @@ const Reports = (() => {
     document.getElementById('btn-export-fields').addEventListener('click', exportFields);
     document.getElementById('btn-export-sanidad')?.addEventListener('click', exportSanidad);
     document.getElementById('btn-export-reproduccion')?.addEventListener('click', exportReproduccion);
+
+    document.getElementById('btn-print-rodeo')?.addEventListener('click', printRodeo);
+    document.getElementById('btn-print-movimientos')?.addEventListener('click', printMovimientos);
+    document.getElementById('btn-print-transacciones')?.addEventListener('click', printTransacciones);
+    document.getElementById('btn-share-rodeo')?.addEventListener('click', shareRodeo);
+    document.getElementById('btn-share-movimientos')?.addEventListener('click', shareMovimientos);
+    document.getElementById('btn-share-transacciones')?.addEventListener('click', shareTransacciones);
 
     document.getElementById('btn-export-backup')?.addEventListener('click', exportBackup);
     document.getElementById('import-backup-input')?.addEventListener('change', e => {

@@ -1,0 +1,61 @@
+/* ===== Print styles ===== */
+
+#print-view { display: none; }
+
+@media print {
+  /* Hide everything except print-view */
+  .sidebar,
+  header,
+  .modal-overlay,
+  .btn,
+  .table-toolbar,
+  #sidebar-overlay,
+  #app-loading,
+  #alerts-panel,
+  #toast,
+  .tabs,
+  .stats-grid,
+  .pagination,
+  [id$="-pagination"] { display: none !important; }
+
+  .module { display: none !important; }
+  #print-view { display: block !important; }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-family: sans-serif;
+  }
+
+  .main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .data-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .data-table th,
+  .data-table td {
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    font-size: 11px;
+    text-align: left;
+  }
+
+  .data-table th {
+    background: #f0f0f0;
+    font-weight: 600;
+  }
+
+  .print-header { margin-bottom: 20px; }
+  .print-header h1 { font-size: 18px; margin: 0 0 4px; }
+  .print-header h2 { font-size: 14px; margin: 0 0 4px; color: #444; }
+  .print-header p  { font-size: 11px; color: #888; margin: 0; }
+
+  .print-section { margin-top: 20px; }
+  .print-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #666; margin-bottom: 6px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+}

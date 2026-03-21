@@ -310,3 +310,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   refreshAlertBadge();
   } // fin _initApp
 });
+
+// ===== Service Worker (PWA) =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}

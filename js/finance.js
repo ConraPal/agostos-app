@@ -2,6 +2,7 @@ const Finance = (() => {
   const KEY = 'ag_transactions';
   const AMORT_KEY = 'ag_amortizations';
   const PRESUPUESTO_KEY = 'ag_presupuesto';
+  const COTIZACION_KEY = 'ag_cotizacion';
 
   const CATEGORIES = {
     ingreso:  ['Toros', 'Vacas vacías', 'Terneros machos', 'Terneras hembras', 'Novillos', 'Vaquillonas', 'Cereales', 'Arrendamiento', 'Subsidios', 'Otro ingreso'],
@@ -35,6 +36,21 @@ const Finance = (() => {
     return '$\u00a0' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function toARS(monto, moneda) {
+    if (moneda === 'USD') {
+      const cot = Storage.get(COTIZACION_KEY);
+      return Number(monto) * (cot?.usd_ars || 1);
+    }
+    return Number(monto);
+  }
+
+  function fmtMoneda(monto, moneda) {
+    if (moneda === 'USD') {
+      return 'USD\u00a0' + Number(monto).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return fmtMoney(monto);
+  }
+
   // --- Potrero datalist for transactions ---
   function populateTxPotreroOptions() {
     const fields = Storage.get('ag_fields') || [];
@@ -55,8 +71,8 @@ const Finance = (() => {
 
     let totalIngresos = 0, totalGastos = 0, txMes = 0;
     all.forEach(t => {
-      if (t.tipo === 'ingreso') totalIngresos += Number(t.monto);
-      else totalGastos += Number(t.monto);
+      if (t.tipo === 'ingreso') totalIngresos += toARS(t.monto, t.moneda);
+      else totalGastos += toARS(t.monto, t.moneda);
       if (t.fecha && t.fecha.startsWith(thisMonth)) txMes++;
     });
 
@@ -103,7 +119,7 @@ const Finance = (() => {
         <td><span class="badge badge-tx-${t.tipo}">${TIPO_LABEL[t.tipo] || t.tipo}</span></td>
         <td>${t.categoria}</td>
         <td>${t.descripcion || '—'}${t.potrero ? `<br><span class="cell-sub">${t.potrero}</span>` : ''}</td>
-        <td class="monto-cell monto-${t.tipo}">${fmtMoney(t.monto)}</td>
+        <td class="monto-cell monto-${t.tipo}">${fmtMoneda(t.monto, t.moneda)}</td>
         <td class="actions-cell">
           <button class="action-btn" data-action="edit" data-id="${t.id}" title="Editar" aria-label="Editar transacción ${t.categoria}">✏️</button>
           <button class="action-btn danger" data-action="delete" data-id="${t.id}" title="Eliminar" aria-label="Eliminar transacción ${t.categoria}">🗑️</button>
@@ -202,6 +218,7 @@ const Finance = (() => {
       document.getElementById('ft-categoria').value = tx.categoria;
       updateCategoryFields(tx.categoria);
       document.getElementById('ft-monto').value = tx.monto;
+      document.getElementById('ft-moneda').value = tx.moneda || 'ARS';
       document.getElementById('ft-descripcion').value = tx.descripcion || '';
       document.getElementById('ft-potrero').value = tx.potrero || '';
       document.getElementById('ft-obs').value = tx.observaciones || '';
@@ -231,6 +248,7 @@ const Finance = (() => {
     const tipo            = document.getElementById('ft-tipo').value;
     const categoria       = document.getElementById('ft-categoria').value;
     const monto           = parseFloat(document.getElementById('ft-monto').value);
+    const moneda          = document.getElementById('ft-moneda').value || 'ARS';
     const descripcion     = document.getElementById('ft-descripcion').value.trim();
     const observaciones   = document.getElementById('ft-obs').value.trim();
     const potrero         = document.getElementById('ft-potrero').value.trim() || null;
@@ -243,9 +261,9 @@ const Finance = (() => {
 
     if (editingId) {
       const idx = data.findIndex(t => t.id === editingId);
-      if (idx !== -1) data[idx] = { ...data[idx], fecha, tipo, categoria, monto, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg };
+      if (idx !== -1) data[idx] = { ...data[idx], fecha, tipo, categoria, monto, moneda, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg };
     } else {
-      data.push({ id: String(Date.now()), fecha, tipo, categoria, monto, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg });
+      data.push({ id: String(Date.now()), fecha, tipo, categoria, monto, moneda, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg });
     }
 
     const isNew = !editingId;
@@ -562,6 +580,26 @@ const Finance = (() => {
       if (!btn) return;
       if (btn.dataset.action === 'edit') openModalAmort(btn.dataset.id);
       if (btn.dataset.action === 'delete') removeAmort(btn.dataset.id);
+    });
+
+    // Cotización USD
+    function updateCotizacionUI() {
+      const cot = Storage.get(COTIZACION_KEY);
+      const hint = document.getElementById('cotizacion-hint');
+      const input = document.getElementById('cotizacion-usd');
+      if (cot?.usd_ars) {
+        if (input) input.value = cot.usd_ars;
+        if (hint) hint.textContent = `Actualizado: ${fmt(cot.fecha)}`;
+      }
+    }
+    updateCotizacionUI();
+    document.getElementById('btn-save-cotizacion')?.addEventListener('click', () => {
+      const val = parseFloat(document.getElementById('cotizacion-usd').value);
+      if (!val || val <= 0) { ui.toast('Ingresá un valor de cotización válido.', 'error'); return; }
+      Storage.set(COTIZACION_KEY, { usd_ars: val, fecha: new Date().toISOString().slice(0, 10) });
+      updateCotizacionUI();
+      renderStats();
+      ui.toast('Cotización USD guardada.');
     });
 
     renderStats();
