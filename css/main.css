@@ -590,9 +590,26 @@ body {
   }
 }
 
-@media (max-width: 480px) {
-  .topbar-actions .btn span { display: none; }
+/* ===== Mobile FAB — action buttons ===== */
+@media (max-width: 768px) {
+  #btn-new-animal,
+  #btn-new-cultivo,
+  #btn-new-forraje,
+  #btn-new-field,
+  #btn-new-transaction,
+  #btn-new-vencimiento {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    z-index: 150;
+    border-radius: 28px;
+    padding: 13px 22px;
+    font-size: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.30);
+  }
+}
 
+@media (max-width: 480px) {
   /* Topbar más compacto */
   .topbar { padding: 10px 12px; }
   .topbar-title { font-size: 16px; }

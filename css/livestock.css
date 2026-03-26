@@ -115,3 +115,27 @@
 
 .action-btn:hover { background: var(--color-bg); color: var(--color-text); }
 .action-btn.danger:hover { color: var(--color-danger); }
+
+/* ===== Animals table — responsive columns ===== */
+/* Col order: 1-Caravana 2-Nombre 3-Tipo 4-Raza 5-Nacimiento 6-Potrero 7-Peso 8-Estado 9-Acciones */
+@media (max-width: 768px) {
+  /* Hide Raza and Nacimiento — keep Potrero and Peso visible */
+  #animals-table th:nth-child(4),
+  #animals-table td:nth-child(4),
+  #animals-table th:nth-child(5),
+  #animals-table td:nth-child(5) {
+    display: none;
+  }
+  #animals-table th,
+  #animals-table td { padding: 9px 10px; }
+}
+
+@media (max-width: 480px) {
+  /* Also hide Potrero on very small screens */
+  #animals-table th:nth-child(6),
+  #animals-table td:nth-child(6) {
+    display: none;
+  }
+  #animals-table th,
+  #animals-table td { padding: 8px 8px; font-size: 12px; }
+}
