@@ -655,7 +655,7 @@ Se adaptan automáticamente al dark mode.
 - **Remote:** `git@github.com:ConraPal/agostos-app.git` (SSH)
 - **Clave SSH:** ed25519 en `~/.ssh/id_ed25519`, registrada en GitHub (ConraPal)
 - **Rama principal:** `main`
-- **Deploy:** GitHub Pages desde `main` — `https://conrapal.github.io/agostos-app/`
+- **Deploy:** Vercel desde `main` — `https://agostos-app.vercel.app` (migrado desde GitHub Pages)
 
 ---
 

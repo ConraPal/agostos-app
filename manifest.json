@@ -1,7 +1,7 @@
 {
   "name": "Agostos — Gestión de Campo",
   "short_name": "Agostos",
-  "start_url": "/agostos-app/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#1a3a2a",
   "theme_color": "#2d6a4f",
