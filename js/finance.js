@@ -367,9 +367,10 @@ const Finance = (() => {
     }
     Storage.set(AMORT_KEY, data);
     amortPage = 1;
+    const wasEditingAmort = !!editingAmortId;
     closeModalAmort();
     renderAmortizaciones();
-    ui.toast(editingAmortId ? 'Amortización actualizada.' : 'Amortización registrada.');
+    ui.toast(wasEditingAmort ? 'Amortización actualizada.' : 'Amortización registrada.');
   }
 
   function removeAmort(id) {
@@ -526,9 +527,10 @@ const Finance = (() => {
       if (idx !== -1) data[idx] = { ...data[idx], año, tipo, categoria, monto };
     }
     Storage.set(PRESUPUESTO_KEY, data);
+    const wasEditingPresup = !!editingPresupuestoId;
     closeModalPresupuesto();
     renderPresupuesto(presupuestoYear);
-    ui.toast(editingPresupuestoId ? 'Presupuesto actualizado.' : 'Presupuesto registrado.');
+    ui.toast(wasEditingPresup ? 'Presupuesto actualizado.' : 'Presupuesto registrado.');
   }
 
   function removePresupuesto(id) {

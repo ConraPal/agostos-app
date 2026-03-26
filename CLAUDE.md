@@ -57,6 +57,23 @@ Cada módulo sigue este patrón:
 - El módulo expone siempre un método `init()` que registra listeners y hace el primer render
 - **Keys de Storage**: prefijo `ag_` para evitar colisiones (ej: `ag_animals`, `ag_movements`)
 
+### Patrón save + toast (crítico)
+
+`closeModal()` pone `editingId = null`. Siempre capturar el estado de edición **antes** de llamar al close:
+
+```js
+// CORRECTO
+const wasEditing = !!editingId;
+closeModal();
+ui.toast(wasEditing ? 'Actualizado.' : 'Registrado.');
+
+// MAL — editingId ya es null cuando se evalúa
+closeModal();
+ui.toast(editingId ? 'Actualizado.' : 'Registrado.');
+```
+
+Este patrón aplica a todos los módulos: `saveAnimal`, `saveRepro`, `saveAmort`, `savePresupuesto`, `saveSanidad`, `saveCultivo`, `saveForraje`, `saveTransaction`.
+
 ### Routing
 
 No hay router de URL. La navegación entre módulos es visual (mostrar/ocultar secciones `.module`). El sidebar maneja el estado activo con clases CSS.

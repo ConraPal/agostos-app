@@ -48,6 +48,8 @@ const Livestock = (() => {
     'vacunación':      'badge-sanidad-vacunacion',
     'desparasitación': 'badge-sanidad-desparasitacion',
     'veterinario':     'badge-sanidad-veterinario',
+    'raspaje':         'badge-sanidad-raspaje',
+    'accidente':       'badge-sanidad-accidente',
     'otro':            'badge-sanidad-otro',
   };
   const sanidadBadge = tipo => {
@@ -226,7 +228,7 @@ const Livestock = (() => {
         </td>
         <td>${sanidadBadge(s.tipo)}</td>
         <td>${s.descripcion || '—'}</td>
-        <td>${s.producto ? `${s.producto}${s.dosis ? ` / ${s.dosis}` : ''}` : (s.dosis || '—')}</td>
+        <td>${s.producto || '—'}</td>
         <td>${s.observaciones || '—'}</td>
         <td>
           <button class="action-btn" onclick="Livestock.editSanidad('${s.id}')" title="Editar" aria-label="Editar evento sanitario">✏️</button>
@@ -256,41 +258,70 @@ const Livestock = (() => {
 
     dropdown.innerHTML = matches.map(a => `
       <li class="dropdown-item" data-id="${a.id}" data-caravana="${a.caravana}"
-          data-nombre="${a.nombre || ''}">
+          data-nombre="${a.nombre || ''}" data-tipo="${a.tipo || ''}">
         <span class="di-caravana">${a.caravana}</span>
         ${a.nombre ? `<span class="di-nombre">${a.nombre}</span>` : ''}
+        ${a.tipo ? `<span class="di-potrero" style="text-transform:capitalize">${a.tipo}</span>` : ''}
       </li>
     `).join('');
     dropdown.classList.remove('hidden');
   };
 
+  const updateRaspajeOption = (isToro) => {
+    const sel = document.getElementById('fs-tipo');
+    let opt = sel.querySelector('option[value="raspaje"]');
+    if (isToro) {
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = 'raspaje';
+        opt.textContent = 'Raspaje';
+        // Insert before "otro"
+        const otro = sel.querySelector('option[value="otro"]');
+        sel.insertBefore(opt, otro || null);
+      }
+    } else {
+      if (opt) {
+        if (sel.value === 'raspaje') sel.value = '';
+        opt.remove();
+      }
+    }
+  };
+
+  let selectedSanidadAnimalTipo = null;
+
   const selectSanidadAnimal = li => {
     selectedSanidadAnimalId = li.dataset.id;
+    selectedSanidadAnimalTipo = li.dataset.tipo || null;
     document.getElementById('fs-animal').value = li.dataset.caravana + (li.dataset.nombre ? ` — ${li.dataset.nombre}` : '');
     document.getElementById('sanidad-animal-dropdown').classList.add('hidden');
+    updateRaspajeOption(selectedSanidadAnimalTipo === 'toro');
   };
 
   const openModalSanidad = (id = null) => {
     editingSanidadId = id;
     selectedSanidadAnimalId = null;
+    selectedSanidadAnimalTipo = null;
     const form = document.getElementById('form-sanidad');
     form.reset();
     document.getElementById('modal-sanidad-title').textContent = id ? 'Editar evento sanitario' : 'Nuevo evento sanitario';
     form.fecha.value = new Date().toISOString().slice(0, 10);
+    updateRaspajeOption(false);
 
     if (id) {
       const s = getData(KEYS.sanidad).find(x => x.id === id);
       if (!s) return;
-      form.fecha.value        = s.fecha || '';
-      form.tipo.value         = s.tipo || '';
-      form.descripcion.value  = s.descripcion || '';
-      form.producto.value     = s.producto || '';
-      form.dosis.value        = s.dosis || '';
+      form.fecha.value         = s.fecha || '';
+      form.descripcion.value   = s.descripcion || '';
+      form.producto.value      = s.producto || '';
       form.observaciones.value = s.observaciones || '';
       if (s.animalId) {
         selectedSanidadAnimalId = s.animalId;
+        const animal = getData(KEYS.animals).find(a => a.id === s.animalId);
+        selectedSanidadAnimalTipo = animal ? animal.tipo : null;
+        updateRaspajeOption(selectedSanidadAnimalTipo === 'toro');
         form.animal.value = s.caravana + (s.animalNombre ? ` — ${s.animalNombre}` : '');
       }
+      form.tipo.value = s.tipo || '';
     }
 
     document.getElementById('modal-sanidad').classList.remove('hidden');
@@ -302,6 +333,7 @@ const Livestock = (() => {
     document.getElementById('sanidad-animal-dropdown').classList.add('hidden');
     editingSanidadId = null;
     selectedSanidadAnimalId = null;
+    selectedSanidadAnimalTipo = null;
   };
 
   const saveSanidad = e => {
@@ -316,14 +348,13 @@ const Livestock = (() => {
     }
 
     const entry = {
-      fecha:        form.fecha.value,
+      fecha:         form.fecha.value,
       animalId,
       caravana,
       animalNombre,
-      tipo:         form.tipo.value,
-      descripcion:  form.descripcion.value.trim(),
-      producto:     form.producto.value.trim(),
-      dosis:        form.dosis.value.trim(),
+      tipo:          form.tipo.value,
+      descripcion:   form.descripcion.value.trim(),
+      producto:      form.producto.value.trim(),
       observaciones: form.observaciones.value.trim()
     };
 
@@ -449,9 +480,10 @@ const Livestock = (() => {
     }
 
     saveData(KEYS.animals, animals);
+    const wasEditing = !!editingId;
     closeModal();
     render();
-    ui.toast(editingId ? 'Animal actualizado.' : 'Animal registrado.');
+    ui.toast(wasEditing ? 'Animal actualizado.' : 'Animal registrado.');
   };
 
   // --- Movement Modal ---
@@ -639,19 +671,24 @@ const Livestock = (() => {
       form.tacto_fecha.value            = r.tacto_fecha || '';
       form.vacas_total.value            = r.vacas_total ?? '';
       form.vacas_positivas.value        = r.vacas_positivas ?? '';
+      form.muertes_gestacion.value      = r.muertes_gestacion ?? '';
       form.ia_realizada.checked         = !!r.ia_realizada;
       form.ia_fecha.value               = r.ia_fecha || '';
       form.ia_toro.value                = r.ia_toro || '';
       form.ia_prenez_pct.value          = r.ia_prenez_pct ?? '';
       form.paricion_inicio.value        = r.paricion_inicio || '';
       form.paricion_fin.value           = r.paricion_fin || '';
-      form.partos.value                 = r.partos ?? '';
-      form.muertes_paricion.value       = r.muertes_paricion ?? '';
-      form.destete_fecha.value          = r.destete_fecha || '';
-      form.terneros_machos_destete.value = r.terneros_machos_destete ?? '';
-      form.terneras_hembras_destete.value = r.terneras_hembras_destete ?? '';
-      form.muertes_destete.value        = r.muertes_destete ?? '';
-      form.observaciones.value          = r.observaciones || '';
+      form.partos.value                    = r.partos ?? '';
+      form.muertes_paricion.value          = r.muertes_paricion ?? '';
+      form.nacidos_machos.value            = r.nacidos_machos ?? '';
+      form.nacidos_hembras.value           = r.nacidos_hembras ?? '';
+      document.getElementById('fr-total-aparicion').value = r.total_aparicion ?? '';
+      form.muertes_terneros.value          = r.muertes_terneros ?? '';
+      form.destete_fecha.value             = r.destete_fecha || '';
+      form.terneros_machos_destete.value   = r.terneros_machos_destete ?? '';
+      form.terneras_hembras_destete.value  = r.terneras_hembras_destete ?? '';
+      form.muertes_destete.value           = r.muertes_destete ?? '';
+      form.observaciones.value             = r.observaciones || '';
       if (r.ia_realizada) document.getElementById('ia-section').style.display = '';
     }
 
@@ -669,18 +706,28 @@ const Livestock = (() => {
     const toInt = v => { const n = parseInt(v, 10); return isNaN(n) ? null : n; };
     const vacas_total              = toInt(form.vacas_total.value);
     const vacas_positivas          = toInt(form.vacas_positivas.value);
+    const muertes_gestacion        = toInt(form.muertes_gestacion.value);
     const vacas_negativas          = (vacas_total != null && vacas_positivas != null) ? vacas_total - vacas_positivas : null;
     const prenez_pct               = (vacas_total != null && vacas_total > 0 && vacas_positivas != null) ? (vacas_positivas / vacas_total * 100) : null;
     const ia_realizada             = form.ia_realizada.checked;
     const partos                   = toInt(form.partos.value);
     const muertes_paricion         = toInt(form.muertes_paricion.value);
+    const nacidos_machos           = toInt(form.nacidos_machos.value);
+    const nacidos_hembras          = toInt(form.nacidos_hembras.value);
+    const total_aparicion          = (nacidos_machos != null || nacidos_hembras != null) ? ((nacidos_machos ?? 0) + (nacidos_hembras ?? 0)) : null;
+    const muertes_terneros         = toInt(form.muertes_terneros.value);
     const terneros_machos_destete  = toInt(form.terneros_machos_destete.value);
     const terneras_hembras_destete = toInt(form.terneras_hembras_destete.value);
     const muertes_destete          = toInt(form.muertes_destete.value);
 
-    const terneros_destete = (terneros_machos_destete ?? 0) + (terneras_hembras_destete ?? 0);
-    const indice_destete   = (partos != null && partos > 0) ? (terneros_destete / partos * 100) : null;
-    const mortalidad_total = (muertes_paricion != null || muertes_destete != null) ? ((muertes_paricion ?? 0) + (muertes_destete ?? 0)) : null;
+    // % destete = (nacidos vivos - muertes terneros) / vacas entoradas × 100
+    const nacidos_vivos = total_aparicion ?? ((terneros_machos_destete ?? 0) + (terneras_hembras_destete ?? 0));
+    const indice_destete = (vacas_total != null && vacas_total > 0)
+      ? ((nacidos_vivos - (muertes_terneros ?? 0)) / vacas_total * 100)
+      : null;
+    const mortalidad_total = (muertes_paricion != null || muertes_terneros != null || muertes_destete != null)
+      ? ((muertes_paricion ?? 0) + (muertes_terneros ?? 0) + (muertes_destete ?? 0))
+      : null;
 
     const entry = {
       año:                       parseInt(form.año.value, 10),
@@ -689,6 +736,7 @@ const Livestock = (() => {
       tacto_fecha:               form.tacto_fecha.value || null,
       vacas_total,
       vacas_positivas,
+      muertes_gestacion,
       vacas_negativas,
       prenez_pct,
       ia_realizada,
@@ -699,6 +747,10 @@ const Livestock = (() => {
       paricion_fin:              form.paricion_fin.value || null,
       partos,
       muertes_paricion,
+      nacidos_machos,
+      nacidos_hembras,
+      total_aparicion,
+      muertes_terneros,
       destete_fecha:             form.destete_fecha.value || null,
       terneros_machos_destete,
       terneras_hembras_destete,
@@ -716,9 +768,10 @@ const Livestock = (() => {
       data.unshift({ id: String(Date.now()), ...entry });
     }
     saveData(KEYS.reproduction, data);
+    const wasEditingRepro = !!editingReproId;
     closeModalRepro();
     renderReproduccion();
-    ui.toast(editingReproId ? 'Ciclo actualizado.' : 'Ciclo registrado.');
+    ui.toast(wasEditingRepro ? 'Ciclo actualizado.' : 'Ciclo registrado.');
   };
 
   const editRepro = id => openModalRepro(id);
@@ -893,6 +946,17 @@ const Livestock = (() => {
     });
     document.getElementById('form-reproduction').addEventListener('submit', saveRepro);
 
+    // Reactive total aparición
+    const updateTotalAparicion = () => {
+      const machos  = parseInt(document.getElementById('fr-nacidos-machos').value, 10) || 0;
+      const hembras = parseInt(document.getElementById('fr-nacidos-hembras').value, 10) || 0;
+      const total   = document.getElementById('fr-nacidos-machos').value || document.getElementById('fr-nacidos-hembras').value
+        ? machos + hembras : '';
+      document.getElementById('fr-total-aparicion').value = total;
+    };
+    document.getElementById('fr-nacidos-machos').addEventListener('input', updateTotalAparicion);
+    document.getElementById('fr-nacidos-hembras').addEventListener('input', updateTotalAparicion);
+
     // Reproducción year filter
     document.getElementById('repro-year-filter')?.addEventListener('change', e => {
       reproYear = e.target.value;
@@ -923,6 +987,8 @@ const Livestock = (() => {
     // Animal search dropdown para sanidad
     document.getElementById('fs-animal').addEventListener('input', e => {
       selectedSanidadAnimalId = null;
+      selectedSanidadAnimalTipo = null;
+      if (!e.target.value.trim()) updateRaspajeOption(false);
       buildSanidadDropdown(e.target.value);
     });
     document.getElementById('fs-animal').addEventListener('keydown', e => {
