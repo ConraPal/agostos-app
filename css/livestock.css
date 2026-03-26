@@ -96,6 +96,8 @@
 .badge-sanidad-vacunacion      { background: var(--c-ok-bg);     color: var(--c-ok-fg); }
 .badge-sanidad-desparasitacion { background: var(--c-info-bg);   color: var(--c-info-fg); }
 .badge-sanidad-veterinario     { background: var(--c-orange-bg); color: var(--c-orange-fg); }
+.badge-sanidad-raspaje         { background: var(--c-purple-bg); color: var(--c-purple-fg); }
+.badge-sanidad-accidente       { background: var(--c-danger-bg); color: var(--c-danger-fg); }
 .badge-sanidad-otro            { background: #f0f0f0; color: #555; }
 
 /* ===== Form hint text ===== */

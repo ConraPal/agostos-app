@@ -2,10 +2,12 @@ const Fields = (() => {
   const KEY = 'ag_fields';
   const ANIMALS_KEY = 'ag_animals';
 
-  const PASTURAS = ['Natural', 'Mejorada', 'Verdeo', 'Otro'];
+  const PASTURAS = ['Natural', 'Mejorada', 'Pastura', 'Verdeo', 'Otro'];
   const ESTADOS = { activo: 'Activo', descanso: 'Descanso', clausurado: 'Clausurado' };
 
   let editingId = null;
+
+  const formatDate = iso => iso ? new Date(iso).toLocaleDateString('es-AR') : '—';
 
   // --- Helpers ---
   function getAll() { return Storage.get(KEY) || []; }
@@ -44,24 +46,38 @@ const Fields = (() => {
     );
     data.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
+    // Build animal count map
+    const animalCount = {};
+    getActiveAnimals().forEach(a => {
+      if (!a.potrero) return;
+      animalCount[a.potrero] = (animalCount[a.potrero] || 0) + 1;
+    });
+
     const tbody = document.getElementById('fields-tbody');
     if (data.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No hay potreros registrados.</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay potreros registrados.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = data.map(f => `
+    tbody.innerHTML = data.map(f => {
+      const count = animalCount[f.nombre] || 0;
+      const carga = (f.hectareas && count > 0)
+        ? (count / f.hectareas).toFixed(2) + '\u00a0cab/ha'
+        : (count > 0 ? count + '\u00a0cab' : '—');
+      return `
       <tr>
         <td>${f.nombre}</td>
         <td>${f.hectareas ? f.hectareas + '\u00a0ha' : '—'}</td>
         <td>${f.pastura || '—'}</td>
+        <td>${f.fecha_implantacion ? formatDate(f.fecha_implantacion) : '—'}</td>
+        <td>${carga}</td>
         <td><span class="badge badge-field-${f.estado}">${ESTADOS[f.estado] || f.estado}</span></td>
         <td class="actions-cell">
           <button class="action-btn" data-action="edit" data-id="${f.id}" title="Editar" aria-label="Editar potrero ${f.nombre}">✏️</button>
           <button class="action-btn danger" data-action="delete" data-id="${f.id}" title="Eliminar" aria-label="Eliminar potrero ${f.nombre}">🗑️</button>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   }
 
   // --- Tab: Stock ---
@@ -101,11 +117,15 @@ const Fields = (() => {
       const nameCell = r.registrado
         ? r.nombre
         : `${r.nombre} <span class="badge-no-reg">sin registrar</span>`;
+      const carga = (r.hectareas && count > 0)
+        ? (count / r.hectareas).toFixed(2) + '\u00a0cab/ha'
+        : '—';
       return `
         <tr>
           <td>${nameCell}</td>
           <td>${r.hectareas ? r.hectareas + '\u00a0ha' : '—'}</td>
           <td>${count > 0 ? `<strong>${count}</strong>` : '<span class="text-muted">0</span>'}</td>
+          <td>${carga}</td>
           <td class="caravanas-cell">${count > 0 ? preview : '—'}</td>
         </tr>`;
     }).join('');
@@ -120,11 +140,12 @@ const Fields = (() => {
       const f = getAll().find(f => f.id === id);
       if (!f) return;
       document.getElementById('modal-field-title').textContent = 'Editar potrero';
-      document.getElementById('ff-nombre').value    = f.nombre;
-      document.getElementById('ff-hectareas').value = f.hectareas || '';
-      document.getElementById('ff-pastura').value   = f.pastura || '';
-      document.getElementById('ff-estado').value    = f.estado;
-      document.getElementById('ff-obs').value       = f.observaciones || '';
+      document.getElementById('ff-nombre').value        = f.nombre;
+      document.getElementById('ff-hectareas').value     = f.hectareas || '';
+      document.getElementById('ff-pastura').value       = f.pastura || '';
+      document.getElementById('ff-estado').value        = f.estado;
+      document.getElementById('ff-implantacion').value  = f.fecha_implantacion || '';
+      document.getElementById('ff-obs').value           = f.observaciones || '';
     } else {
       document.getElementById('modal-field-title').textContent = 'Nuevo potrero';
     }
@@ -140,11 +161,12 @@ const Fields = (() => {
   // --- Save ---
   function saveField(e) {
     e.preventDefault();
-    const nombre       = document.getElementById('ff-nombre').value.trim();
-    const hectareas    = parseFloat(document.getElementById('ff-hectareas').value) || null;
-    const pastura      = document.getElementById('ff-pastura').value;
-    const estado       = document.getElementById('ff-estado').value;
-    const observaciones = document.getElementById('ff-obs').value.trim();
+    const nombre            = document.getElementById('ff-nombre').value.trim();
+    const hectareas         = parseFloat(document.getElementById('ff-hectareas').value) || null;
+    const pastura           = document.getElementById('ff-pastura').value;
+    const estado            = document.getElementById('ff-estado').value;
+    const fecha_implantacion = document.getElementById('ff-implantacion').value || null;
+    const observaciones     = document.getElementById('ff-obs').value.trim();
 
     const data = getAll();
 
@@ -154,13 +176,13 @@ const Fields = (() => {
         return;
       }
       const idx = data.findIndex(f => f.id === editingId);
-      if (idx !== -1) data[idx] = { ...data[idx], nombre, hectareas, pastura, estado, observaciones };
+      if (idx !== -1) data[idx] = { ...data[idx], nombre, hectareas, pastura, estado, fecha_implantacion, observaciones };
     } else {
       if (data.some(f => f.nombre.toLowerCase() === nombre.toLowerCase())) {
         ui.toast(`Ya existe un potrero llamado "${nombre}".`, 'error');
         return;
       }
-      data.push({ id: String(Date.now()), nombre, hectareas, pastura, estado, observaciones });
+      data.push({ id: String(Date.now()), nombre, hectareas, pastura, estado, fecha_implantacion, observaciones });
     }
 
     const isNew = !editingId;

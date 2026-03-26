@@ -3,6 +3,8 @@ const Agricultura = (() => {
   const CULTIVOS_KEY = 'ag_crop_history';
   const FORRAJE_KEY  = 'ag_forraje';
 
+  const formatDate = iso => iso ? new Date(iso).toLocaleDateString('es-AR') : '—';
+
   const PAGE_SIZE = 20;
   let cultivosPage = 1;
   let forrajePage  = 1;
@@ -30,13 +32,16 @@ const Agricultura = (() => {
 
     const rollos  = forraje.filter(f => f.tipo === 'rollo').reduce((s, f) => s + (Number(f.cantidad) || 0), 0);
     const fardos  = forraje.filter(f => f.tipo === 'fardo').reduce((s, f) => s + (Number(f.cantidad) || 0), 0);
-    const potrerosCultivo = new Set(cultivos.map(c => c.potrero_id)).size;
+    const potrerosCultivo = new Set(cultivos.filter(c => c.potrero_id).map(c => c.potrero_id)).size;
 
     document.getElementById('stat-agro-cultivos').textContent = cultivos.length;
     document.getElementById('stat-agro-rollos').textContent   = rollos;
     document.getElementById('stat-agro-fardos').textContent   = fardos;
     document.getElementById('stat-agro-potreros').textContent = potrerosCultivo;
   }
+
+  // Extract year from a cultivo record (supports both old año field and new fecha_siembra)
+  const cultivoYear = c => c.fecha_siembra ? parseInt(c.fecha_siembra.slice(0, 4), 10) : (c.año || null);
 
   // --- Tab: Cultivos ---
   function renderCultivos() {
@@ -46,15 +51,18 @@ const Agricultura = (() => {
     const allCultivos   = Storage.get(CULTIVOS_KEY) || [];
     let data = [...allCultivos];
     if (potreroFilter) data = data.filter(c => c.potrero_id === potreroFilter);
-    if (yearFilter)    data = data.filter(c => String(c.año) === yearFilter);
-    data.sort((a, b) => b.año - a.año || a.potrero.localeCompare(b.potrero, 'es'));
+    if (yearFilter)    data = data.filter(c => String(cultivoYear(c)) === yearFilter);
+    data.sort((a, b) => {
+      const ya = cultivoYear(a) || 0, yb = cultivoYear(b) || 0;
+      return yb - ya || a.potrero.localeCompare(b.potrero, 'es');
+    });
 
     // Repopulate potrero filter
     populatePotreroSelect('cultivos-potrero-filter', true);
     if (potreroFilter) document.getElementById('cultivos-potrero-filter').value = potreroFilter;
 
     // Populate year filter
-    const allYears = [...new Set(allCultivos.map(c => c.año))].sort((a, b) => b - a);
+    const allYears = [...new Set(allCultivos.map(c => cultivoYear(c)).filter(Boolean))].sort((a, b) => b - a);
     if (yrEl) {
       const cur = yrEl.value;
       yrEl.innerHTML = '<option value="">Todos los años</option>' + allYears.map(y => `<option value="${y}">${y}</option>`).join('');
@@ -63,24 +71,30 @@ const Agricultura = (() => {
 
     const tbody = document.getElementById('cultivos-tbody');
     if (!data.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay cultivos registrados.</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay cultivos registrados.</td></tr>';
       ui.pagination('cultivos-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
     const paged = data.slice((cultivosPage - 1) * PAGE_SIZE, cultivosPage * PAGE_SIZE);
-    tbody.innerHTML = paged.map(c => `
+    tbody.innerHTML = paged.map(c => {
+      const rendimiento = c.rendimiento != null
+        ? c.rendimiento.toFixed(0) + '\u00a0kg/ha'
+        : (c.kg_cosechados && c.ha_cosechadas ? (c.kg_cosechados / c.ha_cosechadas).toFixed(0) + '\u00a0kg/ha' : '—');
+      const siembra = c.fecha_siembra ? formatDate(c.fecha_siembra) : (c.año || '—');
+      return `
       <tr>
         <td>${c.potrero}</td>
-        <td>${c.año}</td>
+        <td>${siembra}</td>
         <td><span class="badge badge-cultivo-${c.tipo}">${c.tipo === 'cultivo' ? 'Cultivo' : 'Pastura'}</span></td>
         <td>${c.detalle}</td>
+        <td>${rendimiento}</td>
         <td>${c.notas || '—'}</td>
         <td class="actions-cell">
-          <button class="action-btn" data-action="edit-cultivo" data-id="${c.id}" title="Editar" aria-label="Editar cultivo ${c.año} ${c.potrero}">✏️</button>
-          <button class="action-btn danger" data-action="delete-cultivo" data-id="${c.id}" title="Eliminar" aria-label="Eliminar cultivo ${c.año} ${c.potrero}">🗑️</button>
+          <button class="action-btn" data-action="edit-cultivo" data-id="${c.id}" title="Editar" aria-label="Editar cultivo ${c.potrero}">✏️</button>
+          <button class="action-btn danger" data-action="delete-cultivo" data-id="${c.id}" title="Eliminar" aria-label="Eliminar cultivo ${c.potrero}">🗑️</button>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
     ui.pagination('cultivos-pagination', data.length, cultivosPage, PAGE_SIZE, p => { cultivosPage = p; renderCultivos(); });
   }
 
@@ -88,18 +102,20 @@ const Agricultura = (() => {
     editingCultivoId = id;
     document.getElementById('form-cultivo').reset();
     document.getElementById('modal-cultivo-title').textContent = id ? 'Editar cultivo' : 'Agregar cultivo';
+    document.getElementById('fc-rendimiento').value = '';
     populatePotreroSelect('fc-potrero');
 
     if (id) {
       const c = (Storage.get(CULTIVOS_KEY) || []).find(x => x.id === id);
       if (!c) return;
-      document.getElementById('fc-potrero').value = c.potrero_id;
-      document.getElementById('fc-año').value     = c.año;
-      document.getElementById('fc-tipo').value    = c.tipo;
-      document.getElementById('fc-detalle').value = c.detalle;
-      document.getElementById('fc-notas').value   = c.notas || '';
-    } else {
-      document.getElementById('fc-año').value = new Date().getFullYear();
+      document.getElementById('fc-potrero').value        = c.potrero_id;
+      document.getElementById('fc-fecha-siembra').value  = c.fecha_siembra || '';
+      document.getElementById('fc-tipo').value           = c.tipo;
+      document.getElementById('fc-detalle').value        = c.detalle;
+      document.getElementById('fc-kg-cosechados').value  = c.kg_cosechados ?? '';
+      document.getElementById('fc-ha-cosechadas').value  = c.ha_cosechadas ?? '';
+      document.getElementById('fc-rendimiento').value    = c.rendimiento != null ? c.rendimiento.toFixed(0) : '';
+      document.getElementById('fc-notas').value          = c.notas || '';
     }
     document.getElementById('modal-cultivo').classList.remove('hidden');
   }
@@ -111,21 +127,25 @@ const Agricultura = (() => {
 
   function saveCultivo(e) {
     e.preventDefault();
-    const sel    = document.getElementById('fc-potrero');
-    const potId  = sel.value;
-    const potNom = sel.options[sel.selectedIndex]?.text || '';
-    const año    = parseInt(document.getElementById('fc-año').value, 10);
-    const tipo   = document.getElementById('fc-tipo').value;
-    const detalle = document.getElementById('fc-detalle').value.trim();
-    const notas  = document.getElementById('fc-notas').value.trim();
+    const sel           = document.getElementById('fc-potrero');
+    const potId         = sel.value;
+    const potNom        = sel.options[sel.selectedIndex]?.text || '';
+    const fecha_siembra = document.getElementById('fc-fecha-siembra').value || null;
+    const año           = fecha_siembra ? parseInt(fecha_siembra.slice(0, 4), 10) : null;
+    const tipo          = document.getElementById('fc-tipo').value;
+    const detalle       = document.getElementById('fc-detalle').value.trim();
+    const kg_cosechados = parseFloat(document.getElementById('fc-kg-cosechados').value) || null;
+    const ha_cosechadas = parseFloat(document.getElementById('fc-ha-cosechadas').value) || null;
+    const rendimiento   = (kg_cosechados && ha_cosechadas) ? kg_cosechados / ha_cosechadas : null;
+    const notas         = document.getElementById('fc-notas').value.trim();
 
     const data = Storage.get(CULTIVOS_KEY) || [];
     const wasEditing = editingCultivoId;
     if (editingCultivoId) {
       const idx = data.findIndex(c => c.id === editingCultivoId);
-      if (idx !== -1) data[idx] = { ...data[idx], potrero_id: potId, potrero: potNom, año, tipo, detalle, notas };
+      if (idx !== -1) data[idx] = { ...data[idx], potrero_id: potId, potrero: potNom, fecha_siembra, año, tipo, detalle, kg_cosechados, ha_cosechadas, rendimiento, notas };
     } else {
-      data.push({ id: String(Date.now()), potrero_id: potId, potrero: potNom, año, tipo, detalle, notas });
+      data.push({ id: String(Date.now()), potrero_id: potId, potrero: potNom, fecha_siembra, año, tipo, detalle, kg_cosechados, ha_cosechadas, rendimiento, notas });
     }
     Storage.set(CULTIVOS_KEY, data);
     cultivosPage = 1;
@@ -268,6 +288,15 @@ const Agricultura = (() => {
       if (e.target === e.currentTarget) closeModalCultivo();
     });
     document.getElementById('form-cultivo').addEventListener('submit', saveCultivo);
+
+    // Reactive rendimiento
+    const updateRendimiento = () => {
+      const kg = parseFloat(document.getElementById('fc-kg-cosechados').value);
+      const ha = parseFloat(document.getElementById('fc-ha-cosechadas').value);
+      document.getElementById('fc-rendimiento').value = (kg && ha) ? (kg / ha).toFixed(0) : '';
+    };
+    document.getElementById('fc-kg-cosechados').addEventListener('input', updateRendimiento);
+    document.getElementById('fc-ha-cosechadas').addEventListener('input', updateRendimiento);
     document.getElementById('cultivos-potrero-filter').addEventListener('change', () => { cultivosPage = 1; renderCultivos(); });
     document.getElementById('cultivos-year-filter')?.addEventListener('change', () => { cultivosPage = 1; renderCultivos(); });
     document.getElementById('cultivos-tbody').addEventListener('click', e => {
