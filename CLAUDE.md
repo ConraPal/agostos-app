@@ -24,7 +24,7 @@ agostos-app/
 ├── manifest.json           # PWA manifest
 ├── sw.js                   # Service Worker — cache-first, assets locales
 ├── css/
-│   ├── main.css            # Estilos globales: layout, sidebar, tablas, modales, formularios, toast, confirm
+│   ├── main.css            # Estilos globales: layout, sidebar, bottom-nav, tablas, modales, formularios, toast, confirm
 │   ├── livestock.css       # Estilos del módulo ganadería
 │   ├── finance.css         # Estilos del módulo finanzas (incl. cotizacion-bar)
 │   ├── fields.css          # Estilos del módulo potreros
@@ -86,11 +86,14 @@ Breakpoints implementados en `main.css` y `livestock.css`:
 
 | Breakpoint | Cambios |
 |------------|---------|
-| `≤ 768px`  | Sidebar se convierte en overlay deslizable; aparece botón hamburger (☰) |
+| `≤ 768px`  | Sidebar oculto; aparece **bottom navigation bar** fija con los 5 módulos |
 | `≤ 768px`  | Stats grid pasa de 4 → 2 columnas; form-row pasa a 1 columna |
-| `≤ 480px`  | Stats grid pasa a 1 columna; labels de botones del topbar se ocultan |
+| `≤ 768px`  | FAB y toast reposicionados encima de la bottom nav |
+| `≤ 480px`  | Stats grid pasa a 1 columna; topbar más compacto |
 
-**Sidebar mobile:** posicionado `fixed` con `left: -220px` por defecto. `body.sidebar-open` lo muestra (`left: 0`). `#sidebar-overlay` cubre el contenido; al clickearlo cierra el sidebar. Navegar a cualquier módulo también lo cierra.
+**Bottom navigation (mobile):** `<nav class="bottom-nav">` en `index.html`, `position: fixed; bottom: 0`. Contiene 5 ítems con clase `nav-item bottom-nav-item` y `data-module` — el JS de `app.js` los maneja igual que los ítems del sidebar. La variable CSS `--bottom-nav-h: 58px` controla la altura y se usa para elevar el FAB, toast y el padding inferior de `.module`.
+
+**Variable CSS clave:** `--bottom-nav-h: 58px` definida en `:root`. Todos los elementos que deben quedar por encima de la bottom nav la referencian con `calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + Npx)`.
 
 ### Orden de carga de scripts
 

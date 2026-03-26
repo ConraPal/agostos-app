@@ -19,13 +19,16 @@
 .stat-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
   border-radius: var(--radius);
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   box-shadow: var(--shadow);
+  transition: box-shadow .15s;
 }
+.stat-card:hover { box-shadow: var(--shadow-md); }
 
 .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--color-muted); }
 .stat-value { font-size: 28px; font-weight: 700; color: var(--color-primary); }
