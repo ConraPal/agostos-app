@@ -136,3 +136,9 @@
   color: var(--color-muted);
   flex: 1;
 }
+
+/* Vencimientos badges */
+.badge-venc-vencido   { background: var(--c-danger-bg); color: var(--c-danger-fg); }
+.badge-venc-proximo   { background: var(--c-warn-bg);   color: var(--c-warn-fg);   }
+.badge-venc-pendiente { background: var(--c-info-bg);   color: var(--c-info-fg);   }
+.badge-venc-pagado    { background: var(--c-ok-bg);     color: var(--c-ok-fg);     }

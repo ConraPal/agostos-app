@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     livestock:   document.getElementById('btn-new-animal'),
     agricultura: [document.getElementById('btn-new-cultivo'), document.getElementById('btn-new-forraje')],
     fields:      document.getElementById('btn-new-field'),
-    finance:     document.getElementById('btn-new-transaction'),
+    finance:     [document.getElementById('btn-new-transaction'), document.getElementById('btn-new-vencimiento')],
   };
 
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(item => {

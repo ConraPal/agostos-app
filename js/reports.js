@@ -481,7 +481,7 @@ const Reports = (() => {
   const ALL_KEYS = ['ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction', 'ag_sanidad',
                     'ag_transactions', 'ag_amortizations', 'ag_presupuesto', 'ag_cotizacion',
                     'ag_fields', 'ag_crop_history', 'ag_forraje',
-                    'ag_alertas'];
+                    'ag_alertas', 'ag_vencimientos'];
 
   function exportBackup() {
     const backup = {};

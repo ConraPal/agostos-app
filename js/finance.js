@@ -542,6 +542,121 @@ const Finance = (() => {
     });
   }
 
+  // --- Tab: Vencimientos ---
+  const VENC_KEY = 'ag_vencimientos';
+  let editingVencId = null;
+  let vencimientosPage = 1;
+
+  function getVenc() { return Storage.get(VENC_KEY) || []; }
+  function saveAllVenc(data) { Storage.set(VENC_KEY, data); }
+
+  function vencStatus(item) {
+    if (item.completado) return { label: 'Pagado', cls: 'pagado' };
+    const today = new Date().toISOString().slice(0, 10);
+    const limit = new Date(); limit.setDate(limit.getDate() + 30);
+    const limitStr = limit.toISOString().slice(0, 10);
+    if (item.fecha < today)          return { label: 'Vencido',  cls: 'vencido'   };
+    if (item.fecha <= limitStr)      return { label: 'Próximo',  cls: 'proximo'   };
+    return                                  { label: 'Pendiente', cls: 'pendiente' };
+  }
+
+  function openModalVenc(id = null) {
+    editingVencId = id;
+    document.getElementById('form-vencimiento').reset();
+    document.getElementById('modal-venc-title').textContent = id ? 'Editar vencimiento' : 'Nuevo vencimiento';
+    if (id) {
+      const v = getVenc().find(x => x.id === id);
+      if (!v) return;
+      document.getElementById('fv-concepto').value = v.concepto;
+      document.getElementById('fv-fecha').value    = v.fecha;
+      document.getElementById('fv-monto').value    = v.monto;
+    }
+    document.getElementById('modal-vencimiento').classList.remove('hidden');
+  }
+
+  function closeModalVenc() {
+    document.getElementById('modal-vencimiento').classList.add('hidden');
+    editingVencId = null;
+  }
+
+  function saveVencimiento(e) {
+    e.preventDefault();
+    const concepto = document.getElementById('fv-concepto').value.trim();
+    const fecha    = document.getElementById('fv-fecha').value;
+    const monto    = parseFloat(document.getElementById('fv-monto').value);
+
+    const data = getVenc();
+    const wasEditing = !!editingVencId;
+    if (wasEditing) {
+      const idx = data.findIndex(v => v.id === editingVencId);
+      if (idx !== -1) data[idx] = { ...data[idx], concepto, fecha, monto };
+    } else {
+      data.push({ id: String(Date.now()), concepto, fecha, monto, completado: false });
+    }
+    saveAllVenc(data);
+    vencimientosPage = 1;
+    closeModalVenc();
+    renderVencimientos();
+    ui.toast(wasEditing ? 'Vencimiento actualizado.' : 'Vencimiento registrado.');
+  }
+
+  function removeVenc(id) {
+    ui.confirm('¿Eliminar este vencimiento?').then(ok => {
+      if (!ok) return;
+      saveAllVenc(getVenc().filter(v => v.id !== id));
+      renderVencimientos();
+      ui.toast('Vencimiento eliminado.');
+    });
+  }
+
+  function toggleVencPagado(id) {
+    const data = getVenc();
+    const idx = data.findIndex(v => v.id === id);
+    if (idx !== -1) data[idx].completado = !data[idx].completado;
+    saveAllVenc(data);
+    renderVencimientos();
+  }
+
+  function renderVencimientos() {
+    const all = getVenc();
+
+    // Sort: vencidos/próximos/pendientes ASC por fecha, pagados al fondo
+    all.sort((a, b) => {
+      const aPagado = a.completado ? 1 : 0;
+      const bPagado = b.completado ? 1 : 0;
+      if (aPagado !== bPagado) return aPagado - bPagado;
+      return a.fecha.localeCompare(b.fecha);
+    });
+
+    const tbody = document.getElementById('vencimientos-tbody');
+    if (!all.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No hay vencimientos registrados.</td></tr>';
+      ui.pagination('vencimientos-pagination', 0, 1, PAGE_SIZE, () => {});
+      return;
+    }
+
+    const paged = all.slice((vencimientosPage - 1) * PAGE_SIZE, vencimientosPage * PAGE_SIZE);
+    tbody.innerHTML = paged.map(v => {
+      const { label, cls } = vencStatus(v);
+      const toggleLabel = v.completado ? '↩️' : '✅';
+      const toggleTitle = v.completado ? 'Desmarcar como pagado' : 'Marcar como pagado';
+      return `
+        <tr>
+          <td>${fmt(v.fecha)}</td>
+          <td>${v.concepto}</td>
+          <td class="monto-cell">${fmtMoney(v.monto)}</td>
+          <td><span class="badge badge-venc-${cls}">${label}</span></td>
+          <td class="actions-cell">
+            <button class="action-btn" data-action="toggle-venc" data-id="${v.id}" title="${toggleTitle}" aria-label="${toggleTitle}">${toggleLabel}</button>
+            <button class="action-btn" data-action="edit-venc" data-id="${v.id}" title="Editar" aria-label="Editar vencimiento ${v.concepto}">✏️</button>
+            <button class="action-btn danger" data-action="delete-venc" data-id="${v.id}" title="Eliminar" aria-label="Eliminar vencimiento ${v.concepto}">🗑️</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    ui.pagination('vencimientos-pagination', all.length, vencimientosPage, PAGE_SIZE, p => { vencimientosPage = p; renderVencimientos(); });
+  }
+
   // --- Init ---
   function init() {
     document.getElementById('btn-new-transaction').addEventListener('click', () => openModal());
@@ -626,6 +741,23 @@ const Finance = (() => {
       if (btn.dataset.action === 'delete-presup') removePresupuesto(btn.dataset.id);
     });
     initPresupuestoYear();
+
+    // Vencimientos
+    document.getElementById('btn-new-vencimiento').addEventListener('click', () => openModalVenc());
+    document.getElementById('modal-venc-close').addEventListener('click', closeModalVenc);
+    document.getElementById('btn-cancel-venc').addEventListener('click', closeModalVenc);
+    document.getElementById('modal-vencimiento').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModalVenc();
+    });
+    document.getElementById('form-vencimiento').addEventListener('submit', saveVencimiento);
+    document.getElementById('vencimientos-tbody').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'toggle-venc') toggleVencPagado(btn.dataset.id);
+      if (btn.dataset.action === 'edit-venc')   openModalVenc(btn.dataset.id);
+      if (btn.dataset.action === 'delete-venc') removeVenc(btn.dataset.id);
+    });
+    renderVencimientos();
   }
 
   return { init };
