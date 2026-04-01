@@ -275,6 +275,17 @@ Función interna. Llamada desde los 5 puntos de escritura:
 | `saveMovement` | `Movimiento` | `{tipo} de {origen} a {destino}` |
 | `saveSanidad` | `Sanidad` | `{tipo}: {descripcion}` |
 
+### Stats (tab Registro)
+
+| Stat ID | Label | Cálculo |
+|---------|-------|---------|
+| `stat-total` | Stock total | Todos los animales con `estado === 'activo'` |
+| `stat-cows` | Vacas | Activos con `tipo === 'vaca'` |
+| `stat-bulls` | Toros | Activos con `tipo === 'toro'` |
+| `stat-calves` | Terneros | Activos con `tipo === 'ternero'` |
+| `stat-novillos` | Novillos | Activos con `tipo === 'novillo'` |
+| `stat-vaquillonas` | Vaquillonas | Activos con `tipo === 'vaquillona'` |
+
 ### Tabs del módulo
 
 - **Registro** — CRUD completo, stats en tiempo real, búsqueda por caravana/nombre, filtro por tipo, sort por Tipo y Peso ✓
@@ -353,9 +364,10 @@ Un ítem por año+tipo+categoría (se valida duplicado al crear).
 
 - `toARS(monto, moneda)` — convierte USD → ARS usando `ag_cotizacion.usd_ars`; las transacciones sin `moneda` se tratan como ARS
 - `fmtMoneda(monto, moneda)` — prefijo `$` (ARS) o `USD` (USD)
-- `renderStats()` — separa totales por moneda: `stat-ingresos-ars` / `stat-ingresos-usd` / `stat-gastos-ars` / `stat-gastos-usd`; el USD sub-stat solo se muestra si hay transacciones en USD. Balance usa ARS equiv. (label "ARS equiv." en el stat card)
-- `renderResumen()` — acumula `{ ars, usd }` por categoría; muestra ambos cuando coexisten, con `.badge-moneda-usd` para el monto USD
+- `renderStats()` — separa totales por moneda: `stat-ingresos-ars` / `stat-ingresos-usd` / `stat-gastos-ars` / `stat-gastos-usd` / `stat-impuestos-ars`; impuestos tienen stat card propio; balance incluye impuestos en el cálculo; el USD sub-stat solo se muestra si hay transacciones en USD. Balance usa ARS equiv. (label "ARS equiv." en el stat card)
+- `renderResumen()` — acumula `{ ars, usd }` por categoría; tres secciones: Ingresos / Gastos / Impuestos (separados); muestra ambas monedas cuando coexisten, con `.badge-moneda-usd` para el monto USD
 - `renderMargen()` — usa `toARS()` en todos los cálculos (ingresos, costos, impuestos)
+- **Impuestos siempre en ARS**: al seleccionar tipo "impuesto" en el modal, el selector de moneda se fuerza a ARS y se deshabilita; `saveTransaction()` fuerza `moneda: 'ARS'` para impuestos
 - En la tabla de transacciones, gastos e impuestos se muestran con prefijo `−` (signo menos)
 - Barra de cotización `#cotizacion-bar` en el tab Transacciones: input de valor + botón Guardar
 - Clases CSS nuevas en `finance.css`: `.stat-sub-moneda`, `.badge-moneda-usd`, `.resumen-sep`, `.resumen-monto`, `.stat-label-note`
@@ -374,17 +386,18 @@ Un ítem por año+tipo+categoría (se valida duplicado al crear).
 
 ### Stats
 
-- **Balance** — (Σ ingresos ARS + USD→ARS) − (Σ gastos ARS + USD→ARS); rojo si negativo; label "ARS equiv."
+- **Balance** — (Σ ingresos ARS + USD→ARS) − (Σ gastos ARS + USD→ARS + impuestos→ARS); rojo si negativo; label "ARS equiv."
 - **Total ingresos** — `stat-ingresos-ars` (ARS) + `stat-ingresos-usd` (USD, oculto si cero)
-- **Total gastos** — `stat-gastos-ars` (ARS) + `stat-gastos-usd` (USD, oculto si cero)
+- **Total gastos** — `stat-gastos-ars` (ARS) + `stat-gastos-usd` (USD, oculto si cero); no incluye impuestos
+- **Impuestos / Retenciones** — `stat-impuestos-ars` (ARS equiv.)
 - **Transacciones del mes** — count del mes en curso
 
 ### Tabs del módulo
 
 - **Transacciones** — CRUD con búsqueda, filtro por tipo, selector de moneda, barra de cotización USD ✓
-- **Resumen** — totales por categoría (ingresos / gastos) + gastos por potrero ✓
+- **Resumen** — totales por categoría en tres secciones independientes: Ingresos / Gastos / Impuestos + gastos por potrero ✓
 - **Amortizaciones** — CRUD de activos; stats de total activos y cuota anual total ✓
-- **Margen** — filtro por año; fórmula: Ingresos − Costos − Amortizaciones = Margen Bruto − Impuestos = Margen Neto ✓
+- **Margen** — filtro por año; fórmula: Ingresos − Costos = **Margen Bruto** − Impuestos = **Margen Neto**; Amortizaciones se muestra aparte como referencia ✓
 - **Presupuesto** — comparación presupuestado vs real por categoría y año; filtro por año ✓
 
 ---

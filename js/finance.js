@@ -71,6 +71,7 @@ const Finance = (() => {
 
     let arsIngresos = 0, usdIngresos = 0;
     let arsGastos   = 0, usdGastos   = 0;
+    let arsImpuestos = 0;
     let txMes = 0;
 
     all.forEach(t => {
@@ -78,13 +79,16 @@ const Finance = (() => {
       const isUSD = t.moneda === 'USD';
       if (t.tipo === 'ingreso') {
         if (isUSD) usdIngresos += monto; else arsIngresos += monto;
+      } else if (t.tipo === 'impuesto') {
+        arsImpuestos += toARS(monto, t.moneda);
       } else {
         if (isUSD) usdGastos += monto; else arsGastos += monto;
       }
       if (t.fecha?.startsWith(thisMonth)) txMes++;
     });
 
-    const balance = (arsIngresos + toARS(usdIngresos, 'USD')) - (arsGastos + toARS(usdGastos, 'USD'));
+    const totalGastosARS = arsGastos + toARS(usdGastos, 'USD') + arsImpuestos;
+    const balance = (arsIngresos + toARS(usdIngresos, 'USD')) - totalGastosARS;
     const balanceEl = document.getElementById('stat-balance');
     balanceEl.textContent = fmtMoney(balance);
     balanceEl.className = 'stat-value ' + (balance < 0 ? 'stat-negativo' : '');
@@ -102,6 +106,9 @@ const Finance = (() => {
       gastUsdEl.textContent = usdGastos > 0 ? fmtMoneda(usdGastos, 'USD') : '';
       gastUsdEl.style.display = usdGastos > 0 ? '' : 'none';
     }
+
+    const impEl = document.getElementById('stat-impuestos-ars');
+    if (impEl) impEl.textContent = fmtMoney(arsImpuestos);
 
     document.getElementById('stat-mes').textContent = txMes;
   }
@@ -169,7 +176,11 @@ const Finance = (() => {
       .sort((a, b) => (b[1].ars + toARS(b[1].usd, 'USD')) - (a[1].ars + toARS(a[1].usd, 'USD')));
 
     const gastos = Object.entries(byCategory)
-      .filter(([, v]) => v.tipo !== 'ingreso')
+      .filter(([, v]) => v.tipo === 'gasto')
+      .sort((a, b) => (b[1].ars + toARS(b[1].usd, 'USD')) - (a[1].ars + toARS(a[1].usd, 'USD')));
+
+    const impuestos = Object.entries(byCategory)
+      .filter(([, v]) => v.tipo === 'impuesto')
       .sort((a, b) => (b[1].ars + toARS(b[1].usd, 'USD')) - (a[1].ars + toARS(a[1].usd, 'USD')));
 
     const fmtRow = (cat, v) => {
@@ -179,7 +190,7 @@ const Finance = (() => {
       return `<tr><td>${cat}</td><td class="monto-cell resumen-monto">${arsStr}${sep}${usdStr}</td></tr>`;
     };
 
-    const renderGroup = (items, emptyMsg, tipo) => {
+    const renderGroup = (items, emptyMsg) => {
       if (items.length === 0) return `<p class="resumen-empty">${emptyMsg}</p>`;
       return `<table class="data-table">
         <thead><tr><th>Categoría</th><th style="text-align:right">Total</th></tr></thead>
@@ -187,8 +198,10 @@ const Finance = (() => {
       </table>`;
     };
 
-    document.getElementById('resumen-ingresos').innerHTML = renderGroup(ingresos, 'Sin ingresos registrados.', 'ingreso');
-    document.getElementById('resumen-gastos').innerHTML   = renderGroup(gastos,   'Sin gastos registrados.',   'gasto');
+    document.getElementById('resumen-ingresos').innerHTML  = renderGroup(ingresos,  'Sin ingresos registrados.');
+    document.getElementById('resumen-gastos').innerHTML    = renderGroup(gastos,    'Sin gastos registrados.');
+    const impEl = document.getElementById('resumen-impuestos');
+    if (impEl) impEl.innerHTML = renderGroup(impuestos, 'Sin impuestos registrados.');
 
     // Gastos por potrero — separados por moneda
     const gastosPorPotrero = {};
@@ -220,6 +233,15 @@ const Finance = (() => {
     const cats = CATEGORIES[tipo] || [];
     sel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
     updateCategoryFields(sel.value);
+    const monedaSel = document.getElementById('ft-moneda');
+    if (monedaSel) {
+      if (tipo === 'impuesto') {
+        monedaSel.value = 'ARS';
+        monedaSel.disabled = true;
+      } else {
+        monedaSel.disabled = false;
+      }
+    }
   }
 
   function updateCategoryFields(categoria) {
@@ -256,7 +278,8 @@ const Finance = (() => {
       document.getElementById('ft-categoria').value = tx.categoria;
       updateCategoryFields(tx.categoria);
       document.getElementById('ft-monto').value = tx.monto;
-      document.getElementById('ft-moneda').value = tx.moneda || 'ARS';
+      document.getElementById('ft-moneda').value = tx.tipo === 'impuesto' ? 'ARS' : (tx.moneda || 'ARS');
+      document.getElementById('ft-moneda').disabled = tx.tipo === 'impuesto';
       document.getElementById('ft-descripcion').value = tx.descripcion || '';
       document.getElementById('ft-potrero').value = tx.potrero || '';
       document.getElementById('ft-obs').value = tx.observaciones || '';
@@ -276,6 +299,8 @@ const Finance = (() => {
 
   function closeModal() {
     document.getElementById('modal-transaction').classList.add('hidden');
+    const monedaSel = document.getElementById('ft-moneda');
+    if (monedaSel) monedaSel.disabled = false;
     editingId = null;
   }
 
@@ -286,7 +311,7 @@ const Finance = (() => {
     const tipo            = document.getElementById('ft-tipo').value;
     const categoria       = document.getElementById('ft-categoria').value;
     const monto           = parseFloat(document.getElementById('ft-monto').value);
-    const moneda          = document.getElementById('ft-moneda').value || 'ARS';
+    const moneda          = tipo === 'impuesto' ? 'ARS' : (document.getElementById('ft-moneda').value || 'ARS');
     const descripcion     = document.getElementById('ft-descripcion').value.trim();
     const observaciones   = document.getElementById('ft-obs').value.trim();
     const potrero         = document.getElementById('ft-potrero').value.trim() || null;
@@ -294,6 +319,12 @@ const Finance = (() => {
     const precio_unitario = parseFloat(document.getElementById('ft-precio-unit').value) || null;
     const peso_kg         = parseFloat(document.getElementById('ft-peso-kg').value) || null;
     const precio_kg       = parseFloat(document.getElementById('ft-precio-kg').value) || null;
+
+    if (!monto || monto <= 0) {
+      ui.toast('El monto debe ser mayor a cero.', 'error');
+      document.getElementById('ft-monto').focus();
+      return;
+    }
 
     const data = getAll();
 
@@ -434,7 +465,7 @@ const Finance = (() => {
       .filter(a => año >= a.año_inicio && año < a.año_inicio + a.vida_util)
       .reduce((s, a) => s + (a.cuota_anual || 0), 0);
 
-    const margenBruto = ingresos - costos - amortizacionesAño;
+    const margenBruto = ingresos - costos;
     const margenNeto  = margenBruto - impuestos;
 
     const card = (label, value) => {
@@ -444,11 +475,11 @@ const Finance = (() => {
 
     document.getElementById('margen-cards').innerHTML = `
       ${card('Ingresos', ingresos)}
-      ${card('Costos (excl. impuestos)', costos)}
-      ${card('Amortizaciones', amortizacionesAño)}
+      ${card('Costos operativos', costos)}
       ${card('Margen Bruto', margenBruto)}
-      ${card('Impuestos', impuestos)}
+      ${card('Impuestos / Retenciones', impuestos)}
       ${card('Margen Neto', margenNeto)}
+      ${card('Amortizaciones', amortizacionesAño)}
     `;
   }
 

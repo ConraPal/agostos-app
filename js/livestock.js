@@ -64,10 +64,12 @@ const Livestock = (() => {
   // --- Stats ---
   const renderStats = () => {
     const animals = getData(KEYS.animals).filter(a => a.estado === 'activo');
-    document.getElementById('stat-total').textContent  = animals.length;
-    document.getElementById('stat-cows').textContent   = animals.filter(a => a.tipo === 'vaca').length;
-    document.getElementById('stat-bulls').textContent  = animals.filter(a => a.tipo === 'toro').length;
-    document.getElementById('stat-calves').textContent = animals.filter(a => a.tipo === 'ternero').length;
+    document.getElementById('stat-total').textContent      = animals.length;
+    document.getElementById('stat-cows').textContent       = animals.filter(a => a.tipo === 'vaca').length;
+    document.getElementById('stat-bulls').textContent      = animals.filter(a => a.tipo === 'toro').length;
+    document.getElementById('stat-calves').textContent     = animals.filter(a => a.tipo === 'ternero').length;
+    document.getElementById('stat-novillos').textContent   = animals.filter(a => a.tipo === 'novillo').length;
+    document.getElementById('stat-vaquillonas').textContent = animals.filter(a => a.tipo === 'vaquillona').length;
   };
 
   // --- Render animals table ---
