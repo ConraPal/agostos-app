@@ -69,20 +69,40 @@ const Finance = (() => {
     const now = new Date();
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    let totalIngresos = 0, totalGastos = 0, txMes = 0;
+    let arsIngresos = 0, usdIngresos = 0;
+    let arsGastos   = 0, usdGastos   = 0;
+    let txMes = 0;
+
     all.forEach(t => {
-      if (t.tipo === 'ingreso') totalIngresos += toARS(t.monto, t.moneda);
-      else totalGastos += toARS(t.monto, t.moneda);
-      if (t.fecha && t.fecha.startsWith(thisMonth)) txMes++;
+      const monto = Number(t.monto);
+      const isUSD = t.moneda === 'USD';
+      if (t.tipo === 'ingreso') {
+        if (isUSD) usdIngresos += monto; else arsIngresos += monto;
+      } else {
+        if (isUSD) usdGastos += monto; else arsGastos += monto;
+      }
+      if (t.fecha?.startsWith(thisMonth)) txMes++;
     });
 
-    const balance = totalIngresos - totalGastos;
+    const balance = (arsIngresos + toARS(usdIngresos, 'USD')) - (arsGastos + toARS(usdGastos, 'USD'));
     const balanceEl = document.getElementById('stat-balance');
     balanceEl.textContent = fmtMoney(balance);
     balanceEl.className = 'stat-value ' + (balance < 0 ? 'stat-negativo' : '');
 
-    document.getElementById('stat-ingresos').textContent = fmtMoney(totalIngresos);
-    document.getElementById('stat-gastos').textContent = fmtMoney(totalGastos);
+    document.getElementById('stat-ingresos-ars').textContent = fmtMoney(arsIngresos);
+    const ingUsdEl = document.getElementById('stat-ingresos-usd');
+    if (ingUsdEl) {
+      ingUsdEl.textContent = usdIngresos > 0 ? fmtMoneda(usdIngresos, 'USD') : '';
+      ingUsdEl.style.display = usdIngresos > 0 ? '' : 'none';
+    }
+
+    document.getElementById('stat-gastos-ars').textContent = fmtMoney(arsGastos);
+    const gastUsdEl = document.getElementById('stat-gastos-usd');
+    if (gastUsdEl) {
+      gastUsdEl.textContent = usdGastos > 0 ? fmtMoneda(usdGastos, 'USD') : '';
+      gastUsdEl.style.display = usdGastos > 0 ? '' : 'none';
+    }
+
     document.getElementById('stat-mes').textContent = txMes;
   }
 
@@ -113,64 +133,82 @@ const Finance = (() => {
     }
 
     const paged = data.slice((transactionsPage - 1) * PAGE_SIZE, transactionsPage * PAGE_SIZE);
-    tbody.innerHTML = paged.map(t => `
+    tbody.innerHTML = paged.map(t => {
+      const esEgreso = t.tipo === 'gasto' || t.tipo === 'impuesto';
+      const montoFmt = (esEgreso ? '−\u00a0' : '') + fmtMoneda(t.monto, t.moneda);
+      return `
       <tr>
         <td>${fmt(t.fecha)}</td>
         <td><span class="badge badge-tx-${t.tipo}">${TIPO_LABEL[t.tipo] || t.tipo}</span></td>
         <td>${t.categoria}</td>
         <td>${t.descripcion || '—'}${t.potrero ? `<br><span class="cell-sub">${t.potrero}</span>` : ''}</td>
-        <td class="monto-cell monto-${t.tipo}">${fmtMoneda(t.monto, t.moneda)}</td>
+        <td class="monto-cell monto-${t.tipo}">${montoFmt}</td>
         <td class="actions-cell">
           <button class="action-btn" data-action="edit" data-id="${t.id}" title="Editar" aria-label="Editar transacción ${t.categoria}">✏️</button>
           <button class="action-btn danger" data-action="delete" data-id="${t.id}" title="Eliminar" aria-label="Eliminar transacción ${t.categoria}">🗑️</button>
         </td>
       </tr>
-    `).join('');
+    `}).join('');
     ui.pagination('transactions-pagination', data.length, transactionsPage, PAGE_SIZE, p => { transactionsPage = p; renderTable(); });
   }
 
   // --- Tab: Resumen ---
   function renderResumen() {
     const all = getAll();
+    // byCategory: { tipo, ars, usd }
     const byCategory = {};
 
     all.forEach(t => {
-      if (!byCategory[t.categoria]) byCategory[t.categoria] = { tipo: t.tipo, total: 0 };
-      byCategory[t.categoria].total += Number(t.monto);
+      if (!byCategory[t.categoria]) byCategory[t.categoria] = { tipo: t.tipo, ars: 0, usd: 0 };
+      if (t.moneda === 'USD') byCategory[t.categoria].usd += Number(t.monto);
+      else                    byCategory[t.categoria].ars += Number(t.monto);
     });
 
     const ingresos = Object.entries(byCategory)
       .filter(([, v]) => v.tipo === 'ingreso')
-      .sort((a, b) => b[1].total - a[1].total);
+      .sort((a, b) => (b[1].ars + toARS(b[1].usd, 'USD')) - (a[1].ars + toARS(a[1].usd, 'USD')));
 
     const gastos = Object.entries(byCategory)
-      .filter(([, v]) => v.tipo === 'gasto')
-      .sort((a, b) => b[1].total - a[1].total);
+      .filter(([, v]) => v.tipo !== 'ingreso')
+      .sort((a, b) => (b[1].ars + toARS(b[1].usd, 'USD')) - (a[1].ars + toARS(a[1].usd, 'USD')));
 
-    const renderGroup = (items, emptyMsg) => {
+    const fmtRow = (cat, v) => {
+      const arsStr = v.ars > 0 ? `<span class="monto-${v.tipo}">${fmtMoney(v.ars)}</span>` : '';
+      const usdStr = v.usd > 0 ? `<span class="badge-moneda-usd">USD\u00a0${v.usd.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>` : '';
+      const sep = arsStr && usdStr ? '<span class="resumen-sep">+</span>' : '';
+      return `<tr><td>${cat}</td><td class="monto-cell resumen-monto">${arsStr}${sep}${usdStr}</td></tr>`;
+    };
+
+    const renderGroup = (items, emptyMsg, tipo) => {
       if (items.length === 0) return `<p class="resumen-empty">${emptyMsg}</p>`;
       return `<table class="data-table">
         <thead><tr><th>Categoría</th><th style="text-align:right">Total</th></tr></thead>
-        <tbody>${items.map(([cat, v]) =>
-          `<tr><td>${cat}</td><td class="monto-cell monto-${v.tipo}">${fmtMoney(v.total)}</td></tr>`
-        ).join('')}</tbody>
+        <tbody>${items.map(([cat, v]) => fmtRow(cat, v)).join('')}</tbody>
       </table>`;
     };
 
-    document.getElementById('resumen-ingresos').innerHTML = renderGroup(ingresos, 'Sin ingresos registrados.');
-    document.getElementById('resumen-gastos').innerHTML = renderGroup(gastos, 'Sin gastos registrados.');
+    document.getElementById('resumen-ingresos').innerHTML = renderGroup(ingresos, 'Sin ingresos registrados.', 'ingreso');
+    document.getElementById('resumen-gastos').innerHTML   = renderGroup(gastos,   'Sin gastos registrados.',   'gasto');
 
-    // Gastos por potrero
+    // Gastos por potrero — separados por moneda
     const gastosPorPotrero = {};
     all.filter(t => t.tipo === 'gasto' && t.potrero).forEach(t => {
-      gastosPorPotrero[t.potrero] = (gastosPorPotrero[t.potrero] || 0) + Number(t.monto);
+      if (!gastosPorPotrero[t.potrero]) gastosPorPotrero[t.potrero] = { ars: 0, usd: 0 };
+      if (t.moneda === 'USD') gastosPorPotrero[t.potrero].usd += Number(t.monto);
+      else                    gastosPorPotrero[t.potrero].ars += Number(t.monto);
     });
-    const potreroEntries = Object.entries(gastosPorPotrero).sort((a, b) => b[1] - a[1]);
+    const potreroEntries = Object.entries(gastosPorPotrero)
+      .sort((a, b) => (b[1].ars + toARS(b[1].usd, 'USD')) - (a[1].ars + toARS(a[1].usd, 'USD')));
     const resumenPotrero = document.getElementById('resumen-potrero');
     if (resumenPotrero) {
       resumenPotrero.innerHTML = potreroEntries.length
         ? `<table class="data-table"><thead><tr><th>Potrero</th><th style="text-align:right">Total gastos</th></tr></thead><tbody>${
-            potreroEntries.map(([p, v]) => `<tr><td>${p}</td><td class="monto-cell monto-gasto">${fmtMoney(v)}</td></tr>`).join('')
+            potreroEntries.map(([p, v]) => {
+              const arsStr = v.ars > 0 ? `<span class="monto-gasto">${fmtMoney(v.ars)}</span>` : '';
+              const usdStr = v.usd > 0 ? `<span class="badge-moneda-usd">USD\u00a0${v.usd.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>` : '';
+              const sep = arsStr && usdStr ? '<span class="resumen-sep">+</span>' : '';
+              return `<tr><td>${p}</td><td class="monto-cell resumen-monto">${arsStr}${sep}${usdStr}</td></tr>`;
+            }).join('')
           }</tbody></table>`
         : '<p class="resumen-empty">Sin gastos asignados a potreros.</p>';
     }
@@ -388,9 +426,9 @@ const Finance = (() => {
     const txAll  = getAll().filter(t => t.fecha && t.fecha.startsWith(String(año)));
     const amorts = Storage.get(AMORT_KEY) || [];
 
-    const ingresos = txAll.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + Number(t.monto), 0);
-    const costos   = txAll.filter(t => t.tipo === 'gasto').reduce((s, t) => s + Number(t.monto), 0);
-    const impuestos = txAll.filter(t => t.tipo === 'impuesto').reduce((s, t) => s + Number(t.monto), 0);
+    const ingresos  = txAll.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + toARS(t.monto, t.moneda), 0);
+    const costos    = txAll.filter(t => t.tipo === 'gasto').reduce((s, t) => s + toARS(t.monto, t.moneda), 0);
+    const impuestos = txAll.filter(t => t.tipo === 'impuesto').reduce((s, t) => s + toARS(t.monto, t.moneda), 0);
 
     const amortizacionesAño = amorts
       .filter(a => año >= a.año_inicio && año < a.año_inicio + a.vida_util)

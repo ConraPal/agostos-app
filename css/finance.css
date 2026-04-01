@@ -142,3 +142,46 @@
 .badge-venc-proximo   { background: var(--c-warn-bg);   color: var(--c-warn-fg);   }
 .badge-venc-pendiente { background: var(--c-info-bg);   color: var(--c-info-fg);   }
 .badge-venc-pagado    { background: var(--c-ok-bg);     color: var(--c-ok-fg);     }
+
+/* ===== Bimonetario - ARS/USD separados ===== */
+.stat-sub-moneda {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
+.stat-label-note {
+  font-size: 0.68rem;
+  font-weight: 400;
+  opacity: 0.6;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.badge-moneda-usd {
+  display: inline-block;
+  background: var(--c-info-bg);
+  color: var(--c-info-fg);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.resumen-sep {
+  margin: 0 5px;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+.resumen-monto {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-wrap: wrap;
+}

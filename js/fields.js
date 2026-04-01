@@ -214,6 +214,7 @@ const Fields = (() => {
   // --- Init ---
   function init() {
     document.getElementById('btn-new-field').addEventListener('click', () => openModal());
+    document.getElementById('btn-new-field-inline').addEventListener('click', () => openModal());
     document.getElementById('modal-field-close').addEventListener('click', closeModal);
     document.getElementById('btn-cancel-field').addEventListener('click', closeModal);
     document.getElementById('modal-field').addEventListener('click', e => {

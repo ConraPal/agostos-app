@@ -232,30 +232,45 @@ body {
 /* ===== Tabs ===== */
 .tabs {
   display: flex;
-  gap: 4px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 4px;
+  gap: 6px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
+  padding: 5px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
   box-shadow: var(--shadow);
 }
 
 .tab {
-  padding: 7px 16px;
-  background: none;
-  border: none;
+  padding: 8px 18px;
+  background: transparent;
+  border: 1px solid transparent;
   cursor: pointer;
   font-size: 13px;
-  color: var(--color-muted);
-  border-radius: calc(var(--radius) - 2px);
-  transition: color .15s, background .15s;
   font-weight: 500;
+  color: var(--color-muted);
+  border-radius: 8px;
+  transition: color .15s, background .15s, box-shadow .15s, border-color .15s;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
-.tab:hover  { color: var(--color-text); background: rgba(0,0,0,.06); }
-.tab.active { color: #fff; background: var(--color-primary); font-weight: 600; }
+.tab:hover {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.tab.active {
+  color: #fff;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.35);
+}
+
+.tab:active { transform: scale(.96); }
 
 .tab-content          { display: none; }
 .tab-content.active   { display: block; }
@@ -523,23 +538,28 @@ body {
   /* Módulo: padding lateral + inferior para bottom nav */
   .module { padding: 14px 16px calc(var(--bottom-nav-h, 60px) + env(safe-area-inset-bottom, 0px) + 16px); }
 
-  /* Tabs — grid fijo, siempre visibles, sticky */
+  /* Tabs — scroll horizontal, sticky */
   .tabs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    padding: 4px;
+    gap: 4px;
+    border-radius: 10px;
     position: sticky;
     top: 0;
     z-index: 10;
-    margin-bottom: 16px;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
+  .tabs::-webkit-scrollbar { display: none; }
   .tab {
-    padding: 8px 4px;
-    font-size: 11px;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 7px 13px;
+    font-size: 12px;
+    border-radius: 7px;
   }
 
   /* Search input full-width */
@@ -719,8 +739,9 @@ body.dark .form-group input,
 body.dark .form-group select,
 body.dark .form-group textarea  { background: #161616; color: var(--color-text); border-color: var(--color-border); }
 body.dark .table-wrapper        { background: var(--color-surface); border-color: var(--color-border); }
-body.dark .tabs                 { border-color: var(--color-border); background: var(--color-surface); }
-body.dark .tab:hover            { background: rgba(255,255,255,.07); }
+body.dark .tabs                 { background: #111; border-color: var(--color-border); }
+body.dark .tab:hover            { background: var(--color-surface); border-color: var(--color-border); }
+body.dark .tab.active           { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
 body.dark .sidebar-art::before  { background: linear-gradient(to bottom, var(--color-sidebar), transparent); }
 body.dark .animal-dropdown      { background: var(--color-surface); border-color: var(--color-border); }
 body.dark .dropdown-item:hover,
@@ -957,4 +978,122 @@ body.dark .pg-btn               { background: var(--color-surface); border-color
 body.dark .bottom-nav {
   background: var(--color-surface);
   border-top-color: var(--color-border);
+}
+
+/* ===== Home screen ===== */
+.home-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem 1rem;
+  gap: 2.5rem;
+}
+
+.home-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  text-align: center;
+  margin: 0;
+  opacity: 0.75;
+}
+
+.home-cards {
+  display: flex;
+  gap: 1.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.home-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 2.75rem 2rem;
+  width: 210px;
+  background: rgba(255,255,255,0.72);
+  border: 2px solid rgba(45,106,79,0.18);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s, background 0.15s;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+
+.home-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 28px rgba(45,106,79,0.22);
+  transform: translateY(-3px);
+  background: rgba(255,255,255,0.88);
+}
+
+.home-card:active {
+  transform: translateY(-1px);
+}
+
+.home-card-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+}
+
+.home-card-label {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-primary-h);
+}
+
+.home-card-desc {
+  font-size: 0.83rem;
+  font-weight: 400;
+  color: var(--color-text);
+  opacity: 0.6;
+  line-height: 1.45;
+}
+
+@media (max-width: 480px) {
+  .home-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .home-card {
+    width: 100%;
+    max-width: 300px;
+    padding: 2.25rem 1.75rem;
+  }
+}
+
+/* Dark mode: glassmorphism sobre fondo oscuro */
+body.dark .home-card {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.35);
+}
+
+body.dark .home-card:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 32px rgba(45,106,79,0.35);
+}
+
+body.dark .home-card-label {
+  color: #d4e8d4;
+}
+
+body.dark .home-card-desc {
+  color: var(--color-text);
+  opacity: 0.55;
+}
+
+body.dark .home-title {
+  color: var(--color-text);
+  opacity: 0.65;
 }

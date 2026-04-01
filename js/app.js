@@ -116,9 +116,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // --- Module routing (sidebar) ---
+  // --- Module routing ---
   const pageTitle = document.getElementById('page-title');
-  const moduleTitles = { livestock: 'Ganadería', agricultura: 'Agricultura', fields: 'Potreros', finance: 'Finanzas', reports: 'Reportes' };
+  const moduleTitles = { home: 'Inicio', livestock: 'Ganadería', agricultura: 'Agricultura', fields: 'Potreros', finance: 'Finanzas', reports: 'Reportes' };
   const moduleButtons = {
     livestock:   document.getElementById('btn-new-animal'),
     agricultura: [document.getElementById('btn-new-cultivo'), document.getElementById('btn-new-forraje')],
@@ -126,26 +126,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     finance:     [document.getElementById('btn-new-transaction'), document.getElementById('btn-new-vencimiento')],
   };
 
+  function navigateTo(mod) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+    document.querySelector(`.nav-item[data-module="${mod}"]`)?.classList.add('active');
+    document.getElementById(`module-${mod}`)?.classList.add('active');
+
+    if (pageTitle && moduleTitles[mod]) pageTitle.textContent = moduleTitles[mod];
+
+    if (mod === 'agricultura') Agricultura.refresh();
+    if (mod === 'fields')      Fields.refresh();
+    if (mod === 'reports')     Reports.refresh();
+
+    Object.entries(moduleButtons).forEach(([key, val]) => {
+      const btns = Array.isArray(val) ? val : [val];
+      btns.forEach(btn => { if (btn) btn.classList.toggle('hidden', key !== mod); });
+    });
+  }
+
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(item => {
     item.addEventListener('click', e => {
       e.preventDefault();
-      const mod = item.dataset.module;
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
-      item.classList.add('active');
-      document.getElementById(`module-${mod}`)?.classList.add('active');
-
-      if (pageTitle && moduleTitles[mod]) pageTitle.textContent = moduleTitles[mod];
-
-      if (mod === 'agricultura') Agricultura.refresh();
-      if (mod === 'fields')      Fields.refresh();
-      if (mod === 'reports')     Reports.refresh();
-
-      Object.entries(moduleButtons).forEach(([key, val]) => {
-        const btns = Array.isArray(val) ? val : [val];
-        btns.forEach(btn => { if (btn) btn.classList.toggle('hidden', key !== mod); });
-      });
+      navigateTo(item.dataset.module);
     });
+  });
+
+  // --- Home card buttons ---
+  document.querySelectorAll('.home-card[data-navigate]').forEach(card => {
+    card.addEventListener('click', () => navigateTo(card.dataset.navigate));
   });
 
   // --- Sidebar toggle (mobile) ---

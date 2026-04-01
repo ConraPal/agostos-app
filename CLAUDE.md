@@ -74,11 +74,27 @@ ui.toast(editingId ? 'Actualizado.' : 'Registrado.');
 
 Este patrón aplica a todos los módulos: `saveAnimal`, `saveRepro`, `saveAmort`, `savePresupuesto`, `saveSanidad`, `saveCultivo`, `saveForraje`, `saveTransaction`.
 
+### Home screen (post-login)
+
+Al hacer login, el módulo activo por defecto es `#module-home` — una pantalla de bienvenida con tres tarjetas grandes:
+
+| Tarjeta | `data-navigate` | Descripción |
+|---------|----------------|-------------|
+| 🐄 Ganadería | `livestock` | Stock, sanidad, movimientos y reproducción |
+| 🌾 Agricultura | `agricultura` | Cultivos y forraje por potrero |
+| 🗺️ Potreros | `fields` | Gestión de campos y hectáreas |
+
+- `#module-home` no aparece en sidebar ni bottom-nav
+- CSS en `main.css` bajo `/* ===== Home screen =====*/`: `.home-welcome`, `.home-card`, `.home-card-icon/label/desc`
+- Dark mode: glassmorphism con `rgba(255,255,255,0.07)` + borde semitransparente
+
 ### Routing
 
 No hay router de URL. La navegación entre módulos es visual (mostrar/ocultar secciones `.module`). El sidebar maneja el estado activo con clases CSS.
 
-Al cambiar de módulo, `app.js` actualiza el título del topbar y alterna la visibilidad del botón de acción correspondiente (oculto con `.hidden` cuando el módulo no está activo).
+Al cambiar de módulo, `app.js` llama `navigateTo(mod)` — función centralizada que: actualiza `.active` en nav-items y módulos, actualiza el título del topbar, llama `refresh()` del módulo si aplica, y alterna la visibilidad de los botones de acción del topbar.
+
+Los botones `.home-card[data-navigate]` también llaman `navigateTo(mod)` al hacer click.
 
 ### Mobile / Responsive
 
@@ -112,6 +128,8 @@ Breakpoints implementados en `main.css` y `livestock.css`:
 ### Tabs
 
 Los tabs están scoped al módulo padre: el handler en `app.js` usa `.closest('.module')` para activar/desactivar solo los tabs y tab-contents del módulo actualmente visible.
+
+**Diseño visual (pill-buttons):** `.tabs` es un contenedor con fondo propio, borde y `border-radius: 12px`. Cada `.tab` es un pill button; el activo tiene `background: var(--color-primary)` + texto blanco + sombra verde. Hover muestra fondo de superficie + borde sutil. Dark mode: contenedor `background: #111`.
 
 ---
 
@@ -335,8 +353,12 @@ Un ítem por año+tipo+categoría (se valida duplicado al crear).
 
 - `toARS(monto, moneda)` — convierte USD → ARS usando `ag_cotizacion.usd_ars`; las transacciones sin `moneda` se tratan como ARS
 - `fmtMoneda(monto, moneda)` — prefijo `$` (ARS) o `USD` (USD)
-- `renderStats()` convierte todo a ARS para el balance
+- `renderStats()` — separa totales por moneda: `stat-ingresos-ars` / `stat-ingresos-usd` / `stat-gastos-ars` / `stat-gastos-usd`; el USD sub-stat solo se muestra si hay transacciones en USD. Balance usa ARS equiv. (label "ARS equiv." en el stat card)
+- `renderResumen()` — acumula `{ ars, usd }` por categoría; muestra ambos cuando coexisten, con `.badge-moneda-usd` para el monto USD
+- `renderMargen()` — usa `toARS()` en todos los cálculos (ingresos, costos, impuestos)
+- En la tabla de transacciones, gastos e impuestos se muestran con prefijo `−` (signo menos)
 - Barra de cotización `#cotizacion-bar` en el tab Transacciones: input de valor + botón Guardar
+- Clases CSS nuevas en `finance.css`: `.stat-sub-moneda`, `.badge-moneda-usd`, `.resumen-sep`, `.resumen-monto`, `.stat-label-note`
 
 ### Categorías
 
@@ -352,8 +374,9 @@ Un ítem por año+tipo+categoría (se valida duplicado al crear).
 
 ### Stats
 
-- **Balance** — Σ ingresos ARS − Σ gastos ARS (conversión USD incluida; rojo si negativo)
-- **Total ingresos / gastos** — sumas ARS equivalentes
+- **Balance** — (Σ ingresos ARS + USD→ARS) − (Σ gastos ARS + USD→ARS); rojo si negativo; label "ARS equiv."
+- **Total ingresos** — `stat-ingresos-ars` (ARS) + `stat-ingresos-usd` (USD, oculto si cero)
+- **Total gastos** — `stat-gastos-ars` (ARS) + `stat-gastos-usd` (USD, oculto si cero)
 - **Transacciones del mes** — count del mes en curso
 
 ### Tabs del módulo
@@ -404,6 +427,7 @@ Gestión de campos y pasturas del establecimiento, con visibilidad de stock por 
 
 - `Fields.refresh()` es llamado desde `app.js` al navegar al módulo.
 - El campo `potrero` de los animales es texto libre; el cruce se hace por coincidencia exacta de nombre.
+- Botón `+ Nuevo potrero` inline dentro del tab (id: `btn-new-field-inline`), adicional al del topbar (`btn-new-field`). Ambos llaman `openModal()` en `fields.js`.
 
 ---
 
@@ -700,6 +724,6 @@ Agostos App apunta al **productor ganadero chico/familiar argentino** — el nic
 
 ### Roadmap
 
-1. **Fase 1 (MVP)** ✅ COMPLETO — rodeo + sanidad + económico básico + offline + PWA + bimonetario + PDF + WhatsApp share
+1. **Fase 1 (MVP)** ✅ COMPLETO — rodeo + sanidad + económico básico + offline + PWA + bimonetario + PDF + WhatsApp share + home screen + UX pill-tabs
 2. **Fase 2** — indicadores productivos + plan sanitario + reportes PDF avanzados
 3. **Fase 3** — trazabilidad + satelital + monetización

@@ -57,7 +57,7 @@
       <span class="logo-text">Agostos</span>
     </div>
     <nav class="sidebar-nav">
-      <a href="#livestock" class="nav-item active" data-module="livestock">
+      <a href="#livestock" class="nav-item" data-module="livestock">
         <span class="nav-icon">🐄</span>
         <span>Ganadería</span>
       </a>
@@ -90,14 +90,14 @@
     <header class="topbar">
       <div class="topbar-left">
         <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Menú">☰</button>
-        <h1 class="topbar-title" id="page-title">Ganadería</h1>
+        <h1 class="topbar-title" id="page-title">Inicio</h1>
       </div>
       <div class="topbar-actions">
         <button class="btn-icon bell-btn" id="btn-alertas" title="Recordatorios" aria-label="Recordatorios">🔔<span class="bell-badge" id="bell-badge" style="display:none"></span></button>
         <button class="btn-icon" id="btn-dark-toggle" title="Modo oscuro" aria-label="Alternar modo oscuro">🌙</button>
         <span class="topbar-user" id="topbar-user" title="Sesión activa"></span>
         <button class="btn btn-secondary btn-sm" id="btn-logout" title="Cerrar sesión">Salir</button>
-        <button class="btn btn-primary" id="btn-new-animal">+ Nuevo animal</button>
+        <button class="btn btn-primary hidden" id="btn-new-animal">+ Nuevo animal</button>
         <button class="btn btn-primary hidden" id="btn-new-cultivo">+ Agregar cultivo</button>
         <button class="btn btn-secondary hidden" id="btn-new-forraje">+ Agregar forraje</button>
         <button class="btn btn-primary hidden" id="btn-new-field">+ Nuevo potrero</button>
@@ -106,8 +106,32 @@
       </div>
     </header>
 
+    <!-- Módulo Home -->
+    <section id="module-home" class="module active">
+      <div class="home-welcome">
+        <h2 class="home-title">¿Qué vas a gestionar hoy?</h2>
+        <div class="home-cards">
+          <button class="home-card" data-navigate="livestock">
+            <span class="home-card-icon">🐄</span>
+            <span class="home-card-label">Ganadería</span>
+            <span class="home-card-desc">Stock, sanidad, movimientos y reproducción</span>
+          </button>
+          <button class="home-card" data-navigate="agricultura">
+            <span class="home-card-icon">🌾</span>
+            <span class="home-card-label">Agricultura</span>
+            <span class="home-card-desc">Cultivos y forraje por potrero</span>
+          </button>
+          <button class="home-card" data-navigate="fields">
+            <span class="home-card-icon">🗺️</span>
+            <span class="home-card-label">Potreros</span>
+            <span class="home-card-desc">Gestión de campos y hectáreas</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- Módulo Ganadería -->
-    <section id="module-livestock" class="module active">
+    <section id="module-livestock" class="module">
 
       <!-- Stats -->
       <div class="stats-grid">
@@ -464,6 +488,7 @@
       <div id="tab-fields-list" class="tab-content active">
         <div class="table-toolbar">
           <input type="search" class="search-input" id="search-fields" placeholder="Buscar por nombre o pastura..." />
+          <button class="btn btn-primary" id="btn-new-field-inline">+ Nuevo potrero</button>
         </div>
         <div class="table-wrapper">
           <table class="data-table" id="fields-table">
@@ -517,16 +542,18 @@
       <!-- Stats -->
       <div class="stats-grid">
         <div class="stat-card">
-          <span class="stat-label">Balance</span>
+          <span class="stat-label">Balance <span class="stat-label-note">ARS equiv.</span></span>
           <span class="stat-value" id="stat-balance">$&nbsp;0,00</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Total ingresos</span>
-          <span class="stat-value monto-ingreso" id="stat-ingresos">$&nbsp;0,00</span>
+          <span class="stat-value monto-ingreso" id="stat-ingresos-ars">$&nbsp;0,00</span>
+          <span class="stat-sub-moneda monto-ingreso" id="stat-ingresos-usd" style="display:none"></span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Total gastos</span>
-          <span class="stat-value monto-gasto" id="stat-gastos">$&nbsp;0,00</span>
+          <span class="stat-value monto-gasto" id="stat-gastos-ars">$&nbsp;0,00</span>
+          <span class="stat-sub-moneda monto-gasto" id="stat-gastos-usd" style="display:none"></span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Transacciones del mes</span>
@@ -893,7 +920,7 @@
 
   <!-- Mobile bottom navigation -->
   <nav class="bottom-nav" id="bottom-nav">
-    <a href="#livestock" class="nav-item bottom-nav-item active" data-module="livestock">
+    <a href="#livestock" class="nav-item bottom-nav-item" data-module="livestock">
       <span class="nav-icon">🐄</span>
       <span class="bottom-nav-label">Ganadería</span>
     </a>
