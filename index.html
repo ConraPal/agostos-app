@@ -33,7 +33,12 @@
         </div>
         <div class="form-row">
           <label for="login-password">Contraseña</label>
-          <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" />
+          <div class="login-password-wrap">
+            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" />
+            <button type="button" id="toggle-password" class="toggle-password" aria-label="Mostrar contraseña">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
         </div>
         <p id="login-error" class="login-error hidden">Email o contraseña incorrectos.</p>
         <button type="submit" class="btn btn-primary login-btn" id="login-submit">Ingresar</button>
@@ -127,6 +132,7 @@
             <span class="home-card-desc">Gestión de campos y hectáreas</span>
           </button>
         </div>
+        <div id="home-stats-bar" class="home-stats-bar"></div>
       </div>
     </section>
 

@@ -20,19 +20,13 @@ const ui = (() => {
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('confirm-ok').addEventListener('click', () => {
-      document.getElementById('modal-confirm').classList.add('hidden');
-      _resolve?.(true); _resolve = null;
-    });
-    document.getElementById('confirm-cancel').addEventListener('click', () => {
-      document.getElementById('modal-confirm').classList.add('hidden');
-      _resolve?.(false); _resolve = null;
-    });
+    const closeConfirm = (result) => {
+      closeModalAnimated('modal-confirm', () => { _resolve?.(result); _resolve = null; });
+    };
+    document.getElementById('confirm-ok').addEventListener('click', () => closeConfirm(true));
+    document.getElementById('confirm-cancel').addEventListener('click', () => closeConfirm(false));
     document.getElementById('modal-confirm').addEventListener('click', e => {
-      if (e.target === e.currentTarget) {
-        document.getElementById('modal-confirm').classList.add('hidden');
-        _resolve?.(false); _resolve = null;
-      }
+      if (e.target === e.currentTarget) closeConfirm(false);
     });
   });
 
@@ -60,8 +54,101 @@ const ui = (() => {
     return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
   }
 
-  return { toast, confirm, pagination, debounce };
+  // --- Count-up animation for stat values ---
+  function countUp(el, target, duration = 600) {
+    if (!el) return;
+    const start = performance.now();
+    const from  = parseFloat(el.textContent) || 0;
+    const to    = parseFloat(target) || 0;
+    if (from === to) { el.textContent = to; return; }
+    const step = ts => {
+      const progress = Math.min((ts - start) / duration, 1);
+      const eased    = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      el.textContent = Math.round(from + (to - from) * eased);
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  // --- Field validation helpers ---
+  function fieldError(inputEl, msg = '') {
+    if (!inputEl) return;
+    inputEl.classList.remove('field-success');
+    inputEl.classList.add('field-error');
+    // force reflow to re-trigger shake animation
+    void inputEl.offsetWidth;
+    let errEl = inputEl.parentElement.querySelector('.field-error-msg');
+    if (!errEl) {
+      errEl = document.createElement('span');
+      errEl.className = 'field-error-msg';
+      inputEl.parentElement.appendChild(errEl);
+    }
+    errEl.textContent = msg;
+    inputEl.focus();
+  }
+  function fieldClear(inputEl) {
+    if (!inputEl) return;
+    inputEl.classList.remove('field-error', 'field-success');
+    const errEl = inputEl.parentElement?.querySelector('.field-error-msg');
+    if (errEl) errEl.remove();
+  }
+
+  // --- Button loading state ---
+  const _btnOrigText = new WeakMap();
+  function btnLoading(btn, on) {
+    if (!btn) return;
+    if (on) {
+      _btnOrigText.set(btn, btn.innerHTML);
+      btn.classList.add('btn-loading');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="btn-spinner"></span>${btn.dataset.loadingText || ''}`;
+    } else {
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+      if (_btnOrigText.has(btn)) { btn.innerHTML = _btnOrigText.get(btn); _btnOrigText.delete(btn); }
+    }
+  }
+
+  return { toast, confirm, pagination, debounce, countUp, fieldError, fieldClear, btnLoading };
 })();
+
+// --- Modal close animation helper (global) ---
+function closeModalAnimated(overlayId, afterFn) {
+  const overlay = document.getElementById(overlayId);
+  if (!overlay) { afterFn?.(); return; }
+  overlay.classList.add('modal-closing');
+  let finished = false;
+  const done = () => {
+    if (finished) return;
+    finished = true;
+    overlay.classList.remove('modal-closing');
+    overlay.classList.add('hidden');
+    afterFn?.();
+  };
+  const modal = overlay.querySelector('.modal');
+  const target = modal || overlay;
+  const onEnd = () => { target.removeEventListener('animationend', onEnd); done(); };
+  target.addEventListener('animationend', onEnd);
+  // Fallback in case animation doesn't fire (e.g. reduced-motion)
+  setTimeout(done, 200);
+}
+
+// --- Empty state helper (global) ---
+function emptyStateHTML(msg, btnLabel, btnAction) {
+  const btn = btnLabel
+    ? `<button class="btn btn-primary" onclick="${btnAction}">${btnLabel}</button>`
+    : '';
+  return `
+    <tr class="empty-row"><td colspan="99">
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+        </svg>
+        <span class="empty-state-msg">${msg}</span>
+        ${btn}
+      </div>
+    </td></tr>`;
+}
 
 // ===== App Bootstrap =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -80,8 +167,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       const submitBtn = document.getElementById('login-submit');
       const errorEl   = document.getElementById('login-error');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Ingresando…';
+      const card      = document.querySelector('.login-card');
+      ui.btnLoading(submitBtn, true);
       errorEl.classList.add('hidden');
       try {
         await Storage.login(
@@ -91,10 +178,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         loginScreen.classList.add('hidden');
         _initApp();
       } catch (_) {
+        ui.btnLoading(submitBtn, false);
         errorEl.classList.remove('hidden');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Ingresar';
+        if (card) {
+          card.classList.remove('shake');
+          void card.offsetWidth;
+          card.classList.add('shake');
+          card.addEventListener('animationend', () => card.classList.remove('shake'), { once: true });
+        }
       }
+    });
+
+    // Toggle password visibility
+    document.getElementById('toggle-password')?.addEventListener('click', () => {
+      const pwd = document.getElementById('login-password');
+      const btn = document.getElementById('toggle-password');
+      if (!pwd) return;
+      const show = pwd.type === 'password';
+      pwd.type = show ? 'text' : 'password';
+      btn.innerHTML = show
+        ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+        : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
     });
     return; // esperar login
   }
@@ -126,17 +230,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     finance:     [document.getElementById('btn-new-transaction'), document.getElementById('btn-new-vencimiento')],
   };
 
+  function renderHomeStats() {
+    const bar = document.getElementById('home-stats-bar');
+    if (!bar) return;
+    const animals  = (Storage.get('ag_animals') || []).filter(a => a.estado === 'activo');
+    const fields   = (Storage.get('ag_fields') || []).filter(f => f.estado === 'activo');
+    const parts = [];
+    if (animals.length) parts.push(`<strong>${animals.length}</strong> animales activos`);
+    if (fields.length)  parts.push(`<strong>${fields.length}</strong> potreros`);
+    bar.innerHTML = parts.length
+      ? parts.join(' <span class="hs-dot">·</span> ')
+      : 'Sin datos registrados aún.';
+  }
+
   function navigateTo(mod) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
     document.querySelector(`.nav-item[data-module="${mod}"]`)?.classList.add('active');
-    document.getElementById(`module-${mod}`)?.classList.add('active');
+    const moduleEl = document.getElementById(`module-${mod}`);
+    if (moduleEl) {
+      // Re-trigger animation by removing and re-adding active
+      moduleEl.classList.remove('active');
+      void moduleEl.offsetWidth;
+      moduleEl.classList.add('active');
+    }
 
     if (pageTitle && moduleTitles[mod]) pageTitle.textContent = moduleTitles[mod];
 
     if (mod === 'agricultura') Agricultura.refresh();
     if (mod === 'fields')      Fields.refresh();
     if (mod === 'reports')     Reports.refresh();
+    if (mod === 'home')        renderHomeStats();
 
     Object.entries(moduleButtons).forEach(([key, val]) => {
       const btns = Array.isArray(val) ? val : [val];
@@ -198,6 +322,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   Fields.init();
   Agricultura.init();
   Reports.init();
+
+  // --- Render home stats on initial load ---
+  renderHomeStats();
 
   // --- Alertas / Recordatorios ---
   const ALERTA_KEY = 'ag_alertas';

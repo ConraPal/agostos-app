@@ -110,7 +110,7 @@ const Finance = (() => {
     const impEl = document.getElementById('stat-impuestos-ars');
     if (impEl) impEl.textContent = fmtMoney(arsImpuestos);
 
-    document.getElementById('stat-mes').textContent = txMes;
+    ui.countUp(document.getElementById('stat-mes'), txMes);
   }
 
   // --- Tab: Transacciones ---
@@ -134,7 +134,11 @@ const Finance = (() => {
 
     const tbody = document.getElementById('transactions-tbody');
     if (data.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay transacciones registradas.</td></tr>';
+      tbody.innerHTML = emptyStateHTML(
+        search || filterTipo ? 'No hay transacciones que coincidan.' : 'Aún no registraste transacciones.',
+        search || filterTipo ? '' : '+ Nueva transacción',
+        "document.getElementById('btn-new-transaction').click()"
+      );
       ui.pagination('transactions-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -298,10 +302,11 @@ const Finance = (() => {
   }
 
   function closeModal() {
-    document.getElementById('modal-transaction').classList.add('hidden');
-    const monedaSel = document.getElementById('ft-moneda');
-    if (monedaSel) monedaSel.disabled = false;
-    editingId = null;
+    closeModalAnimated('modal-transaction', () => {
+      const monedaSel = document.getElementById('ft-moneda');
+      if (monedaSel) monedaSel.disabled = false;
+      editingId = null;
+    });
   }
 
   // --- Save ---
@@ -365,12 +370,12 @@ const Finance = (() => {
     const total = data.length;
     const cuotaTotal = data.reduce((s, a) => s + (a.cuota_anual || 0), 0);
 
-    document.getElementById('stat-amort-total').textContent = total;
+    ui.countUp(document.getElementById('stat-amort-total'), total);
     document.getElementById('stat-amort-cuota').textContent = fmtMoney(cuotaTotal);
 
     const tbody = document.getElementById('amort-tbody');
     if (!data.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay amortizaciones registradas.</td></tr>';
+      tbody.innerHTML = emptyStateHTML('Aún no registraste activos amortizables.', '', '');
       ui.pagination('amort-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -413,8 +418,7 @@ const Finance = (() => {
   }
 
   function closeModalAmort() {
-    document.getElementById('modal-amortization').classList.add('hidden');
-    editingAmortId = null;
+    closeModalAnimated('modal-amortization', () => { editingAmortId = null; });
   }
 
   function saveAmort(e) {
@@ -573,8 +577,7 @@ const Finance = (() => {
   }
 
   function closeModalPresupuesto() {
-    document.getElementById('modal-presupuesto').classList.add('hidden');
-    editingPresupuestoId = null;
+    closeModalAnimated('modal-presupuesto', () => { editingPresupuestoId = null; });
   }
 
   function savePresupuesto(e) {
@@ -644,8 +647,7 @@ const Finance = (() => {
   }
 
   function closeModalVenc() {
-    document.getElementById('modal-vencimiento').classList.add('hidden');
-    editingVencId = null;
+    closeModalAnimated('modal-vencimiento', () => { editingVencId = null; });
   }
 
   function saveVencimiento(e) {

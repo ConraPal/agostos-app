@@ -34,10 +34,10 @@ const Agricultura = (() => {
     const fardos  = forraje.filter(f => f.tipo === 'fardo').reduce((s, f) => s + (Number(f.cantidad) || 0), 0);
     const potrerosCultivo = new Set(cultivos.filter(c => c.potrero_id).map(c => c.potrero_id)).size;
 
-    document.getElementById('stat-agro-cultivos').textContent = cultivos.length;
-    document.getElementById('stat-agro-rollos').textContent   = rollos;
-    document.getElementById('stat-agro-fardos').textContent   = fardos;
-    document.getElementById('stat-agro-potreros').textContent = potrerosCultivo;
+    ui.countUp(document.getElementById('stat-agro-cultivos'), cultivos.length);
+    ui.countUp(document.getElementById('stat-agro-rollos'),   rollos);
+    ui.countUp(document.getElementById('stat-agro-fardos'),   fardos);
+    ui.countUp(document.getElementById('stat-agro-potreros'), potrerosCultivo);
   }
 
   // Extract year from a cultivo record (supports both old año field and new fecha_siembra)
@@ -71,7 +71,11 @@ const Agricultura = (() => {
 
     const tbody = document.getElementById('cultivos-tbody');
     if (!data.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay cultivos registrados.</td></tr>';
+      tbody.innerHTML = emptyStateHTML(
+        potreroFilter || yearFilter ? 'No hay cultivos que coincidan con el filtro.' : 'Aún no registraste cultivos.',
+        potreroFilter || yearFilter ? '' : '+ Agregar cultivo',
+        "document.getElementById('btn-new-cultivo').click()"
+      );
       ui.pagination('cultivos-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -121,8 +125,7 @@ const Agricultura = (() => {
   }
 
   function closeModalCultivo() {
-    document.getElementById('modal-cultivo').classList.add('hidden');
-    editingCultivoId = null;
+    closeModalAnimated('modal-cultivo', () => { editingCultivoId = null; });
   }
 
   function saveCultivo(e) {
@@ -188,7 +191,11 @@ const Agricultura = (() => {
 
     const tbody = document.getElementById('forraje-tbody');
     if (!data.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay datos de forraje registrados.</td></tr>';
+      tbody.innerHTML = emptyStateHTML(
+        'Aún no registraste datos de forraje.',
+        '+ Agregar forraje',
+        "document.getElementById('btn-new-forraje').click()"
+      );
       ui.pagination('forraje-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -232,8 +239,7 @@ const Agricultura = (() => {
   }
 
   function closeModalForraje() {
-    document.getElementById('modal-forraje').classList.add('hidden');
-    editingForrajeId = null;
+    closeModalAnimated('modal-forraje', () => { editingForrajeId = null; });
   }
 
   function saveForraje(e) {

@@ -30,10 +30,10 @@ const Fields = (() => {
     const enUso  = fields.filter(f => (animalCount[f.nombre] || 0) > 0).length;
     const libres = total - enUso;
 
-    document.getElementById('stat-fields-total').textContent  = total;
-    document.getElementById('stat-fields-ha').textContent     = totalHa % 1 === 0 ? totalHa : totalHa.toFixed(1);
-    document.getElementById('stat-fields-en-uso').textContent = enUso;
-    document.getElementById('stat-fields-libres').textContent = libres;
+    ui.countUp(document.getElementById('stat-fields-total'),  total);
+    ui.countUp(document.getElementById('stat-fields-ha'),     totalHa % 1 === 0 ? totalHa : parseFloat(totalHa.toFixed(1)));
+    ui.countUp(document.getElementById('stat-fields-en-uso'), enUso);
+    ui.countUp(document.getElementById('stat-fields-libres'), libres);
   }
 
   // --- Tab: Potreros ---
@@ -55,7 +55,11 @@ const Fields = (() => {
 
     const tbody = document.getElementById('fields-tbody');
     if (data.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay potreros registrados.</td></tr>';
+      tbody.innerHTML = emptyStateHTML(
+        search ? 'No hay potreros que coincidan.' : 'Aún no registraste potreros.',
+        search ? '' : '+ Nuevo potrero',
+        "document.getElementById('btn-new-field-inline').click()"
+      );
       return;
     }
 
@@ -107,7 +111,7 @@ const Fields = (() => {
 
     const tbody = document.getElementById('stock-tbody');
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Sin datos de stock.</td></tr>';
+      tbody.innerHTML = emptyStateHTML('Sin animales activos en ningún potrero.', '', '');
       return;
     }
 
@@ -154,8 +158,7 @@ const Fields = (() => {
   }
 
   function closeModal() {
-    document.getElementById('modal-field').classList.add('hidden');
-    editingId = null;
+    closeModalAnimated('modal-field', () => { editingId = null; });
   }
 
   // --- Save ---
@@ -168,18 +171,23 @@ const Fields = (() => {
     const fecha_implantacion = document.getElementById('ff-implantacion').value || null;
     const observaciones     = document.getElementById('ff-obs').value.trim();
 
+    if (!nombre) {
+      ui.fieldError(document.getElementById('ff-nombre'), 'El nombre es obligatorio.');
+      return;
+    }
+
     const data = getAll();
 
     if (editingId) {
       if (data.some(f => f.id !== editingId && f.nombre.toLowerCase() === nombre.toLowerCase())) {
-        ui.toast(`Ya existe otro potrero llamado "${nombre}".`, 'error');
+        ui.fieldError(document.getElementById('ff-nombre'), `Ya existe otro potrero llamado "${nombre}".`);
         return;
       }
       const idx = data.findIndex(f => f.id === editingId);
       if (idx !== -1) data[idx] = { ...data[idx], nombre, hectareas, pastura, estado, fecha_implantacion, observaciones };
     } else {
       if (data.some(f => f.nombre.toLowerCase() === nombre.toLowerCase())) {
-        ui.toast(`Ya existe un potrero llamado "${nombre}".`, 'error');
+        ui.fieldError(document.getElementById('ff-nombre'), `Ya existe un potrero llamado "${nombre}".`);
         return;
       }
       data.push({ id: String(Date.now()), nombre, hectareas, pastura, estado, fecha_implantacion, observaciones });

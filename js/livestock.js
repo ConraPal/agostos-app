@@ -64,12 +64,12 @@ const Livestock = (() => {
   // --- Stats ---
   const renderStats = () => {
     const animals = getData(KEYS.animals).filter(a => a.estado === 'activo');
-    document.getElementById('stat-total').textContent      = animals.length;
-    document.getElementById('stat-cows').textContent       = animals.filter(a => a.tipo === 'vaca').length;
-    document.getElementById('stat-bulls').textContent      = animals.filter(a => a.tipo === 'toro').length;
-    document.getElementById('stat-calves').textContent     = animals.filter(a => a.tipo === 'ternero').length;
-    document.getElementById('stat-novillos').textContent   = animals.filter(a => a.tipo === 'novillo').length;
-    document.getElementById('stat-vaquillonas').textContent = animals.filter(a => a.tipo === 'vaquillona').length;
+    ui.countUp(document.getElementById('stat-total'),       animals.length);
+    ui.countUp(document.getElementById('stat-cows'),        animals.filter(a => a.tipo === 'vaca').length);
+    ui.countUp(document.getElementById('stat-bulls'),       animals.filter(a => a.tipo === 'toro').length);
+    ui.countUp(document.getElementById('stat-calves'),      animals.filter(a => a.tipo === 'ternero').length);
+    ui.countUp(document.getElementById('stat-novillos'),    animals.filter(a => a.tipo === 'novillo').length);
+    ui.countUp(document.getElementById('stat-vaquillonas'), animals.filter(a => a.tipo === 'vaquillona').length);
   };
 
   // --- Render animals table ---
@@ -110,7 +110,11 @@ const Livestock = (() => {
 
     const tbody = document.getElementById('animals-tbody');
     if (!animals.length) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="9">No hay animales que coincidan.</td></tr>`;
+      tbody.innerHTML = emptyStateHTML(
+        search || typeFilter ? 'No hay animales que coincidan con la búsqueda.' : 'Aún no registraste animales.',
+        search || typeFilter ? '' : '+ Nuevo animal',
+        "document.getElementById('btn-new-animal').click()"
+      );
       ui.pagination('animals-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -143,7 +147,7 @@ const Livestock = (() => {
     });
     const tbody = document.getElementById('movements-tbody');
     if (!movements.length) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No hay movimientos registrados.</td></tr>`;
+      tbody.innerHTML = emptyStateHTML('No hay movimientos registrados.', '', '');
       ui.pagination('movements-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -166,7 +170,7 @@ const Livestock = (() => {
     const history = [...getData(KEYS.history)].sort((a, b) => b.fecha.localeCompare(a.fecha));
     const tbody = document.getElementById('history-tbody');
     if (!history.length) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="5">No hay registros en el historial.</td></tr>`;
+      tbody.innerHTML = emptyStateHTML('El historial está vacío.', '', '');
       ui.pagination('history-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -204,18 +208,22 @@ const Livestock = (() => {
     const all = getData(KEYS.sanidad);
     const now = new Date();
     const mesActual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    document.getElementById('stat-sanidad-mes').textContent =
-      all.filter(s => s.fecha && s.fecha.startsWith(mesActual)).length;
-    document.getElementById('stat-sanidad-vacunacion').textContent =
-      all.filter(s => s.tipo === 'vacunación').length;
-    document.getElementById('stat-sanidad-desparasitacion').textContent =
-      all.filter(s => s.tipo === 'desparasitación').length;
-    document.getElementById('stat-sanidad-veterinario').textContent =
-      all.filter(s => s.tipo === 'veterinario').length;
+    ui.countUp(document.getElementById('stat-sanidad-mes'),
+      all.filter(s => s.fecha && s.fecha.startsWith(mesActual)).length);
+    ui.countUp(document.getElementById('stat-sanidad-vacunacion'),
+      all.filter(s => s.tipo === 'vacunación').length);
+    ui.countUp(document.getElementById('stat-sanidad-desparasitacion'),
+      all.filter(s => s.tipo === 'desparasitación').length);
+    ui.countUp(document.getElementById('stat-sanidad-veterinario'),
+      all.filter(s => s.tipo === 'veterinario').length);
 
     const tbody = document.getElementById('sanidad-tbody');
     if (!data.length) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay eventos de sanidad${tipoFilter || search ? ' que coincidan' : ' registrados'}.</td></tr>`;
+      tbody.innerHTML = emptyStateHTML(
+        tipoFilter || search ? 'No hay eventos de sanidad que coincidan.' : 'Aún no registraste eventos sanitarios.',
+        tipoFilter || search ? '' : '+ Nuevo evento',
+        "document.getElementById('btn-new-sanidad').click()"
+      );
       ui.pagination('sanidad-pagination', 0, 1, PAGE_SIZE, () => {});
       return;
     }
@@ -331,11 +339,12 @@ const Livestock = (() => {
   };
 
   const closeModalSanidad = () => {
-    document.getElementById('modal-sanidad').classList.add('hidden');
-    document.getElementById('sanidad-animal-dropdown').classList.add('hidden');
-    editingSanidadId = null;
-    selectedSanidadAnimalId = null;
-    selectedSanidadAnimalTipo = null;
+    closeModalAnimated('modal-sanidad', () => {
+      document.getElementById('sanidad-animal-dropdown').classList.add('hidden');
+      editingSanidadId = null;
+      selectedSanidadAnimalId = null;
+      selectedSanidadAnimalTipo = null;
+    });
   };
 
   const saveSanidad = e => {
@@ -444,8 +453,7 @@ const Livestock = (() => {
   };
 
   const closeModal = () => {
-    document.getElementById('modal-animal').classList.add('hidden');
-    editingId = null;
+    closeModalAnimated('modal-animal', () => { editingId = null; });
   };
 
   // --- Save animal ---
@@ -467,6 +475,15 @@ const Livestock = (() => {
       castracion_fecha: form.tipo.value === 'ternero' ? (form.castracion_fecha.value || null) : null
     };
 
+    if (!data.caravana) {
+      ui.fieldError(form.caravana, 'La caravana es obligatoria.');
+      return;
+    }
+    if (!data.tipo) {
+      ui.fieldError(form.tipo, 'Seleccioná un tipo.');
+      return;
+    }
+
     if (editingId) {
       const idx = animals.findIndex(a => a.id === editingId);
       animals[idx] = { ...animals[idx], ...data };
@@ -474,7 +491,7 @@ const Livestock = (() => {
     } else {
       // Check duplicate caravana
       if (animals.some(a => a.caravana === data.caravana)) {
-        ui.toast(`Ya existe un animal con la caravana ${data.caravana}`, 'error');
+        ui.fieldError(form.caravana, `Ya existe un animal con la caravana ${data.caravana}.`);
         return;
       }
       animals.unshift({ id: String(Date.now()), ...data });
@@ -503,9 +520,10 @@ const Livestock = (() => {
   };
 
   const closeMovementModal = () => {
-    document.getElementById('modal-movement').classList.add('hidden');
-    document.getElementById('animal-dropdown').classList.add('hidden');
-    selectedAnimalId = null;
+    closeModalAnimated('modal-movement', () => {
+      document.getElementById('animal-dropdown').classList.add('hidden');
+      selectedAnimalId = null;
+    });
   };
 
   // Animal search dropdown
@@ -698,8 +716,7 @@ const Livestock = (() => {
   };
 
   const closeModalRepro = () => {
-    document.getElementById('modal-reproduction').classList.add('hidden');
-    editingReproId = null;
+    closeModalAnimated('modal-reproduction', () => { editingReproId = null; });
   };
 
   const saveRepro = e => {
