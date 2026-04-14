@@ -443,6 +443,198 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   refreshAlertBadge();
+
+  // ===== Onboarding Wizard =====
+  const Onboarding = (function () {
+    const _obState = { step: 1, fields: [], counts: {} };
+    const TIPOS = ['vaca', 'toro', 'ternero', 'novillo', 'vaquillona'];
+    const TIPO_LABELS = { vaca: 'Vacas', toro: 'Toros', ternero: 'Terneros', novillo: 'Novillos', vaquillona: 'Vaquillonas' };
+    const STEP_TITLES = { 1: 'Tus potreros', 2: 'Tu hacienda', 3: '¡Listo para empezar!' };
+
+    function checkAndStart() {
+      const animals = Storage.get('ag_animals') || [];
+      const fields  = Storage.get('ag_fields')  || [];
+      if (!Storage.get('ag_onboarded') && animals.length === 0 && fields.length === 0) {
+        _openWizard();
+      }
+    }
+
+    function _openWizard() {
+      _obState.step = 1;
+      _obState.fields = [];
+      _obState.counts = {};
+      document.getElementById('ob-fields-list').innerHTML = '';
+      _obAddFieldRow();
+      _obGoToStep(1);
+      document.getElementById('modal-onboarding').classList.remove('hidden');
+    }
+
+    function _obGoToStep(n) {
+      _obState.step = n;
+      document.getElementById('ob-title').textContent = STEP_TITLES[n];
+      document.getElementById('ob-step-label').textContent = 'Paso ' + n + ' de 3';
+      document.querySelectorAll('.ob-dot').forEach(d => d.classList.toggle('ob-dot-active', Number(d.dataset.step) === n));
+      document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('ob-step-active'));
+      document.getElementById('ob-step-' + n).classList.add('ob-step-active');
+      if (n === 2) _obBuildHaciendaTable();
+      if (n === 3) _obBuildSummary();
+    }
+
+    function _obAddFieldRow() {
+      const row = document.createElement('div');
+      row.className = 'ob-field-row';
+      row.innerHTML =
+        '<input type="text" data-col="nombre" placeholder="Nombre del potrero">' +
+        '<input type="number" data-col="hectareas" placeholder="Ha" min="0" step="0.1">' +
+        '<select data-col="pastura">' +
+          '<option value="Natural">Natural</option>' +
+          '<option value="Mejorada">Mejorada</option>' +
+          '<option value="Verdeo">Verdeo</option>' +
+          '<option value="Otro">Otro</option>' +
+        '</select>' +
+        '<button type="button" class="ob-remove-row" aria-label="Eliminar fila">&times;</button>';
+      row.querySelector('.ob-remove-row').addEventListener('click', function () {
+        row.remove();
+        _obUpdateRemoveButtons();
+      });
+      document.getElementById('ob-fields-list').appendChild(row);
+      _obUpdateRemoveButtons();
+    }
+
+    function _obUpdateRemoveButtons() {
+      const rows = document.querySelectorAll('#ob-fields-list .ob-field-row');
+      rows.forEach(function (r) { r.querySelector('.ob-remove-row').disabled = rows.length === 1; });
+    }
+
+    function _obSyncFieldsFromDOM() {
+      _obState.fields = [];
+      document.querySelectorAll('#ob-fields-list .ob-field-row').forEach(function (row) {
+        const nombre = row.querySelector('[data-col="nombre"]').value.trim();
+        const ha     = parseFloat(row.querySelector('[data-col="hectareas"]').value) || null;
+        const past   = row.querySelector('[data-col="pastura"]').value;
+        if (nombre) _obState.fields.push({ nombre: nombre, hectareas: ha, pastura: past });
+      });
+    }
+
+    function _obBuildHaciendaTable() {
+      const tbody = document.getElementById('ob-hacienda-tbody');
+      const potreros = _obState.fields.map(function (f) { return f.nombre; });
+      const allRows = potreros.concat(['Sin potrero']);
+      tbody.innerHTML = '';
+      allRows.forEach(function (nombre) {
+        const tr = document.createElement('tr');
+        tr.dataset.potrero = nombre;
+        let cells = '<td>' + (nombre || 'Sin potrero') + '</td>';
+        TIPOS.forEach(function (tipo) {
+          const saved = (_obState.counts[nombre] || {})[tipo] || 0;
+          cells += '<td><input class="ob-count-input" type="number" min="0" value="' + saved + '" data-tipo="' + tipo + '"></td>';
+        });
+        tr.innerHTML = cells;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function _obSyncCountsFromDOM() {
+      _obState.counts = {};
+      document.querySelectorAll('#ob-hacienda-tbody tr').forEach(function (tr) {
+        const potrero = tr.dataset.potrero;
+        _obState.counts[potrero] = {};
+        tr.querySelectorAll('.ob-count-input').forEach(function (inp) {
+          _obState.counts[potrero][inp.dataset.tipo] = parseInt(inp.value) || 0;
+        });
+      });
+    }
+
+    function _obBuildSummary() {
+      let total = 0;
+      Object.keys(_obState.counts).forEach(function (p) {
+        TIPOS.forEach(function (t) { total += (_obState.counts[p][t] || 0); });
+      });
+      document.getElementById('ob-done-summary').textContent =
+        'Registramos ' + _obState.fields.length + ' potreros y ' + total + ' animales como punto de partida.';
+    }
+
+    function _obSaveAndClose() {
+      // Guardar potreros
+      const existingFields = Storage.get('ag_fields') || [];
+      const base = Date.now();
+      const newFields = _obState.fields.map(function (f, i) {
+        return { id: String(base + i), nombre: f.nombre, hectareas: f.hectareas, pastura: f.pastura || 'Natural', estado: 'activo', fecha_implantacion: null, observaciones: '' };
+      });
+      Storage.set('ag_fields', existingFields.concat(newFields));
+
+      // Guardar animales
+      const existingAnimals = Storage.get('ag_animals') || [];
+      let counter = existingAnimals.length + 1;
+      const newAnimals = [];
+      const potreroKeys = _obState.fields.map(function (f) { return f.nombre; }).concat(['Sin potrero']);
+      potreroKeys.forEach(function (potreroNombre) {
+        const counts = _obState.counts[potreroNombre] || {};
+        TIPOS.forEach(function (tipo) {
+          const qty = parseInt(counts[tipo]) || 0;
+          for (var i = 0; i < qty; i++) {
+            const padded = String(counter).padStart(4, '0');
+            newAnimals.push({
+              id: String(base + 10000 + counter),
+              caravana: '#OB-' + padded,
+              tipo: tipo,
+              nombre: '',
+              raza: '',
+              nacimiento: '',
+              potrero: potreroNombre === 'Sin potrero' ? '' : potreroNombre,
+              estado: 'activo',
+              peso: null,
+              observaciones: 'Ingresado en configuración inicial.',
+              castracion_fecha: null
+            });
+            counter++;
+          }
+        });
+      });
+      Storage.set('ag_animals', existingAnimals.concat(newAnimals));
+      Storage.set('ag_onboarded', true);
+
+      closeModalAnimated('modal-onboarding', function () {
+        ui.toast('¡Datos registrados! Ya podés gestionar tu campo.');
+      });
+      renderHomeStats();
+      if (typeof Livestock !== 'undefined') Livestock.refresh();
+      if (typeof Fields !== 'undefined') Fields.refresh();
+    }
+
+    function _obSkip() {
+      Storage.set('ag_onboarded', true);
+      closeModalAnimated('modal-onboarding', null);
+    }
+
+    function _bindEvents() {
+      document.getElementById('ob-skip').addEventListener('click', _obSkip);
+      document.getElementById('ob-add-field').addEventListener('click', _obAddFieldRow);
+
+      document.getElementById('ob-next-1').addEventListener('click', function () {
+        _obSyncFieldsFromDOM();
+        _obGoToStep(2);
+      });
+      document.getElementById('ob-prev-2').addEventListener('click', function () {
+        _obSyncCountsFromDOM();
+        _obGoToStep(1);
+      });
+      document.getElementById('ob-next-2').addEventListener('click', function () {
+        _obSyncCountsFromDOM();
+        _obGoToStep(3);
+      });
+      document.getElementById('ob-finish').addEventListener('click', _obSaveAndClose);
+
+      document.getElementById('modal-onboarding').addEventListener('click', function (e) {
+        if (e.target === e.currentTarget) _obSkip();
+      });
+    }
+
+    _bindEvents();
+    return { checkAndStart: checkAndStart };
+  })();
+
+  Onboarding.checkAndStart();
   } // fin _initApp
 });
 

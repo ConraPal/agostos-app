@@ -1708,6 +1708,86 @@
     </div>
   </div>
 
+  <!-- Modal: Onboarding wizard -->
+  <div class="modal-overlay hidden" id="modal-onboarding">
+    <div class="modal modal-onboarding">
+
+      <div class="modal-header ob-header">
+        <div class="ob-header-left">
+          <h2 id="ob-title">Tus potreros</h2>
+          <span class="ob-step-label" id="ob-step-label">Paso 1 de 3</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="ob-skip">Saltar</button>
+      </div>
+
+      <div class="ob-progress" aria-label="Progreso del asistente">
+        <span class="ob-dot ob-dot-active" data-step="1"></span>
+        <span class="ob-dot" data-step="2"></span>
+        <span class="ob-dot" data-step="3"></span>
+      </div>
+
+      <!-- Paso 1: Potreros -->
+      <div class="ob-step ob-step-active" id="ob-step-1">
+        <div class="modal-form">
+          <p class="ob-intro">Ingresá tus campos o potreros. Podés agregar más después desde el módulo Potreros.</p>
+          <div class="ob-field-row-header">
+            <span>Nombre del potrero</span>
+            <span>Hectáreas</span>
+            <span>Pastura</span>
+            <span></span>
+          </div>
+          <div id="ob-fields-list"></div>
+          <button type="button" class="btn btn-secondary ob-add-row" id="ob-add-field">+ Agregar potrero</button>
+        </div>
+        <div class="modal-footer ob-footer">
+          <span></span>
+          <button class="btn btn-primary" id="ob-next-1">Siguiente</button>
+        </div>
+      </div>
+
+      <!-- Paso 2: Hacienda -->
+      <div class="ob-step" id="ob-step-2">
+        <div class="modal-form">
+          <p class="ob-intro">Indicá cuántos animales tenés en cada potrero. Podés editar cada registro después desde Ganadería.</p>
+          <div class="ob-table-wrap">
+            <table class="ob-hacienda-table" id="ob-hacienda-table">
+              <thead>
+                <tr>
+                  <th>Potrero</th>
+                  <th>Vacas</th>
+                  <th>Toros</th>
+                  <th>Terneros</th>
+                  <th>Novillos</th>
+                  <th>Vaquillonas</th>
+                </tr>
+              </thead>
+              <tbody id="ob-hacienda-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer ob-footer">
+          <button class="btn btn-secondary" id="ob-prev-2">Anterior</button>
+          <button class="btn btn-primary" id="ob-next-2">Siguiente</button>
+        </div>
+      </div>
+
+      <!-- Paso 3: Listo -->
+      <div class="ob-step" id="ob-step-3">
+        <div class="modal-form ob-done-body">
+          <div class="ob-done-icon" aria-hidden="true">🌾</div>
+          <h3 class="ob-done-title">¡Listo para empezar!</h3>
+          <p class="ob-done-summary" id="ob-done-summary">Registramos 0 potreros y 0 animales como punto de partida.</p>
+          <p class="ob-done-note">Podés editar cada registro en los módulos de <strong>Potreros</strong> y <strong>Ganadería</strong>. Las caravanas asignadas automáticamente empiezan con <code>#OB-</code>.</p>
+        </div>
+        <div class="modal-footer ob-footer">
+          <span></span>
+          <button class="btn btn-primary" id="ob-finish">Ir al campo</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Modal: Confirmación genérica -->
   <div class="modal-overlay hidden" id="modal-confirm">
     <div class="modal modal-sm">
