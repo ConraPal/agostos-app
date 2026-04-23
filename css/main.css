@@ -689,6 +689,16 @@ body {
   font-size: 14px;
 }
 
+/* ===== Ocultar botones de acción del topbar (reemplazados por module-cta) ===== */
+#btn-new-animal,
+#btn-new-cultivo,
+#btn-new-forraje,
+#btn-new-field,
+#btn-new-transaction,
+#btn-new-vencimiento {
+  display: none !important;
+}
+
 /* ===== Module CTA (acción principal centrada) ===== */
 .module-cta {
   display: flex;
@@ -721,15 +731,6 @@ body {
     border-radius: 14px;
     min-width: unset;
     justify-content: center;
-  }
-  /* En mobile el module-cta reemplaza el FAB esquinero */
-  #btn-new-animal,
-  #btn-new-cultivo,
-  #btn-new-forraje,
-  #btn-new-field,
-  #btn-new-transaction,
-  #btn-new-vencimiento {
-    display: none !important;
   }
 }
 
