@@ -169,7 +169,25 @@
 
       <!-- CTA principal -->
       <div class="module-cta">
-        <button class="btn btn-primary btn-cta-lg" onclick="document.getElementById('btn-new-animal').click()">+ Nuevo animal</button>
+        <div class="cta-dropdown-wrapper" id="animal-cta-wrapper">
+          <button class="btn btn-primary btn-cta-lg" id="btn-animal-cta">+ Nuevo animal ▾</button>
+          <div class="cta-dropdown hidden" id="animal-cta-dropdown">
+            <button class="cta-dropdown-item" id="cta-individual">
+              <span class="cta-dropdown-icon">🐄</span>
+              <span>
+                <strong>Animal individual</strong>
+                <small>Registrar un animal con todos sus datos</small>
+              </span>
+            </button>
+            <button class="cta-dropdown-item" id="cta-lote">
+              <span class="cta-dropdown-icon">🐮</span>
+              <span>
+                <strong>Lote de animales</strong>
+                <small>Ingresar varios animales de una vez</small>
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Tabs -->
@@ -1197,6 +1215,89 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btn-cancel-animal">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Lote de animales -->
+  <div class="modal-overlay hidden" id="modal-lote">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Ingresar lote de animales</h2>
+        <button class="modal-close" id="modal-lote-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-lote">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fl-tipo">Tipo *</label>
+            <select id="fl-tipo" name="tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="vaca">Vaca</option>
+              <option value="toro">Toro</option>
+              <option value="ternero">Ternero</option>
+              <option value="vaquillona">Vaquillona</option>
+              <option value="novillo">Novillo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="fl-raza">Raza</label>
+            <input type="text" id="fl-raza" name="raza" placeholder="Ej: Angus" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fl-cantidad">Cantidad *</label>
+            <input type="number" id="fl-cantidad" name="cantidad" required min="2" max="500" placeholder="Ej: 20" />
+          </div>
+          <div class="form-group">
+            <label for="fl-potrero">Potrero</label>
+            <input type="text" id="fl-potrero" name="potrero" list="lote-potrero-options" placeholder="Ej: Potrero Norte" autocomplete="off" />
+            <datalist id="lote-potrero-options"></datalist>
+          </div>
+        </div>
+        <div class="lote-caravana-section">
+          <p class="lote-section-label">Caravanas (opcional)</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fl-caravana-prefijo">Prefijo</label>
+              <input type="text" id="fl-caravana-prefijo" name="caravana_prefijo" placeholder="Ej: AR- o HF-" />
+            </div>
+            <div class="form-group">
+              <label for="fl-caravana-desde">Número inicial</label>
+              <input type="number" id="fl-caravana-desde" name="caravana_desde" min="1" placeholder="Ej: 42" />
+            </div>
+          </div>
+          <p class="lote-caravana-preview" id="lote-caravana-preview"></p>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fl-peso">Peso promedio (kg)</label>
+            <input type="number" id="fl-peso" name="peso" min="0" placeholder="Ej: 320" />
+          </div>
+          <div class="form-group">
+            <label for="fl-nacimiento">Fecha de nacimiento</label>
+            <input type="date" id="fl-nacimiento" name="nacimiento" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fl-estado">Estado</label>
+            <select id="fl-estado" name="estado">
+              <option value="activo">Activo</option>
+              <option value="vendido">Vendido</option>
+              <option value="muerto">Muerto</option>
+            </select>
+          </div>
+          <div class="form-group"><!-- spacer --></div>
+        </div>
+        <div class="form-group">
+          <label for="fl-obs">Observaciones</label>
+          <textarea id="fl-obs" name="observaciones" rows="2" placeholder="Notas del lote..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-lote">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar lote</button>
         </div>
       </form>
     </div>

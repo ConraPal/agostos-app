@@ -876,8 +876,131 @@ const Livestock = (() => {
     });
   };
 
+  // --- Lote modal ---
+  const openModalLote = () => {
+    document.getElementById('form-lote').reset();
+    document.getElementById('lote-caravana-preview').textContent = '';
+    populateFieldOptions('lote-potrero-options');
+    document.getElementById('modal-lote').classList.remove('hidden');
+  };
+
+  const closeModalLote = () => {
+    closeModalAnimated('modal-lote', () => {});
+  };
+
+  const updateLotePreview = () => {
+    const prefijo   = document.getElementById('fl-caravana-prefijo').value.trim();
+    const desde     = parseInt(document.getElementById('fl-caravana-desde').value, 10);
+    const cantidad  = parseInt(document.getElementById('fl-cantidad').value, 10);
+    const preview   = document.getElementById('lote-caravana-preview');
+    if (!prefijo || !desde || !cantidad || cantidad < 2) { preview.textContent = ''; return; }
+    const pad = n => String(n).padStart(3, '0');
+    const last = desde + cantidad - 1;
+    preview.textContent = `Ej: ${prefijo}${pad(desde)} … ${prefijo}${pad(last)}`;
+  };
+
+  const saveAnimalLote = async e => {
+    e.preventDefault();
+    const form     = e.target;
+    const tipo     = form.tipo.value;
+    const raza     = form.raza.value.trim();
+    const cantidad = parseInt(form.cantidad.value, 10);
+    const prefijo  = form.caravana_prefijo.value.trim().toUpperCase();
+    const desde    = parseInt(form.caravana_desde.value, 10);
+    const potrero  = form.potrero.value.trim();
+    const peso     = form.peso.value ? Number(form.peso.value) : null;
+    const nacimiento = form.nacimiento.value;
+    const estado   = form.estado.value;
+    const observaciones = form.observaciones.value.trim();
+
+    if (!tipo)           { ui.fieldError(form.tipo, 'Seleccioná un tipo.'); return; }
+    if (!cantidad || cantidad < 2) { ui.fieldError(form.cantidad, 'Ingresá al menos 2 animales.'); return; }
+
+    const animals  = getData(KEYS.animals);
+    const existing = new Set(animals.map(a => a.caravana));
+    const nuevos   = [];
+    const skipped  = [];
+    const now      = Date.now();
+    const pad      = n => String(n).padStart(3, '0');
+
+    for (let i = 0; i < cantidad; i++) {
+      let caravana;
+      if (prefijo && desde) {
+        caravana = `${prefijo}${pad(desde + i)}`;
+      } else if (prefijo) {
+        caravana = `${prefijo}${pad(i + 1)}`;
+      } else {
+        caravana = `LOTE-${tipo.toUpperCase()}-${pad(i + 1)}`;
+      }
+      if (existing.has(caravana)) { skipped.push(caravana); continue; }
+      nuevos.push({
+        id: String(now + i),
+        caravana,
+        nombre: '',
+        tipo,
+        raza,
+        nacimiento,
+        potrero,
+        estado,
+        peso,
+        castracion_fecha: null,
+        observaciones
+      });
+    }
+
+    if (!nuevos.length) {
+      ui.toast('Todas las caravanas generadas ya existen.', 'error');
+      return;
+    }
+
+    nuevos.forEach(a => {
+      animals.unshift(a);
+      logHistory(a.caravana, 'Alta', `Tipo: ${a.tipo} (lote)`);
+    });
+    saveData(KEYS.animals, animals);
+    closeModalLote();
+    render();
+    const msg = skipped.length
+      ? `${nuevos.length} animales registrados. ${skipped.length} omitidos por caravana duplicada.`
+      : `${nuevos.length} animales registrados.`;
+    ui.toast(msg);
+  };
+
+  // --- CTA Dropdown ---
+  const closeCTADropdown = () => {
+    document.getElementById('animal-cta-dropdown')?.classList.add('hidden');
+  };
+
   // --- Init ---
   const init = () => {
+    // CTA dropdown
+    document.getElementById('btn-animal-cta').addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('animal-cta-dropdown').classList.toggle('hidden');
+    });
+    document.getElementById('cta-individual').addEventListener('click', () => {
+      closeCTADropdown();
+      openModal();
+    });
+    document.getElementById('cta-lote').addEventListener('click', () => {
+      closeCTADropdown();
+      openModalLote();
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#animal-cta-wrapper')) closeCTADropdown();
+    });
+
+    // Lote modal
+    document.getElementById('modal-lote-close').addEventListener('click', closeModalLote);
+    document.getElementById('btn-cancel-lote').addEventListener('click', closeModalLote);
+    document.getElementById('modal-lote').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModalLote();
+    });
+    document.getElementById('form-lote').addEventListener('submit', saveAnimalLote);
+    document.getElementById('fl-caravana-prefijo').addEventListener('input', updateLotePreview);
+    document.getElementById('fl-caravana-desde').addEventListener('input', updateLotePreview);
+    document.getElementById('fl-cantidad').addEventListener('input', updateLotePreview);
+
     // Modal open/close
     document.getElementById('btn-new-animal').addEventListener('click', () => openModal());
     document.getElementById('modal-animal-close').addEventListener('click', closeModal);

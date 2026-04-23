@@ -699,6 +699,115 @@ body {
   display: none !important;
 }
 
+/* ===== CTA Dropdown (lote de animales) ===== */
+.cta-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.cta-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  z-index: 300;
+  min-width: 280px;
+  overflow: hidden;
+  animation: dropdownIn 0.15s ease;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.cta-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-text);
+  transition: background 0.15s;
+}
+.cta-dropdown-item + .cta-dropdown-item {
+  border-top: 1px solid var(--color-border);
+}
+.cta-dropdown-item:hover {
+  background: var(--color-bg);
+}
+.cta-dropdown-icon {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.cta-dropdown-item strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.cta-dropdown-item small {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+body.dark .cta-dropdown {
+  background: #1e2a1e;
+  border-color: rgba(255,255,255,0.12);
+}
+body.dark .cta-dropdown-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* Lote modal — sección caravanas */
+.lote-caravana-section {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+body.dark .lote-caravana-section {
+  background: rgba(255,255,255,0.04);
+}
+.lote-section-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
+}
+.lote-caravana-preview {
+  font-size: 12px;
+  color: var(--color-primary);
+  margin: 4px 0 0;
+  min-height: 16px;
+  font-family: monospace;
+}
+
+@media (max-width: 768px) {
+  .cta-dropdown {
+    min-width: 240px;
+    left: 0;
+    transform: none;
+  }
+  @keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
 /* ===== Module CTA (acción principal centrada) ===== */
 .module-cta {
   display: flex;
