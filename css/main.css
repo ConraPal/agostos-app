@@ -689,6 +689,50 @@ body {
   font-size: 14px;
 }
 
+/* ===== Module CTA (acción principal centrada) ===== */
+.module-cta {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.btn-cta-lg {
+  padding: 15px 48px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(61, 107, 63, 0.28);
+  letter-spacing: 0.02em;
+  min-width: 200px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .module-cta {
+    flex-direction: column;
+    margin-bottom: 20px;
+  }
+  .btn-cta-lg {
+    width: 100%;
+    padding: 18px 24px;
+    font-size: 18px;
+    border-radius: 14px;
+    min-width: unset;
+    justify-content: center;
+  }
+  /* En mobile el module-cta reemplaza el FAB esquinero */
+  #btn-new-animal,
+  #btn-new-cultivo,
+  #btn-new-forraje,
+  #btn-new-field,
+  #btn-new-transaction,
+  #btn-new-vencimiento {
+    display: none !important;
+  }
+}
+
 /* ===== Pagination ===== */
 .pagination {
   display: flex;
