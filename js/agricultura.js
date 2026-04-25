@@ -149,7 +149,7 @@ const Agricultura = (() => {
       const idx = data.findIndex(c => c.id === editingCultivoId);
       if (idx !== -1) data[idx] = { ...data[idx], potrero_id: potId, potrero: potNom, fecha_siembra, año, tipo, detalle, kg_cosechados, ha_cosechadas, rendimiento, notas };
     } else {
-      data.push({ id: String(Date.now()), potrero_id: potId, potrero: potNom, fecha_siembra, año, tipo, detalle, kg_cosechados, ha_cosechadas, rendimiento, notas });
+      data.push({ id: ui.uid(), potrero_id: potId, potrero: potNom, fecha_siembra, año, tipo, detalle, kg_cosechados, ha_cosechadas, rendimiento, notas });
     }
     Storage.set(CULTIVOS_KEY, data);
     cultivosPage = 1;
@@ -262,7 +262,7 @@ const Agricultura = (() => {
       const idx = data.findIndex(f => f.id === editingForrajeId);
       if (idx !== -1) data[idx] = { ...data[idx], potrero_id: potId, potrero: potNom, año, tipo, cantidad, cortes, observaciones };
     } else {
-      data.push({ id: String(Date.now()), potrero_id: potId, potrero: potNom, año, tipo, cantidad, cortes, observaciones });
+      data.push({ id: ui.uid(), potrero_id: potId, potrero: potNom, año, tipo, cantidad, cortes, observaciones });
     }
     Storage.set(FORRAJE_KEY, data);
     forrajePage = 1;

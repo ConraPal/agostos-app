@@ -192,7 +192,7 @@ const Fields = (() => {
         ui.fieldError(document.getElementById('ff-nombre'), `Ya existe un potrero llamado "${nombre}".`);
         return;
       }
-      data.push({ id: String(Date.now()), nombre, hectareas, pastura, estado, fecha_implantacion, observaciones });
+      data.push({ id: ui.uid(), nombre, hectareas, pastura, estado, fecha_implantacion, observaciones });
     }
 
     const isNew = !editingId;

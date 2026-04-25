@@ -340,7 +340,7 @@ const Finance = (() => {
       const idx = data.findIndex(t => t.id === editingId);
       if (idx !== -1) data[idx] = { ...data[idx], fecha, tipo, categoria, monto, moneda, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg };
     } else {
-      data.push({ id: String(Date.now()), fecha, tipo, categoria, monto, moneda, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg });
+      data.push({ id: ui.uid(), fecha, tipo, categoria, monto, moneda, descripcion, observaciones, potrero, cantidad, precio_unitario, peso_kg, precio_kg });
     }
 
     const isNew = !editingId;
@@ -441,7 +441,7 @@ const Finance = (() => {
       const idx = data.findIndex(a => a.id === editingAmortId);
       if (idx !== -1) data[idx] = { ...data[idx], nombre, tipo, año_inicio, valor_original, vida_util, cuota_anual, observaciones };
     } else {
-      data.push({ id: String(Date.now()), nombre, tipo, año_inicio, valor_original, vida_util, cuota_anual, observaciones });
+      data.push({ id: ui.uid(), nombre, tipo, año_inicio, valor_original, vida_util, cuota_anual, observaciones });
     }
     Storage.set(AMORT_KEY, data);
     amortPage = 1;
@@ -599,7 +599,7 @@ const Finance = (() => {
         ui.toast(`Ya hay presupuesto para "${categoria}" en ${año}. Editalo directamente.`, 'error');
         return;
       }
-      data.push({ id: String(Date.now()), año, tipo, categoria, monto });
+      data.push({ id: ui.uid(), año, tipo, categoria, monto });
     } else {
       const idx = data.findIndex(p => p.id === editingPresupuestoId);
       if (idx !== -1) data[idx] = { ...data[idx], año, tipo, categoria, monto };
@@ -668,7 +668,7 @@ const Finance = (() => {
       const idx = data.findIndex(v => v.id === editingVencId);
       if (idx !== -1) data[idx] = { ...data[idx], concepto, fecha, monto };
     } else {
-      data.push({ id: String(Date.now()), concepto, fecha, monto, completado: false });
+      data.push({ id: ui.uid(), concepto, fecha, monto, completado: false });
     }
     saveAllVenc(data);
     vencimientosPage = 1;

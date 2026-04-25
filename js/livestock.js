@@ -10,7 +10,7 @@ const Livestock = (() => {
   const logHistory = (caravana, evento, detalle, nombre = '') => {
     const history = getData(KEYS.history);
     history.unshift({
-      id:     Date.now(),
+      id:     ui.uid(),
       fecha:  new Date().toISOString(),
       caravana,
       nombre,
@@ -395,7 +395,7 @@ const Livestock = (() => {
       data[idx] = { ...data[idx], ...entry };
       if (caravana) logHistory(caravana, 'Actualización', `Sanidad: ${entry.tipo}: ${entry.descripcion}`, animalNombre);
     } else {
-      data.unshift({ id: String(Date.now()), ...entry });
+      data.unshift({ id: ui.uid(), ...entry });
       if (caravana) logHistory(caravana, 'Sanidad', `${entry.tipo}: ${entry.descripcion}`, animalNombre);
     }
 
@@ -513,7 +513,7 @@ const Livestock = (() => {
         ui.fieldError(form.caravana, `Ya existe un animal con la caravana ${data.caravana}.`);
         return;
       }
-      animals.unshift({ id: String(Date.now()), ...data });
+      animals.unshift({ id: ui.uid(), ...data });
       logHistory(data.caravana, 'Alta', `Tipo: ${data.tipo}`, data.nombre);
     }
 
@@ -604,7 +604,7 @@ const Livestock = (() => {
     const destino = form.destino.value.trim();
 
     const movement = {
-      id:            String(Date.now()),
+      id:            ui.uid(),
       timestamp:     new Date().toISOString(),
       fecha:         form.fecha.value,
       animalId:      animal.id,
@@ -642,7 +642,7 @@ const Livestock = (() => {
       if (!fields.some(f => f.nombre === destino)) {
         ui.confirm(`El potrero "${destino}" no está registrado. ¿Registrarlo ahora?`, 'Registrar').then(ok => {
           if (!ok) return;
-          fields.push({ id: String(Date.now()), nombre: destino, hectareas: null, pastura: '', estado: 'activo', observaciones: '' });
+          fields.push({ id: ui.uid(), nombre: destino, hectareas: null, pastura: '', estado: 'activo', observaciones: '' });
           Storage.set('ag_fields', fields);
           ui.toast(`Potrero "${destino}" registrado.`);
         });
@@ -807,7 +807,7 @@ const Livestock = (() => {
       const idx = data.findIndex(r => r.id === editingReproId);
       data[idx] = { ...data[idx], ...entry };
     } else {
-      data.unshift({ id: String(Date.now()), ...entry });
+      data.unshift({ id: ui.uid(), ...entry });
     }
     saveData(KEYS.reproduction, data);
     const wasEditingRepro = !!editingReproId;
@@ -854,7 +854,7 @@ const Livestock = (() => {
         if (!ESTADOS_VALIDOS.has(estado)) { invalid++; return; }
         if (nacimiento && !ISO_DATE_RE.test(nacimiento)) { invalid++; return; }
         animals.unshift({
-          id: String(Date.now() + added),
+          id: ui.uid(),
           caravana,
           nombre:       cols[2] || '',
           tipo,
@@ -943,7 +943,6 @@ const Livestock = (() => {
     const existing = new Set(animals.map(a => a.caravana));
     const nuevos   = [];
     const skipped  = [];
-    const now      = Date.now();
     const pad      = n => String(n).padStart(3, '0');
 
     for (let i = 0; i < cantidad; i++) {
@@ -957,7 +956,7 @@ const Livestock = (() => {
       }
       if (existing.has(caravana)) { skipped.push(caravana); continue; }
       nuevos.push({
-        id: String(now + i),
+        id: ui.uid(),
         caravana,
         nombre: '',
         tipo,

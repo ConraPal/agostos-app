@@ -54,6 +54,12 @@ const ui = (() => {
     return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
   }
 
+  // --- UUID (evita colisiones de IDs con Date.now en ms) ---
+  function uid() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+  }
+
   // --- HTML escape (previene XSS en innerHTML con datos de usuario) ---
   function escapeHtml(s) {
     if (s == null) return '';
@@ -118,7 +124,7 @@ const ui = (() => {
     }
   }
 
-  return { toast, confirm, pagination, debounce, countUp, fieldError, fieldClear, btnLoading, escapeHtml };
+  return { toast, confirm, pagination, debounce, countUp, fieldError, fieldClear, btnLoading, escapeHtml, uid };
 })();
 
 // --- Modal close animation helper (global) ---
@@ -424,7 +430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fecha  = document.getElementById('alerta-fecha').value;
     if (!titulo || !fecha) return;
     const data = Storage.get(ALERTA_KEY) || [];
-    data.push({ id: String(Date.now()), titulo, fecha, completado: false });
+    data.push({ id: ui.uid(), titulo, fecha, completado: false });
     Storage.set(ALERTA_KEY, data);
     document.getElementById('alerta-titulo').value = '';
     renderAlertsList();
@@ -566,9 +572,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _obSaveAndClose() {
       // Guardar potreros
       const existingFields = Storage.get('ag_fields') || [];
-      const base = Date.now();
-      const newFields = _obState.fields.map(function (f, i) {
-        return { id: String(base + i), nombre: f.nombre, hectareas: f.hectareas, pastura: f.pastura || 'Natural', estado: 'activo', fecha_implantacion: null, observaciones: '' };
+      const newFields = _obState.fields.map(function (f) {
+        return { id: ui.uid(), nombre: f.nombre, hectareas: f.hectareas, pastura: f.pastura || 'Natural', estado: 'activo', fecha_implantacion: null, observaciones: '' };
       });
       Storage.set('ag_fields', existingFields.concat(newFields));
 
