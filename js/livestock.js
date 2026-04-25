@@ -136,6 +136,7 @@ const Livestock = (() => {
         <td>${ep || '—'}</td>
         <td>${a.peso ? a.peso + ' kg' : '—'}</td>
         <td>${badge(a.estado)}</td>
+        <td class="col-rfid">${a.rfid ? (a.rfid_declarado_senasa ? '<span title="Declarado en SENASA">✅</span>' : '<span title="Pendiente de declarar en SENASA">⏳</span>') : '—'}</td>
         <td>
           <button class="action-btn" onclick="Livestock.edit('${a.id}')" title="Editar" aria-label="Editar animal ${ec}">✏️</button>
           <button class="action-btn danger" onclick="Livestock.remove('${a.id}')" title="Eliminar" aria-label="Eliminar animal ${ec}">🗑️</button>
@@ -455,16 +456,21 @@ const Livestock = (() => {
     form.reset();
     document.getElementById('modal-animal-title').textContent = animal ? 'Editar animal' : 'Nuevo animal';
     if (animal) {
-      form.caravana.value        = animal.caravana;
-      form.nombre.value          = animal.nombre || '';
-      form.tipo.value            = animal.tipo;
-      form.raza.value            = animal.raza || '';
-      form.nacimiento.value      = animal.nacimiento || '';
-      form.potrero.value         = animal.potrero || '';
-      form.estado.value          = animal.estado;
-      form.peso.value            = animal.peso || '';
-      form.observaciones.value   = animal.observaciones || '';
+      form.caravana.value         = animal.caravana;
+      form.nombre.value           = animal.nombre || '';
+      form.tipo.value             = animal.tipo;
+      form.raza.value             = animal.raza || '';
+      form.nacimiento.value       = animal.nacimiento || '';
+      form.potrero.value          = animal.potrero || '';
+      form.estado.value           = animal.estado;
+      form.peso.value             = animal.peso || '';
+      form.observaciones.value    = animal.observaciones || '';
       form.castracion_fecha.value = animal.castracion_fecha || '';
+      // RFID
+      document.getElementById('f-rfid').value       = animal.rfid || '';
+      document.getElementById('f-rfid-tipo').value  = animal.rfid_tipo || '';
+      document.getElementById('f-rfid-fecha').value = animal.rfid_fecha_aplicacion || '';
+      if (animal.rfid) document.getElementById('rfid-section').open = true;
     }
     toggleCastracion(animal ? animal.tipo : '');
     populateFieldOptions('potrero-options');
@@ -481,17 +487,23 @@ const Livestock = (() => {
     const form = e.target;
     const animals = getData(KEYS.animals);
 
+    const rfid      = document.getElementById('f-rfid').value.trim();
+    const rfidInput = document.getElementById('f-rfid');
+
     const data = {
-      caravana:         form.caravana.value.trim().toUpperCase(),
-      nombre:           form.nombre.value.trim(),
-      tipo:             form.tipo.value,
-      raza:             form.raza.value.trim(),
-      nacimiento:       form.nacimiento.value,
-      potrero:          form.potrero.value.trim(),
-      estado:           form.estado.value,
-      peso:             form.peso.value ? Number(form.peso.value) : null,
-      observaciones:    form.observaciones.value.trim(),
-      castracion_fecha: form.tipo.value === 'ternero' ? (form.castracion_fecha.value || null) : null
+      caravana:               form.caravana.value.trim().toUpperCase(),
+      nombre:                 form.nombre.value.trim(),
+      tipo:                   form.tipo.value,
+      raza:                   form.raza.value.trim(),
+      nacimiento:             form.nacimiento.value,
+      potrero:                form.potrero.value.trim(),
+      estado:                 form.estado.value,
+      peso:                   form.peso.value ? Number(form.peso.value) : null,
+      observaciones:          form.observaciones.value.trim(),
+      castracion_fecha:       form.tipo.value === 'ternero' ? (form.castracion_fecha.value || null) : null,
+      rfid:                   rfid || null,
+      rfid_tipo:              rfid ? (document.getElementById('f-rfid-tipo').value || null) : null,
+      rfid_fecha_aplicacion:  rfid ? (document.getElementById('f-rfid-fecha').value || null) : null,
     };
 
     if (!data.caravana) {
@@ -502,10 +514,25 @@ const Livestock = (() => {
       ui.fieldError(form.tipo, 'Seleccioná un tipo.');
       return;
     }
+    if (rfid && !/^\d{15}$/.test(rfid)) {
+      ui.fieldError(rfidInput, 'El RFID debe tener exactamente 15 dígitos numéricos.');
+      return;
+    }
+    if (rfid && animals.some(a => a.rfid === rfid && a.id !== editingId)) {
+      ui.fieldError(rfidInput, 'Este RFID ya está asignado a otro animal.');
+      return;
+    }
 
     if (editingId) {
       const idx = animals.findIndex(a => a.id === editingId);
-      animals[idx] = { ...animals[idx], ...data };
+      const prev = animals[idx];
+      const rfidChanged = prev.rfid !== data.rfid;
+      animals[idx] = {
+        ...prev,
+        ...data,
+        rfid_declarado_senasa:  rfidChanged ? false : (prev.rfid_declarado_senasa ?? false),
+        rfid_fecha_declaracion: rfidChanged ? null  : (prev.rfid_fecha_declaracion ?? null),
+      };
       logHistory(data.caravana, 'Actualización', 'Datos editados', data.nombre);
     } else {
       // Check duplicate caravana
@@ -513,7 +540,7 @@ const Livestock = (() => {
         ui.fieldError(form.caravana, `Ya existe un animal con la caravana ${data.caravana}.`);
         return;
       }
-      animals.unshift({ id: ui.uid(), ...data });
+      animals.unshift({ id: ui.uid(), rfid_declarado_senasa: false, rfid_fecha_declaracion: null, ...data });
       logHistory(data.caravana, 'Alta', `Tipo: ${data.tipo}`, data.nombre);
     }
 

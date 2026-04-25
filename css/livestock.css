@@ -142,13 +142,15 @@
 .action-btn.danger:hover { color: var(--color-danger); }
 
 /* ===== Animals table — responsive columns ===== */
-/* Col order: 1-Caravana 2-Nombre 3-Tipo 4-Raza 5-Nacimiento 6-Potrero 7-Peso 8-Estado 9-Acciones */
+/* Col order: 1-Caravana 2-Nombre 3-Tipo 4-Raza 5-Nacimiento 6-Potrero 7-Peso 8-Estado 9-RFID 10-Acciones */
 @media (max-width: 768px) {
-  /* Hide Raza and Nacimiento — keep Potrero and Peso visible */
+  /* Hide Raza, Nacimiento y RFID en tablet */
   #animals-table th:nth-child(4),
   #animals-table td:nth-child(4),
   #animals-table th:nth-child(5),
-  #animals-table td:nth-child(5) {
+  #animals-table td:nth-child(5),
+  #animals-table th.col-rfid,
+  #animals-table td.col-rfid {
     display: none;
   }
   #animals-table th,
@@ -163,4 +165,39 @@
   }
   #animals-table th,
   #animals-table td { padding: 8px 8px; font-size: 12px; }
+}
+
+/* ===== RFID section en modal de animal ===== */
+.rfid-section {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.rfid-section > summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rfid-section > summary::before {
+  content: '▶';
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+.rfid-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+.rfid-section-body {
+  padding: 0 14px 14px;
+}
+body.dark .rfid-section {
+  border-color: rgba(255,255,255,0.12);
 }
