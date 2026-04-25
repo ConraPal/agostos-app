@@ -120,22 +120,28 @@ const Livestock = (() => {
     }
 
     const paged = animals.slice((animalsPage - 1) * PAGE_SIZE, animalsPage * PAGE_SIZE);
-    tbody.innerHTML = paged.map(a => `
+    tbody.innerHTML = paged.map(a => {
+      const ec = ui.escapeHtml(a.caravana);
+      const en = ui.escapeHtml(a.nombre);
+      const et = ui.escapeHtml(a.tipo);
+      const er = ui.escapeHtml(a.raza);
+      const ep = ui.escapeHtml(a.potrero);
+      return `
       <tr data-id="${a.id}">
-        <td><strong>${a.caravana}</strong></td>
-        <td>${a.nombre || '—'}</td>
-        <td style="text-transform:capitalize">${a.tipo}${a.castracion_fecha ? '<br><span class="cell-sub">Castrado</span>' : ''}</td>
-        <td>${a.raza || '—'}</td>
+        <td><strong>${ec}</strong></td>
+        <td>${en || '—'}</td>
+        <td style="text-transform:capitalize">${et}${a.castracion_fecha ? '<br><span class="cell-sub">Castrado</span>' : ''}</td>
+        <td>${er || '—'}</td>
         <td>${formatDate(a.nacimiento)}</td>
-        <td>${a.potrero || '—'}</td>
+        <td>${ep || '—'}</td>
         <td>${a.peso ? a.peso + ' kg' : '—'}</td>
         <td>${badge(a.estado)}</td>
         <td>
-          <button class="action-btn" onclick="Livestock.edit('${a.id}')" title="Editar" aria-label="Editar animal ${a.caravana}">✏️</button>
-          <button class="action-btn danger" onclick="Livestock.remove('${a.id}')" title="Eliminar" aria-label="Eliminar animal ${a.caravana}">🗑️</button>
+          <button class="action-btn" onclick="Livestock.edit('${a.id}')" title="Editar" aria-label="Editar animal ${ec}">✏️</button>
+          <button class="action-btn danger" onclick="Livestock.remove('${a.id}')" title="Eliminar" aria-label="Eliminar animal ${ec}">🗑️</button>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
     ui.pagination('animals-pagination', animals.length, animalsPage, PAGE_SIZE, p => { animalsPage = p; renderAnimals(); });
   };
 
@@ -152,16 +158,19 @@ const Livestock = (() => {
       return;
     }
     const paged = movements.slice((movementsPage - 1) * PAGE_SIZE, movementsPage * PAGE_SIZE);
-    tbody.innerHTML = paged.map(m => `
+    tbody.innerHTML = paged.map(m => {
+      const ec = ui.escapeHtml(m.caravana);
+      const en = ui.escapeHtml(m.animalNombre);
+      return `
       <tr>
         <td>${formatDate(m.fecha)}</td>
-        <td><strong>${m.caravana}</strong>${m.animalNombre ? `<br><span class="cell-sub">${m.animalNombre}</span>` : ''}</td>
-        <td style="text-transform:capitalize">${m.tipo}</td>
-        <td>${m.origen || '—'}</td>
-        <td>${m.destino || '—'}</td>
-        <td>${m.observaciones || '—'}</td>
-      </tr>
-    `).join('');
+        <td><strong>${ec}</strong>${en ? `<br><span class="cell-sub">${en}</span>` : ''}</td>
+        <td style="text-transform:capitalize">${ui.escapeHtml(m.tipo)}</td>
+        <td>${ui.escapeHtml(m.origen) || '—'}</td>
+        <td>${ui.escapeHtml(m.destino) || '—'}</td>
+        <td>${ui.escapeHtml(m.observaciones) || '—'}</td>
+      </tr>`;
+    }).join('');
     ui.pagination('movements-pagination', movements.length, movementsPage, PAGE_SIZE, p => { movementsPage = p; renderMovements(); });
   };
 
@@ -175,18 +184,21 @@ const Livestock = (() => {
       return;
     }
     const paged = history.slice((historyPage - 1) * PAGE_SIZE, historyPage * PAGE_SIZE);
-    tbody.innerHTML = paged.map(h => `
+    tbody.innerHTML = paged.map(h => {
+      const ec = ui.escapeHtml(h.caravana);
+      const en = ui.escapeHtml(h.nombre);
+      return `
       <tr>
         <td>${formatDate(h.fecha)}</td>
         <td>
-          <strong>${h.caravana}</strong>
-          ${h.nombre ? `<br><span class="cell-sub">${h.nombre}</span>` : ''}
+          <strong>${ec}</strong>
+          ${en ? `<br><span class="cell-sub">${en}</span>` : ''}
         </td>
         <td>${eventBadge(h.evento)}</td>
-        <td>${h.detalle}</td>
+        <td>${ui.escapeHtml(h.detalle)}</td>
         <td>—</td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
     ui.pagination('history-pagination', history.length, historyPage, PAGE_SIZE, p => { historyPage = p; renderHistory(); });
   };
 
@@ -229,23 +241,26 @@ const Livestock = (() => {
     }
 
     const paged = data.slice((sanidadPage - 1) * PAGE_SIZE, sanidadPage * PAGE_SIZE);
-    tbody.innerHTML = paged.map(s => `
+    tbody.innerHTML = paged.map(s => {
+      const ec = ui.escapeHtml(s.caravana);
+      const en = ui.escapeHtml(s.animalNombre);
+      return `
       <tr>
         <td>${formatDate(s.fecha)}</td>
         <td>
-          ${s.caravana ? `<strong>${s.caravana}</strong>` : '<span class="cell-sub">Rodeo completo</span>'}
-          ${s.animalNombre ? `<br><span class="cell-sub">${s.animalNombre}</span>` : ''}
+          ${ec ? `<strong>${ec}</strong>` : '<span class="cell-sub">Rodeo completo</span>'}
+          ${en ? `<br><span class="cell-sub">${en}</span>` : ''}
         </td>
         <td>${sanidadBadge(s.tipo)}</td>
-        <td>${s.descripcion || '—'}</td>
-        <td>${s.producto || '—'}</td>
-        <td>${s.observaciones || '—'}</td>
+        <td>${ui.escapeHtml(s.descripcion) || '—'}</td>
+        <td>${ui.escapeHtml(s.producto) || '—'}</td>
+        <td>${ui.escapeHtml(s.observaciones) || '—'}</td>
         <td>
           <button class="action-btn" onclick="Livestock.editSanidad('${s.id}')" title="Editar" aria-label="Editar evento sanitario">✏️</button>
           <button class="action-btn danger" onclick="Livestock.removeSanidad('${s.id}')" title="Eliminar" aria-label="Eliminar evento sanitario">🗑️</button>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
     ui.pagination('sanidad-pagination', data.length, sanidadPage, PAGE_SIZE, p => { sanidadPage = p; renderSanidad(); });
   };
 
@@ -266,14 +281,18 @@ const Livestock = (() => {
 
     if (!matches.length) { dropdown.classList.add('hidden'); return; }
 
-    dropdown.innerHTML = matches.map(a => `
-      <li class="dropdown-item" data-id="${a.id}" data-caravana="${a.caravana}"
-          data-nombre="${a.nombre || ''}" data-tipo="${a.tipo || ''}">
-        <span class="di-caravana">${a.caravana}</span>
-        ${a.nombre ? `<span class="di-nombre">${a.nombre}</span>` : ''}
-        ${a.tipo ? `<span class="di-potrero" style="text-transform:capitalize">${a.tipo}</span>` : ''}
-      </li>
-    `).join('');
+    dropdown.innerHTML = matches.map(a => {
+      const ec = ui.escapeHtml(a.caravana);
+      const en = ui.escapeHtml(a.nombre);
+      const et = ui.escapeHtml(a.tipo);
+      return `
+      <li class="dropdown-item" data-id="${a.id}" data-caravana="${ec}"
+          data-nombre="${en}" data-tipo="${et}">
+        <span class="di-caravana">${ec}</span>
+        ${en ? `<span class="di-nombre">${en}</span>` : ''}
+        ${et ? `<span class="di-potrero" style="text-transform:capitalize">${et}</span>` : ''}
+      </li>`;
+    }).join('');
     dropdown.classList.remove('hidden');
   };
 
@@ -418,7 +437,7 @@ const Livestock = (() => {
     dl.innerHTML = fields
       .filter(f => f.estado === 'activo')
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-      .map(f => `<option value="${f.nombre}">`)
+      .map(f => `<option value="${ui.escapeHtml(f.nombre)}">`)
       .join('');
   };
 
@@ -540,14 +559,18 @@ const Livestock = (() => {
 
     if (!matches.length) { dropdown.classList.add('hidden'); return; }
 
-    dropdown.innerHTML = matches.map(a => `
-      <li class="dropdown-item" data-id="${a.id}" data-caravana="${a.caravana}"
-          data-nombre="${a.nombre || ''}" data-potrero="${a.potrero || ''}">
-        <span class="di-caravana">${a.caravana}</span>
-        ${a.nombre ? `<span class="di-nombre">${a.nombre}</span>` : ''}
-        ${a.potrero ? `<span class="di-potrero">${a.potrero}</span>` : ''}
-      </li>
-    `).join('');
+    dropdown.innerHTML = matches.map(a => {
+      const ec = ui.escapeHtml(a.caravana);
+      const en = ui.escapeHtml(a.nombre);
+      const ep = ui.escapeHtml(a.potrero);
+      return `
+      <li class="dropdown-item" data-id="${a.id}" data-caravana="${ec}"
+          data-nombre="${en}" data-potrero="${ep}">
+        <span class="di-caravana">${ec}</span>
+        ${en ? `<span class="di-nombre">${en}</span>` : ''}
+        ${ep ? `<span class="di-potrero">${ep}</span>` : ''}
+      </li>`;
+    }).join('');
     dropdown.classList.remove('hidden');
   };
 

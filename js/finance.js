@@ -59,7 +59,7 @@ const Finance = (() => {
     dl.innerHTML = fields
       .filter(f => f.estado === 'activo')
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-      .map(f => `<option value="${f.nombre}">`)
+      .map(f => `<option value="${ui.escapeHtml(f.nombre)}">`)
       .join('');
   }
 
@@ -147,16 +147,19 @@ const Finance = (() => {
     tbody.innerHTML = paged.map(t => {
       const esEgreso = t.tipo === 'gasto' || t.tipo === 'impuesto';
       const montoFmt = (esEgreso ? '−\u00a0' : '') + fmtMoneda(t.monto, t.moneda);
+      const ecat = ui.escapeHtml(t.categoria);
+      const edesc = ui.escapeHtml(t.descripcion);
+      const epot = ui.escapeHtml(t.potrero);
       return `
       <tr>
         <td>${fmt(t.fecha)}</td>
         <td><span class="badge badge-tx-${t.tipo}">${TIPO_LABEL[t.tipo] || t.tipo}</span></td>
-        <td>${t.categoria}</td>
-        <td>${t.descripcion || '—'}${t.potrero ? `<br><span class="cell-sub">${t.potrero}</span>` : ''}</td>
+        <td>${ecat}</td>
+        <td>${edesc || '—'}${epot ? `<br><span class="cell-sub">${epot}</span>` : ''}</td>
         <td class="monto-cell monto-${t.tipo}">${montoFmt}</td>
         <td class="actions-cell">
-          <button class="action-btn" data-action="edit" data-id="${t.id}" title="Editar" aria-label="Editar transacción ${t.categoria}">✏️</button>
-          <button class="action-btn danger" data-action="delete" data-id="${t.id}" title="Eliminar" aria-label="Eliminar transacción ${t.categoria}">🗑️</button>
+          <button class="action-btn" data-action="edit" data-id="${t.id}" title="Editar" aria-label="Editar transacción ${ecat}">✏️</button>
+          <button class="action-btn danger" data-action="delete" data-id="${t.id}" title="Eliminar" aria-label="Eliminar transacción ${ecat}">🗑️</button>
         </td>
       </tr>
     `}).join('');
@@ -191,7 +194,7 @@ const Finance = (() => {
       const arsStr = v.ars > 0 ? `<span class="monto-${v.tipo}">${fmtMoney(v.ars)}</span>` : '';
       const usdStr = v.usd > 0 ? `<span class="badge-moneda-usd">USD\u00a0${v.usd.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>` : '';
       const sep = arsStr && usdStr ? '<span class="resumen-sep">+</span>' : '';
-      return `<tr><td>${cat}</td><td class="monto-cell resumen-monto">${arsStr}${sep}${usdStr}</td></tr>`;
+      return `<tr><td>${ui.escapeHtml(cat)}</td><td class="monto-cell resumen-monto">${arsStr}${sep}${usdStr}</td></tr>`;
     };
 
     const renderGroup = (items, emptyMsg) => {
@@ -224,7 +227,7 @@ const Finance = (() => {
               const arsStr = v.ars > 0 ? `<span class="monto-gasto">${fmtMoney(v.ars)}</span>` : '';
               const usdStr = v.usd > 0 ? `<span class="badge-moneda-usd">USD\u00a0${v.usd.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>` : '';
               const sep = arsStr && usdStr ? '<span class="resumen-sep">+</span>' : '';
-              return `<tr><td>${p}</td><td class="monto-cell resumen-monto">${arsStr}${sep}${usdStr}</td></tr>`;
+              return `<tr><td>${ui.escapeHtml(p)}</td><td class="monto-cell resumen-monto">${arsStr}${sep}${usdStr}</td></tr>`;
             }).join('')
           }</tbody></table>`
         : '<p class="resumen-empty">Sin gastos asignados a potreros.</p>';
@@ -380,20 +383,22 @@ const Finance = (() => {
       return;
     }
     const paged = data.slice((amortPage - 1) * PAGE_SIZE, amortPage * PAGE_SIZE);
-    tbody.innerHTML = paged.map(a => `
+    tbody.innerHTML = paged.map(a => {
+      const en = ui.escapeHtml(a.nombre);
+      return `
       <tr>
-        <td>${a.nombre}</td>
+        <td>${en}</td>
         <td><span class="badge badge-amort-tipo">${a.tipo}</span></td>
         <td class="monto-cell">${fmtMoney(a.valor_original)}</td>
         <td>${a.vida_util} años</td>
         <td class="monto-cell">${fmtMoney(a.cuota_anual)}</td>
         <td>${a.año_inicio}</td>
         <td class="actions-cell">
-          <button class="action-btn" data-action="edit" data-id="${a.id}" title="Editar" aria-label="Editar amortización ${a.nombre}">✏️</button>
-          <button class="action-btn danger" data-action="delete" data-id="${a.id}" title="Eliminar" aria-label="Eliminar amortización ${a.nombre}">🗑️</button>
+          <button class="action-btn" data-action="edit" data-id="${a.id}" title="Editar" aria-label="Editar amortización ${en}">✏️</button>
+          <button class="action-btn danger" data-action="delete" data-id="${a.id}" title="Eliminar" aria-label="Eliminar amortización ${en}">🗑️</button>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
     ui.pagination('amort-pagination', data.length, amortPage, PAGE_SIZE, p => { amortPage = p; renderAmortizaciones(); });
   }
 
@@ -519,17 +524,18 @@ const Finance = (() => {
       const diffCls = p.tipo === 'gasto'
         ? (diff < 0 ? 'monto-gasto' : 'monto-ingreso')
         : (diff > 0 ? 'monto-ingreso' : 'monto-gasto');
+      const ecat = ui.escapeHtml(p.categoria);
       return `
         <tr>
-          <td>${p.categoria}</td>
+          <td>${ecat}</td>
           <td><span class="badge badge-tx-${p.tipo}">${TIPO_LABEL[p.tipo] || p.tipo}</span></td>
           <td class="monto-cell">${fmtMoney(p.monto)}</td>
           <td class="monto-cell monto-${p.tipo}">${fmtMoney(real)}</td>
           <td class="monto-cell ${diffCls}">${fmtMoney(Math.abs(diff))}</td>
           <td>${pct}</td>
           <td class="actions-cell">
-            <button class="action-btn" data-action="edit-presup" data-id="${p.id}" title="Editar" aria-label="Editar presupuesto ${p.categoria}">✏️</button>
-            <button class="action-btn danger" data-action="delete-presup" data-id="${p.id}" title="Eliminar" aria-label="Eliminar presupuesto ${p.categoria}">🗑️</button>
+            <button class="action-btn" data-action="edit-presup" data-id="${p.id}" title="Editar" aria-label="Editar presupuesto ${ecat}">✏️</button>
+            <button class="action-btn danger" data-action="delete-presup" data-id="${p.id}" title="Eliminar" aria-label="Eliminar presupuesto ${ecat}">🗑️</button>
           </td>
         </tr>
       `;

@@ -68,17 +68,18 @@ const Fields = (() => {
       const carga = (f.hectareas && count > 0)
         ? (count / f.hectareas).toFixed(2) + '\u00a0cab/ha'
         : (count > 0 ? count + '\u00a0cab' : '—');
+      const en = ui.escapeHtml(f.nombre);
       return `
       <tr>
-        <td>${f.nombre}</td>
+        <td>${en}</td>
         <td>${f.hectareas ? f.hectareas + '\u00a0ha' : '—'}</td>
         <td>${f.pastura || '—'}</td>
         <td>${f.fecha_implantacion ? formatDate(f.fecha_implantacion) : '—'}</td>
         <td>${carga}</td>
         <td><span class="badge badge-field-${f.estado}">${ESTADOS[f.estado] || f.estado}</span></td>
         <td class="actions-cell">
-          <button class="action-btn" data-action="edit" data-id="${f.id}" title="Editar" aria-label="Editar potrero ${f.nombre}">✏️</button>
-          <button class="action-btn danger" data-action="delete" data-id="${f.id}" title="Eliminar" aria-label="Eliminar potrero ${f.nombre}">🗑️</button>
+          <button class="action-btn" data-action="edit" data-id="${f.id}" title="Editar" aria-label="Editar potrero ${en}">✏️</button>
+          <button class="action-btn danger" data-action="delete" data-id="${f.id}" title="Eliminar" aria-label="Eliminar potrero ${en}">🗑️</button>
         </td>
       </tr>`;
     }).join('');
@@ -117,10 +118,11 @@ const Fields = (() => {
 
     tbody.innerHTML = rows.map(r => {
       const count    = r.list.length;
-      const preview  = r.list.slice(0, 4).map(a => a.caravana).join(', ') + (r.list.length > 4 ? ` +${r.list.length - 4}` : '');
+      const preview  = r.list.slice(0, 4).map(a => ui.escapeHtml(a.caravana)).join(', ') + (r.list.length > 4 ? ` +${r.list.length - 4}` : '');
+      const en       = ui.escapeHtml(r.nombre);
       const nameCell = r.registrado
-        ? r.nombre
-        : `${r.nombre} <span class="badge-no-reg">sin registrar</span>`;
+        ? en
+        : `${en} <span class="badge-no-reg">sin registrar</span>`;
       const carga = (r.hectareas && count > 0)
         ? (count / r.hectareas).toFixed(2) + '\u00a0cab/ha'
         : '—';

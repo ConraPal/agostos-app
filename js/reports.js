@@ -380,11 +380,11 @@ const Reports = (() => {
     const rows = data.map(m => `
       <tr>
         <td>${fmtD(m.fecha)}</td>
-        <td>${m.caravana || '—'}</td>
-        <td>${m.animalNombre || '—'}</td>
-        <td>${m.tipo}</td>
-        <td>${m.origen || '—'}</td>
-        <td>${m.destino || '—'}</td>
+        <td>${ui.escapeHtml(m.caravana) || '—'}</td>
+        <td>${ui.escapeHtml(m.animalNombre) || '—'}</td>
+        <td>${ui.escapeHtml(m.tipo)}</td>
+        <td>${ui.escapeHtml(m.origen) || '—'}</td>
+        <td>${ui.escapeHtml(m.destino) || '—'}</td>
       </tr>
     `).join('');
 
@@ -414,8 +414,8 @@ const Reports = (() => {
       <tr>
         <td>${fmtD(t.fecha)}</td>
         <td>${TIPO_LABEL[t.tipo] || t.tipo}</td>
-        <td>${t.categoria}</td>
-        <td>${t.descripcion || '—'}</td>
+        <td>${ui.escapeHtml(t.categoria)}</td>
+        <td>${ui.escapeHtml(t.descripcion) || '—'}</td>
         <td style="text-align:right">${t.moneda === 'USD' ? 'USD\u00a0' : '$\u00a0'}${Number(t.monto).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
       </tr>
     `).join('');

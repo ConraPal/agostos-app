@@ -22,7 +22,7 @@ const Agricultura = (() => {
     if (!sel) return;
     const fields = getFields();
     const allOpt = includeAll ? '<option value="">Todos los potreros</option>' : '';
-    sel.innerHTML = allOpt + fields.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('');
+    sel.innerHTML = allOpt + fields.map(f => `<option value="${f.id}">${ui.escapeHtml(f.nombre)}</option>`).join('');
   }
 
   // --- Stats ---
@@ -85,17 +85,18 @@ const Agricultura = (() => {
         ? c.rendimiento.toFixed(0) + '\u00a0kg/ha'
         : (c.kg_cosechados && c.ha_cosechadas ? (c.kg_cosechados / c.ha_cosechadas).toFixed(0) + '\u00a0kg/ha' : '—');
       const siembra = c.fecha_siembra ? formatDate(c.fecha_siembra) : (c.año || '—');
+      const ep = ui.escapeHtml(c.potrero);
       return `
       <tr>
-        <td>${c.potrero}</td>
+        <td>${ep}</td>
         <td>${siembra}</td>
         <td><span class="badge badge-cultivo-${c.tipo}">${c.tipo === 'cultivo' ? 'Cultivo' : 'Pastura'}</span></td>
-        <td>${c.detalle}</td>
+        <td>${ui.escapeHtml(c.detalle)}</td>
         <td>${rendimiento}</td>
-        <td>${c.notas || '—'}</td>
+        <td>${ui.escapeHtml(c.notas) || '—'}</td>
         <td class="actions-cell">
-          <button class="action-btn" data-action="edit-cultivo" data-id="${c.id}" title="Editar" aria-label="Editar cultivo ${c.potrero}">✏️</button>
-          <button class="action-btn danger" data-action="delete-cultivo" data-id="${c.id}" title="Eliminar" aria-label="Eliminar cultivo ${c.potrero}">🗑️</button>
+          <button class="action-btn" data-action="edit-cultivo" data-id="${c.id}" title="Editar" aria-label="Editar cultivo ${ep}">✏️</button>
+          <button class="action-btn danger" data-action="delete-cultivo" data-id="${c.id}" title="Eliminar" aria-label="Eliminar cultivo ${ep}">🗑️</button>
         </td>
       </tr>`;
     }).join('');
@@ -200,20 +201,22 @@ const Agricultura = (() => {
       return;
     }
     const paged = data.slice((forrajePage - 1) * PAGE_SIZE, forrajePage * PAGE_SIZE);
-    tbody.innerHTML = paged.map(f => `
+    tbody.innerHTML = paged.map(f => {
+      const ep = ui.escapeHtml(f.potrero);
+      return `
       <tr>
-        <td>${f.potrero}</td>
+        <td>${ep}</td>
         <td>${f.año}</td>
         <td><span class="badge badge-forraje-${f.tipo}">${f.tipo === 'rollo' ? 'Rollo' : 'Fardo'}</span></td>
         <td>${f.cantidad}</td>
         <td>${f.cortes ?? '—'}</td>
-        <td>${f.observaciones || '—'}</td>
+        <td>${ui.escapeHtml(f.observaciones) || '—'}</td>
         <td class="actions-cell">
-          <button class="action-btn" data-action="edit-forraje" data-id="${f.id}" title="Editar" aria-label="Editar forraje ${f.año} ${f.potrero}">✏️</button>
-          <button class="action-btn danger" data-action="delete-forraje" data-id="${f.id}" title="Eliminar" aria-label="Eliminar forraje ${f.año} ${f.potrero}">🗑️</button>
+          <button class="action-btn" data-action="edit-forraje" data-id="${f.id}" title="Editar" aria-label="Editar forraje ${f.año} ${ep}">✏️</button>
+          <button class="action-btn danger" data-action="delete-forraje" data-id="${f.id}" title="Eliminar" aria-label="Eliminar forraje ${f.año} ${ep}">🗑️</button>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
     ui.pagination('forraje-pagination', data.length, forrajePage, PAGE_SIZE, p => { forrajePage = p; renderForraje(); });
   }
 

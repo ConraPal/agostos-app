@@ -54,6 +54,15 @@ const ui = (() => {
     return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
   }
 
+  // --- HTML escape (previene XSS en innerHTML con datos de usuario) ---
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // --- Count-up animation for stat values ---
   function countUp(el, target, duration = 600) {
     if (!el) return;
@@ -109,7 +118,7 @@ const ui = (() => {
     }
   }
 
-  return { toast, confirm, pagination, debounce, countUp, fieldError, fieldClear, btnLoading };
+  return { toast, confirm, pagination, debounce, countUp, fieldError, fieldClear, btnLoading, escapeHtml };
 })();
 
 // --- Modal close animation helper (global) ---
@@ -356,7 +365,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const itemHTML = (a, cls) => `
       <div class="alert-item alert-item-${cls}" data-id="${a.id}">
         <div class="alert-item-info">
-          <span class="alert-item-title">${a.titulo}</span>
+          <span class="alert-item-title">${ui.escapeHtml(a.titulo)}</span>
           <span class="alert-item-date">${fmtD(a.fecha)}</span>
         </div>
         <div class="alert-item-actions">
