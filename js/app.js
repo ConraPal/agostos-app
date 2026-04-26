@@ -764,4 +764,13 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .catch(err => console.warn('SW registration failed:', err));
   });
+
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type !== 'SW_UPDATED') return;
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.innerHTML = 'Nueva versión disponible. <button id="sw-reload-btn" style="margin-left:8px;padding:2px 10px;border-radius:6px;border:none;background:#fff;color:#2d6a4f;font-weight:700;cursor:pointer">Recargar</button>';
+    toast.className = 'toast toast-success toast-show';
+    document.getElementById('sw-reload-btn')?.addEventListener('click', () => location.reload());
+  });
 }

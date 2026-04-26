@@ -6,6 +6,22 @@ const Reports = (() => {
   function getReproduction() { return Storage.get('ag_reproduction')  || []; }
   function getForraje()      { return Storage.get('ag_forraje')       || []; }
 
+  // Lazy loader de Chart.js
+  let _chartJsLoaded = typeof Chart !== 'undefined';
+  let _chartJsPromise = null;
+  function loadChartJs() {
+    if (_chartJsLoaded) return Promise.resolve();
+    if (_chartJsPromise) return _chartJsPromise;
+    _chartJsPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
+      s.onload  = () => { _chartJsLoaded = true; resolve(); };
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    return _chartJsPromise;
+  }
+
   // Chart instances — destroyed and recreated on each refresh
   let _chartHacienda = null;
   let _chartFinanzas = null;
@@ -724,7 +740,8 @@ const Reports = (() => {
   }
 
   // --- Public ---
-  function refresh() {
+  async function refresh() {
+    await loadChartJs();
     _chartPeso = destroyChart(_chartPeso);
     renderHacienda();
     renderFinanzas();

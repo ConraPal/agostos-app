@@ -36,6 +36,10 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() =>
+      self.clients.matchAll({ includeUncontrolled: true }).then(clients =>
+        clients.forEach(cl => cl.postMessage({ type: 'SW_UPDATED' }))
+      )
     )
   );
   self.clients.claim();
