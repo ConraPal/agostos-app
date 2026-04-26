@@ -367,13 +367,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       .sort((a, b) => (a.rfid_fecha_aplicacion || '').localeCompare(b.rfid_fecha_aplicacion || ''));
   }
 
+  function getPlanSanitarioAlerts() {
+    const limit30 = new Date(); limit30.setDate(limit30.getDate() + 30);
+    const limitStr = limit30.toISOString().slice(0, 10);
+    return (Storage.get('ag_plan_sanitario') || [])
+      .filter(p => p.proximo_vencimiento && p.proximo_vencimiento <= limitStr)
+      .sort((a, b) => a.proximo_vencimiento.localeCompare(b.proximo_vencimiento));
+  }
+
   function refreshAlertBadge() {
     const today = getTodayStr();
     const userCount   = (Storage.get(ALERTA_KEY) || []).filter(a => !a.completado && a.fecha <= today).length;
     const senasaCount = getSenasaUrgentes().length;
+    const planCount   = getPlanSanitarioAlerts().length;
     const badge = document.getElementById('bell-badge');
     if (!badge) return;
-    const total = userCount + senasaCount;
+    const total = userCount + senasaCount + planCount;
     badge.textContent = total || '';
     badge.style.display = total ? 'flex' : 'none';
   }
@@ -425,11 +434,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('')}
     ` : '';
 
+    // Sección Plan Sanitario
+    const planAlertas = getPlanSanitarioAlerts();
+    const planHTML = planAlertas.length ? `
+      <div class="alert-section-title alert-section-senasa">💉 Plan Sanitario — vencimientos</div>
+      ${planAlertas.map(p => {
+        const venc = p.proximo_vencimiento;
+        const overdue = venc < today;
+        return `<div class="alert-item alert-item-${overdue ? 'overdue' : 'upcoming'}">
+          <div class="alert-item-info">
+            <span class="alert-item-title">${ui.escapeHtml(p.nombre)} <small style="font-weight:400;color:var(--color-muted)">(${ui.escapeHtml(p.aplica_a)})</small></span>
+            <span class="alert-item-date">${fmtD(venc)}${overdue ? ' — VENCIDO' : ''}</span>
+          </div>
+          <div class="alert-item-actions">
+            <button class="alert-btn-senasa-goto" title="Ir a Plan Sanitario" onclick="navigateTo('livestock');document.querySelector('[data-tab=plan-sanitario]')?.click()">→</button>
+          </div>
+        </div>`;
+      }).join('')}
+    ` : '';
+
     const listEl = document.getElementById('alerts-list');
     const userContent = section('Vencidos', overdue, 'overdue') +
                         section('Hoy', dueToday, 'today') +
                         section('Próximos 30 días', upcoming, 'upcoming');
-    const allContent = senasaHTML + userContent;
+    const allContent = senasaHTML + planHTML + userContent;
     listEl.innerHTML = allContent || '<p class="alerts-empty">Sin recordatorios pendientes.</p>';
 
     // Set default date for the add form

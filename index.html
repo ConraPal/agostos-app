@@ -197,6 +197,7 @@
         <button class="tab" data-tab="history">Historial</button>
         <button class="tab" data-tab="reproduccion">Reproducción</button>
         <button class="tab" data-tab="sanidad">Sanidad</button>
+        <button class="tab" data-tab="plan-sanitario">Plan Sanitario</button>
       </div>
 
       <!-- Tab: Registro -->
@@ -391,6 +392,31 @@
             </tbody>
           </table>
           <div id="sanidad-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Plan Sanitario -->
+      <div id="tab-plan-sanitario" class="tab-content">
+        <div class="table-toolbar">
+          <button class="btn btn-secondary" id="btn-new-plan">+ Agregar plan</button>
+          <button class="btn btn-secondary" id="btn-load-templates">Cargar templates</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="plan-sanitario-table">
+            <thead>
+              <tr>
+                <th>Vacuna / Tratamiento</th>
+                <th>Aplica a</th>
+                <th>Frecuencia</th>
+                <th>Próximo vencimiento</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="plan-sanitario-tbody">
+              <tr class="empty-row"><td colspan="6">Sin planes. Usá "Cargar templates" para precargar Aftosa, Brucelosis, Carbunclo e IBR/DVB.</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -1719,6 +1745,46 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btn-cancel-sanidad">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Plan Sanitario -->
+  <div class="modal-overlay hidden" id="modal-plan">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-plan-title">Nuevo plan sanitario</h2>
+        <button class="modal-close" id="modal-plan-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-plan">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pl-nombre">Nombre *</label>
+            <input type="text" id="pl-nombre" name="nombre" required placeholder="Ej: Aftosa" />
+          </div>
+          <div class="form-group">
+            <label for="pl-aplica">Aplica a</label>
+            <select id="pl-aplica" name="aplica_a">
+              <option value="todo el rodeo">Todo el rodeo</option>
+              <option value="vacas">Vacas</option>
+              <option value="terneros">Terneros</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pl-frecuencia">Frecuencia (meses) *</label>
+            <input type="number" id="pl-frecuencia" name="frecuencia_meses" min="1" max="24" required placeholder="Ej: 6" />
+          </div>
+          <div class="form-group">
+            <label for="pl-vencimiento">Próximo vencimiento</label>
+            <input type="date" id="pl-vencimiento" name="proximo_vencimiento" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-plan">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar</button>
         </div>
       </form>

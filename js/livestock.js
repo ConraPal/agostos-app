@@ -1,7 +1,14 @@
 // ===== Livestock Module =====
 const Livestock = (() => {
 
-  const KEYS = { animals: 'ag_animals', movements: 'ag_movements', history: 'ag_history', reproduction: 'ag_reproduction', sanidad: 'ag_sanidad', pesadas: 'ag_pesadas' };
+  const KEYS = { animals: 'ag_animals', movements: 'ag_movements', history: 'ag_history', reproduction: 'ag_reproduction', sanidad: 'ag_sanidad', pesadas: 'ag_pesadas', plan_sanitario: 'ag_plan_sanitario' };
+
+  const PLAN_TEMPLATES = [
+    { nombre: 'Aftosa',     frecuencia_meses: 6,  aplica_a: 'todo el rodeo' },
+    { nombre: 'Brucelosis', frecuencia_meses: 8,  aplica_a: 'vacas' },
+    { nombre: 'Carbunclo',  frecuencia_meses: 12, aplica_a: 'todo el rodeo' },
+    { nombre: 'IBR/DVB',    frecuencia_meses: 12, aplica_a: 'todo el rodeo' },
+  ];
 
   // --- Data helpers ---
   const getData = key => Storage.get(key, []);
@@ -401,6 +408,23 @@ const Livestock = (() => {
     }
 
     saveData(KEYS.sanidad, data);
+
+    // Actualizar próximo vencimiento de plan que coincida con la descripción
+    if (entry.tipo === 'vacunación') {
+      const plans = getData(KEYS.plan_sanitario);
+      const descLower = entry.descripcion.toLowerCase();
+      let updated = false;
+      plans.forEach(plan => {
+        if (descLower.includes(plan.nombre.toLowerCase())) {
+          const base = new Date(entry.fecha + 'T00:00:00');
+          base.setMonth(base.getMonth() + plan.frecuencia_meses);
+          plan.proximo_vencimiento = base.toISOString().slice(0, 10);
+          updated = true;
+        }
+      });
+      if (updated) { saveData(KEYS.plan_sanitario, plans); renderPlanSanitario(); }
+    }
+
     closeModalSanidad();
     sanidadPage = 1;
     renderSanidad();
@@ -420,6 +444,92 @@ const Livestock = (() => {
     });
   };
 
+  // --- Plan Sanitario ---
+  const renderPlanSanitario = () => {
+    const plans = getData(KEYS.plan_sanitario);
+    const today = new Date().toISOString().slice(0, 10);
+    const limit30 = new Date(); limit30.setDate(limit30.getDate() + 30);
+    const limit30Str = limit30.toISOString().slice(0, 10);
+    const fmtD = iso => { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+
+    document.getElementById('plan-sanitario-tbody').innerHTML = plans.length
+      ? plans.map(p => {
+          let badge = '', badgeCls = '';
+          if (!p.proximo_vencimiento) { badge = 'Sin fecha'; badgeCls = 'badge' }
+          else if (p.proximo_vencimiento < today) { badge = 'Vencido'; badgeCls = 'badge badge-muerto'; }
+          else if (p.proximo_vencimiento <= limit30Str) { badge = 'Próximo'; badgeCls = 'badge badge-evento-edicion'; }
+          else { badge = 'Al día'; badgeCls = 'badge badge-activo'; }
+          return `<tr>
+            <td>${ui.escapeHtml(p.nombre)}</td>
+            <td>${ui.escapeHtml(p.aplica_a)}</td>
+            <td>${p.frecuencia_meses} meses</td>
+            <td>${fmtD(p.proximo_vencimiento)}</td>
+            <td><span class="${badgeCls}">${badge}</span></td>
+            <td>
+              <button class="action-btn" onclick="Livestock.editPlan('${p.id}')" title="Editar">✏️</button>
+              <button class="action-btn danger" onclick="Livestock.removePlan('${p.id}')" title="Eliminar">🗑</button>
+            </td>
+          </tr>`;
+        }).join('')
+      : '<tr class="empty-row"><td colspan="6">Sin planes. Usá "Cargar templates" para precargar Aftosa, Brucelosis, Carbunclo e IBR/DVB.</td></tr>';
+  };
+
+  let editingPlanId = null;
+
+  const openModalPlan = (id = null) => {
+    editingPlanId = id;
+    const form = document.getElementById('form-plan');
+    form.reset();
+    document.getElementById('modal-plan-title').textContent = id ? 'Editar plan sanitario' : 'Nuevo plan sanitario';
+    if (id) {
+      const plan = getData(KEYS.plan_sanitario).find(p => p.id === id);
+      if (plan) {
+        form.nombre.value           = plan.nombre;
+        form.aplica_a.value         = plan.aplica_a;
+        form.frecuencia_meses.value = plan.frecuencia_meses;
+        form.proximo_vencimiento.value = plan.proximo_vencimiento || '';
+      }
+    }
+    document.getElementById('modal-plan').classList.remove('hidden');
+  };
+
+  const closeModalPlan = () => {
+    closeModalAnimated('modal-plan', () => { editingPlanId = null; });
+  };
+
+  const savePlan = e => {
+    e.preventDefault();
+    const form = e.target;
+    const entry = {
+      nombre:              form.nombre.value.trim(),
+      aplica_a:            form.aplica_a.value,
+      frecuencia_meses:    Number(form.frecuencia_meses.value),
+      proximo_vencimiento: form.proximo_vencimiento.value || null,
+    };
+    const plans = getData(KEYS.plan_sanitario);
+    const wasEditing = !!editingPlanId;
+    if (editingPlanId) {
+      const idx = plans.findIndex(p => p.id === editingPlanId);
+      if (idx >= 0) plans[idx] = { ...plans[idx], ...entry };
+    } else {
+      plans.push({ id: ui.uid(), ...entry });
+    }
+    saveData(KEYS.plan_sanitario, plans);
+    closeModalPlan();
+    renderPlanSanitario();
+    ui.toast(wasEditing ? 'Plan actualizado.' : 'Plan sanitario creado.');
+  };
+
+  const loadPlanTemplates = () => {
+    const existing = getData(KEYS.plan_sanitario);
+    const existingNames = new Set(existing.map(p => p.nombre.toLowerCase()));
+    const toAdd = PLAN_TEMPLATES.filter(t => !existingNames.has(t.nombre.toLowerCase()));
+    if (!toAdd.length) { ui.toast('Los templates ya están cargados.'); return; }
+    saveData(KEYS.plan_sanitario, [...existing, ...toAdd.map(t => ({ id: ui.uid(), ...t, proximo_vencimiento: null }))]);
+    renderPlanSanitario();
+    ui.toast(`${toAdd.length} template(s) cargado(s).`);
+  };
+
   // --- Full render ---
   const render = () => {
     renderStats();
@@ -428,6 +538,7 @@ const Livestock = (() => {
     renderHistory();
     renderReproduccion();
     renderSanidad();
+    renderPlanSanitario();
   };
 
   // --- Potrero datalist ---
@@ -1275,8 +1386,25 @@ const Livestock = (() => {
       if (li) selectSanidadAnimal(li);
     });
 
+    // Plan Sanitario listeners
+    document.getElementById('btn-new-plan').addEventListener('click', () => openModalPlan());
+    document.getElementById('btn-load-templates').addEventListener('click', loadPlanTemplates);
+    document.getElementById('modal-plan-close').addEventListener('click', closeModalPlan);
+    document.getElementById('btn-cancel-plan').addEventListener('click', closeModalPlan);
+    document.getElementById('modal-plan').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModalPlan();
+    });
+    document.getElementById('form-plan').addEventListener('submit', savePlan);
+
     render();
   };
 
-  return { init, edit, remove, editRepro, removeRepro, editSanidad, removeSanidad };
+  return { init, edit, remove, editRepro, removeRepro, editSanidad, removeSanidad, editPlan: openModalPlan, removePlan: id => {
+    ui.confirm('¿Eliminar este plan sanitario?').then(ok => {
+      if (!ok) return;
+      saveData(KEYS.plan_sanitario, getData(KEYS.plan_sanitario).filter(p => p.id !== id));
+      renderPlanSanitario();
+      ui.toast('Plan eliminado.');
+    });
+  }};
 })();

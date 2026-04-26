@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n '\\\\${[a-z]\\\\+\\\\.\\\\\\(nombre\\\\|caravana\\\\|raza\\\\|potrero\\\\|descripcion\\\\|observaciones\\\\|detalle\\\\|categoria\\\\|producto\\\\|dosis\\\\|animalNombre\\\\|tipo\\\\|origen\\\\|destino\\\\|motivo\\\\|titulo\\\\|email\\\\|nombre_usuario\\\\|notas\\\\|descripcion\\\\|detalle\\\\|ia_toro\\\\|unidad\\\\\\)}' js/livestock.js js/finance.js js/fields.js js/agricultura.js js/reports.js js/app.js)"
+    ]
+  }
+}
