@@ -36,6 +36,35 @@ const Reports = (() => {
     const active = getAnimals().filter(a => a.estado === 'activo');
     const total  = active.length;
 
+    // Indicadores productivos
+    const EV_FACTOR = { vaca: 1, toro: 1.3, ternero: 0.6, novillo: 0.7, vaquillona: 0.7 };
+    const totalEV   = active.reduce((s, a) => s + (EV_FACTOR[a.tipo] || 1), 0);
+    const fields    = (Storage.get('ag_fields') || []).filter(f => f.estado === 'activo');
+    const totalHa   = fields.reduce((s, f) => s + (Number(f.hectareas) || 0), 0);
+
+    const elCarga = document.getElementById('stat-carga-animal');
+    if (elCarga) elCarga.textContent = (totalHa > 0 && totalEV > 0) ? (totalEV / totalHa).toFixed(2) : '—';
+
+    const CARNE_CATS = new Set(['Toros', 'Vacas vacías', 'Terneros machos', 'Terneras hembras', 'Novillos', 'Vaquillonas']);
+    const curYear    = String(new Date().getFullYear());
+    const totalKgCarne = (Storage.get('ag_transactions') || [])
+      .filter(t => t.tipo === 'ingreso' && CARNE_CATS.has(t.categoria) && t.fecha?.startsWith(curYear) && t.peso_kg)
+      .reduce((s, t) => s + Number(t.peso_kg), 0);
+    const elCarne = document.getElementById('stat-prod-carne');
+    if (elCarne) {
+      if (totalKgCarne === 0) { elCarne.textContent = '—'; }
+      else if (totalHa > 0)  { elCarne.textContent = Math.round(totalKgCarne / totalHa); }
+      else                   { elCarne.textContent = Math.round(totalKgCarne) + ' kg'; }
+    }
+
+    const lastRepro = (Storage.get('ag_reproduction') || []).sort((a, b) => b.año - a.año)[0];
+    const elParicion = document.getElementById('stat-paricion');
+    if (elParicion) {
+      elParicion.textContent = (lastRepro && lastRepro.vacas_total > 0)
+        ? Math.round(lastRepro.partos / lastRepro.vacas_total * 100) + '%'
+        : '—';
+    }
+
     // Por tipo
     const byTipo = {};
     active.forEach(a => { byTipo[a.tipo] = (byTipo[a.tipo] || 0) + 1; });

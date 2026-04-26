@@ -806,6 +806,26 @@
 
       <!-- Tab: Hacienda -->
       <div id="tab-rpt-hacienda" class="tab-content active">
+
+        <!-- Indicadores productivos -->
+        <div class="stats-grid" style="margin-bottom:20px">
+          <div class="stat-card">
+            <span class="stat-label">Carga animal <span class="tooltip-trigger" tabindex="0" data-tip="Equivalentes vaca por hectárea activa. EV: vaca=1, toro=1.3, ternero=0.6, novillo/vaquillona=0.7">?</span></span>
+            <span class="stat-value" id="stat-carga-animal">—</span>
+            <span class="cell-sub">EV / ha</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Producción de carne <span class="tooltip-trigger" tabindex="0" data-tip="Kg de carne vendida en el año actual / hectáreas activas. Solo categorías de hacienda con peso registrado.">?</span></span>
+            <span class="stat-value" id="stat-prod-carne">—</span>
+            <span class="cell-sub">kg / ha (año actual)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">% Parición <span class="tooltip-trigger" tabindex="0" data-tip="Partos / vacas totales del último ciclo reproductivo registrado">?</span></span>
+            <span class="stat-value" id="stat-paricion">—</span>
+            <span class="cell-sub">último ciclo</span>
+          </div>
+        </div>
+
         <div class="rpt-grid">
           <div class="rpt-section">
             <h3>Stock activo por tipo</h3>
