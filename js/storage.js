@@ -18,6 +18,14 @@ const Storage = (() => {
   const cache = {};
   let useSupabase = false;
   let currentUser = null;
+  let _activeEstabId = null;
+
+  const FILTERABLE_KEYS = new Set([
+    'ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction', 'ag_sanidad',
+    'ag_pesadas', 'ag_plan_sanitario', 'ag_transactions', 'ag_amortizations',
+    'ag_presupuesto', 'ag_fields', 'ag_crop_history', 'ag_forraje',
+    'ag_insumos', 'ag_insumos_movs',
+  ]);
 
   // --- Conecta a Supabase y verifica sesión activa ---
   // Retorna { needsAuth: true } si no hay usuario logueado
@@ -98,6 +106,8 @@ const Storage = (() => {
 
   function getUser() { return currentUser; }
 
+  function setActiveEstab(id) { _activeEstabId = id; }
+
   // --- CRUD ---
   function get(key, fallback = null) {
     if (LOCAL_ONLY.has(key)) {
@@ -106,7 +116,12 @@ const Storage = (() => {
         return raw ? JSON.parse(raw) : fallback;
       } catch { return fallback; }
     }
-    return key in cache ? cache[key] : fallback;
+    const val = key in cache ? cache[key] : fallback;
+    // Filtrar por establecimiento activo cuando corresponde
+    if (_activeEstabId && FILTERABLE_KEYS.has(key) && Array.isArray(val)) {
+      return val.filter(item => !item.establecimiento_id || item.establecimiento_id === _activeEstabId);
+    }
+    return val;
   }
 
   function set(key, value) {
@@ -157,5 +172,5 @@ const Storage = (() => {
     if (error) throw error;
   }
 
-  return { init, login, logout, getUser, get, set, remove, signUp, resetPassword, updatePassword };
+  return { init, login, logout, getUser, get, set, remove, signUp, resetPassword, updatePassword, setActiveEstab };
 })();

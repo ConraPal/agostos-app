@@ -454,6 +454,118 @@ document.addEventListener('DOMContentLoaded', async () => {
     location.reload();
   });
 
+  // --- Multi-establecimiento ---
+  const ESTAB_KEY = 'ag_establecimientos';
+  const FILTERABLE_ESTAB = ['ag_animals','ag_movements','ag_history','ag_reproduction','ag_sanidad',
+    'ag_pesadas','ag_plan_sanitario','ag_transactions','ag_amortizations','ag_presupuesto',
+    'ag_fields','ag_crop_history','ag_forraje','ag_insumos','ag_insumos_movs'];
+
+  function refreshAllModules() {
+    Livestock.init && render && null; // init already ran; trigger re-renders
+    ['renderStats','renderAnimals','renderMovements','renderHistory','renderReproduccion','renderSanidad','renderPlanSanitario'].forEach(() => {});
+    // Recargar todos los módulos vía refresh donde esté disponible
+    try { Agricultura.refresh(); } catch(_) {}
+    try { Fields.refresh();     } catch(_) {}
+    try { Insumos.refresh();    } catch(_) {}
+    try { Reports.refresh();    } catch(_) {}
+    // Livestock no tiene refresh público — navigateTo lo re-renderiza
+    const cur = location.hash.slice(1);
+    if (cur === 'livestock') navigateTo('livestock');
+    if (cur === 'finance')   navigateTo('finance');
+  }
+
+  function _migrateEstab(estabId) {
+    FILTERABLE_ESTAB.forEach(key => {
+      const data = Storage.get(key) || [];
+      if (data.length && !data[0].establecimiento_id) {
+        // Leer desde cache raw (sin filtrar) para la migración
+        const raw = Storage.get(key) || [];
+        Storage.set(key, raw.map(item => item.establecimiento_id ? item : { establecimiento_id: estabId, ...item }));
+      }
+    });
+  }
+
+  function _renderEstabLista(estabs) {
+    const el = document.getElementById('estab-lista');
+    if (!el) return;
+    el.innerHTML = estabs.length
+      ? estabs.map(e => `
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--color-border)">
+            <span style="flex:1;font-weight:600">${ui.escapeHtml(e.nombre)}</span>
+            <span style="font-size:12px;color:var(--color-muted)">${e.hectareas_totales ? e.hectareas_totales + ' ha' : ''}</span>
+            ${estabs.length > 1 ? `<button class="action-btn danger btn-del-estab" data-id="${e.id}" title="Eliminar">🗑</button>` : ''}
+          </div>`).join('')
+      : '<p style="color:var(--color-muted);font-size:13px">Sin establecimientos.</p>';
+
+    el.querySelectorAll('.btn-del-estab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ui.confirm('¿Eliminar este establecimiento? Los datos asociados quedan sin establecimiento asignado.').then(ok => {
+          if (!ok) return;
+          const estabs = (Storage.get(ESTAB_KEY) || []).filter(e => e.id !== btn.dataset.id);
+          Storage.set(ESTAB_KEY, estabs);
+          _renderEstabLista(estabs);
+          _populateEstabSelector(estabs);
+        });
+      });
+    });
+  }
+
+  function _populateEstabSelector(estabs) {
+    const sel = document.getElementById('establecimiento-selector');
+    const btn = document.getElementById('btn-gestionar-estab');
+    if (!sel) return;
+    if (estabs.length <= 1) { sel.classList.add('hidden'); btn?.classList.add('hidden'); return; }
+    sel.classList.remove('hidden'); btn?.classList.remove('hidden');
+    const cur = sel.value;
+    sel.innerHTML = estabs.map(e => `<option value="${e.id}"${e.id === cur ? ' selected' : ''}>${ui.escapeHtml(e.nombre)}</option>`).join('');
+  }
+
+  function _initEstablecimientos() {
+    let estabs = Storage.get(ESTAB_KEY) || [];
+    if (!estabs.length) {
+      const principal = { id: ui.uid(), nombre: 'Principal', hectareas_totales: null };
+      estabs = [principal];
+      Storage.set(ESTAB_KEY, estabs);
+      _migrateEstab(principal.id);
+    }
+    Storage.setActiveEstab(estabs[0].id);
+    _populateEstabSelector(estabs);
+
+    const sel = document.getElementById('establecimiento-selector');
+    sel?.addEventListener('change', () => {
+      Storage.setActiveEstab(sel.value);
+      refreshAllModules();
+    });
+
+    // Modal gestión
+    document.getElementById('btn-gestionar-estab')?.addEventListener('click', () => {
+      _renderEstabLista(Storage.get(ESTAB_KEY) || []);
+      document.getElementById('modal-estab')?.classList.remove('hidden');
+    });
+    document.getElementById('modal-estab-close')?.addEventListener('click', () => {
+      document.getElementById('modal-estab')?.classList.add('hidden');
+    });
+    document.getElementById('modal-estab')?.addEventListener('click', e => {
+      if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+    });
+    document.getElementById('form-estab')?.addEventListener('submit', e => {
+      e.preventDefault();
+      const nombre = document.getElementById('estab-nombre').value.trim();
+      const ha     = document.getElementById('estab-ha').value;
+      if (!nombre) return;
+      const nuevo  = { id: ui.uid(), nombre, hectareas_totales: ha ? Number(ha) : null };
+      const estabs = [...(Storage.get(ESTAB_KEY) || []), nuevo];
+      Storage.set(ESTAB_KEY, estabs);
+      _renderEstabLista(estabs);
+      _populateEstabSelector(estabs);
+      document.getElementById('estab-nombre').value = '';
+      document.getElementById('estab-ha').value = '';
+      ui.toast('Establecimiento agregado.');
+    });
+  }
+
+  _initEstablecimientos();
+
   // --- Init modules ---
   Livestock.init();
   Finance.init();
