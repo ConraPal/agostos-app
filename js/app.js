@@ -503,7 +503,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== Onboarding Wizard =====
   const Onboarding = (function () {
-    const _obState = { step: 1, fields: [], counts: {} };
+    const _obState = { step: 1, fields: [], counts: {}, actividad: 'mixto' };
     const TIPOS = ['vaca', 'toro', 'ternero', 'novillo', 'vaquillona'];
     const TIPO_LABELS = { vaca: 'Vacas', toro: 'Toros', ternero: 'Terneros', novillo: 'Novillos', vaquillona: 'Vaquillonas' };
     const STEP_TITLES = { 1: 'Tus potreros', 2: 'Tu hacienda', 3: '¡Listo para empezar!' };
@@ -520,6 +520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _obState.step = 1;
       _obState.fields = [];
       _obState.counts = {};
+      _obState.actividad = 'mixto';
       document.getElementById('ob-fields-list').innerHTML = '';
       _obAddFieldRow();
       _obGoToStep(1);
@@ -607,8 +608,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       Object.keys(_obState.counts).forEach(function (p) {
         TIPOS.forEach(function (t) { total += (_obState.counts[p][t] || 0); });
       });
+      const ACTIVIDAD_LABEL = { cria: 'Cría', invernada: 'Invernada', mixto: 'Mixto', tambo: 'Tambo' };
+      const act = ACTIVIDAD_LABEL[_obState.actividad] || 'Mixto';
       document.getElementById('ob-done-summary').textContent =
-        'Registramos ' + _obState.fields.length + ' potreros y ' + total + ' animales como punto de partida.';
+        'Actividad: ' + act + '. Registramos ' + _obState.fields.length + ' potreros y ' + total + ' animales como punto de partida.';
     }
 
     function _obSaveAndClose() {
@@ -631,7 +634,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           for (var i = 0; i < qty; i++) {
             const padded = String(counter).padStart(4, '0');
             newAnimals.push({
-              id: String(base + 10000 + counter),
+              id: ui.uid(),
               caravana: '#OB-' + padded,
               tipo: tipo,
               nombre: '',
@@ -649,9 +652,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       Storage.set('ag_animals', existingAnimals.concat(newAnimals));
       Storage.set('ag_onboarded', true);
+      Storage.set('ag_actividad', _obState.actividad);
 
       closeModalAnimated('modal-onboarding', function () {
-        ui.toast('¡Datos registrados! Ya podés gestionar tu campo.');
+        ui.toast('¡Listo! Ahora cargá tus animales en Ganadería.');
+        navigateTo('livestock');
       });
       renderHomeStats();
       if (typeof Livestock !== 'undefined') Livestock.refresh();
@@ -668,6 +673,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('ob-add-field').addEventListener('click', _obAddFieldRow);
 
       document.getElementById('ob-next-1').addEventListener('click', function () {
+        _obState.actividad = document.getElementById('ob-actividad').value || 'mixto';
         _obSyncFieldsFromDOM();
         _obGoToStep(2);
       });
