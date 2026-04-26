@@ -239,6 +239,127 @@ const Reports = (() => {
     `;
   }
 
+  // --- Tab: SENASA ---
+  const TIPO_SEXO = { vaca: 'Hembra', toro: 'Macho', ternero: 'Macho', vaquillona: 'Hembra', novillo: 'Macho' };
+  const DISP_LABEL = { boton: 'Botón', bolo: 'Bolo ruminal', inyectable: 'Inyectable' };
+
+  function diasHabiles(fechaISO) {
+    if (!fechaISO) return '—';
+    let count = 0;
+    const start = new Date(fechaISO + 'T00:00:00');
+    const end   = new Date();
+    end.setHours(0, 0, 0, 0);
+    let cur = new Date(start);
+    while (cur < end) {
+      cur.setDate(cur.getDate() + 1);
+      const dow = cur.getDay();
+      if (dow !== 0 && dow !== 6) count++;
+    }
+    return count;
+  }
+
+  function fmtFechaARG(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function renderSenasa() {
+    const animals = getAnimals();
+    const conRfid   = animals.filter(a => a.rfid);
+    const pendientes = conRfid.filter(a => !a.rfid_declarado_senasa)
+      .sort((a, b) => (a.rfid_fecha_aplicacion || '').localeCompare(b.rfid_fecha_aplicacion || ''));
+    const declarados = conRfid.filter(a => a.rfid_declarado_senasa);
+
+    // Stats
+    document.getElementById('senasa-stat-total').textContent      = conRfid.length;
+    document.getElementById('senasa-stat-pendientes').textContent  = pendientes.length;
+    document.getElementById('senasa-stat-declarados').textContent  = declarados.length;
+
+    // Pendientes table
+    const tbody = document.getElementById('senasa-pendientes-tbody');
+    if (!pendientes.length) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--color-text-secondary)">🎉 Sin animales pendientes de declarar.</td></tr>`;
+    } else {
+      tbody.innerHTML = pendientes.map(a => {
+        const dias  = diasHabiles(a.rfid_fecha_aplicacion);
+        const diasN = typeof dias === 'number' ? dias : 0;
+        const diasCls = diasN >= 8 ? 'senasa-dias-urgente' : (diasN >= 6 ? 'senasa-dias-alerta' : '');
+        return `<tr>
+          <td><input type="checkbox" class="senasa-check" data-id="${a.id}" /></td>
+          <td><strong>${ui.escapeHtml(a.caravana)}</strong></td>
+          <td>${ui.escapeHtml(a.nombre) || '—'}</td>
+          <td style="text-transform:capitalize">${ui.escapeHtml(a.tipo)}</td>
+          <td><code>${ui.escapeHtml(a.rfid)}</code></td>
+          <td>${ui.escapeHtml(DISP_LABEL[a.rfid_tipo] || a.rfid_tipo || '—')}</td>
+          <td>${fmtFechaARG(a.rfid_fecha_aplicacion) || '—'}</td>
+          <td class="${diasCls}">${typeof dias === 'number' ? dias + ' d.' : dias}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Declarados
+    const decEl = document.getElementById('senasa-declarados-content');
+    decEl.innerHTML = declarados.length
+      ? `<table class="data-table" style="margin-top:8px">
+          <thead><tr><th>Caravana</th><th>Nombre</th><th>RFID</th><th>Fecha decl.</th></tr></thead>
+          <tbody>${declarados.map(a => `<tr>
+            <td><strong>${ui.escapeHtml(a.caravana)}</strong></td>
+            <td>${ui.escapeHtml(a.nombre) || '—'}</td>
+            <td><code>${ui.escapeHtml(a.rfid)}</code></td>
+            <td>${fmtFechaARG(a.rfid_fecha_declaracion) || '—'}</td>
+          </tr>`).join('')}</tbody>
+        </table>`
+      : '<p style="color:var(--color-text-secondary);padding:12px 0">Sin animales declarados aún.</p>';
+
+    // check-all sync
+    const checkAll = document.getElementById('senasa-check-all');
+    if (checkAll) checkAll.checked = false;
+  }
+
+  function exportSenasaTxt() {
+    const checked = [...document.querySelectorAll('.senasa-check:checked')];
+    const ids = checked.map(c => c.dataset.id);
+    const animals = getAnimals().filter(a => a.rfid && !a.rfid_declarado_senasa);
+    const targets = ids.length
+      ? animals.filter(a => ids.includes(a.id))
+      : animals;
+
+    if (!targets.length) { ui.toast('No hay animales pendientes para exportar.', 'error'); return; }
+
+    const lines = targets.map(a => {
+      const rfid   = a.rfid || '';
+      const tipo   = DISP_LABEL[a.rfid_tipo] || (a.rfid_tipo || '');
+      const especie = 'Bovino';
+      const sexo   = TIPO_SEXO[a.tipo] || 'Macho';
+      const fecha  = fmtFechaARG(a.nacimiento) || '';
+      return `${rfid};${tipo};${especie};${sexo};${fecha}`;
+    });
+
+    const contenido = lines.join('\r\n');
+    const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `senasa_rfid_${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    ui.toast(`TXT generado con ${targets.length} animal${targets.length !== 1 ? 'es' : ''}.`);
+  }
+
+  function marcarDeclarados() {
+    const checked = [...document.querySelectorAll('.senasa-check:checked')];
+    if (!checked.length) { ui.toast('Seleccioná al menos un animal.', 'error'); return; }
+    const ids   = new Set(checked.map(c => c.dataset.id));
+    const today = new Date().toISOString().slice(0, 10);
+    const animals = getAnimals().map(a =>
+      ids.has(a.id) ? { ...a, rfid_declarado_senasa: true, rfid_fecha_declaracion: today } : a
+    );
+    Storage.set('ag_animals', animals);
+    renderSenasa();
+    ui.toast(`${ids.size} animal${ids.size !== 1 ? 'es marcados' : ' marcado'} como declarado${ids.size !== 1 ? 's' : ''}.`);
+  }
+
   // --- CSV export ---
   function downloadCSV(filename, headers, rows) {
     const esc = v => {
@@ -518,6 +639,7 @@ const Reports = (() => {
     renderFinanzas();
     renderReproduccion();
     renderForraje();
+    renderSenasa();
   }
 
   function init() {
@@ -534,6 +656,12 @@ const Reports = (() => {
     document.getElementById('btn-share-rodeo')?.addEventListener('click', shareRodeo);
     document.getElementById('btn-share-movimientos')?.addEventListener('click', shareMovimientos);
     document.getElementById('btn-share-transacciones')?.addEventListener('click', shareTransacciones);
+
+    document.getElementById('btn-senasa-export-txt')?.addEventListener('click', exportSenasaTxt);
+    document.getElementById('btn-senasa-marcar')?.addEventListener('click', marcarDeclarados);
+    document.getElementById('senasa-check-all')?.addEventListener('change', e => {
+      document.querySelectorAll('.senasa-check').forEach(c => { c.checked = e.target.checked; });
+    });
 
     document.getElementById('btn-export-backup')?.addEventListener('click', exportBackup);
     document.getElementById('import-backup-input')?.addEventListener('change', e => {

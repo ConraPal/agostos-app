@@ -800,6 +800,7 @@
         <button class="tab" data-tab="rpt-finanzas">Finanzas</button>
         <button class="tab" data-tab="rpt-reproduccion">Reproducción</button>
         <button class="tab" data-tab="rpt-forraje">Forraje</button>
+        <button class="tab" data-tab="rpt-senasa">SENASA</button>
         <button class="tab" data-tab="rpt-exportar">Exportar</button>
       </div>
 
@@ -887,6 +888,66 @@
           <h3>Stock de forraje</h3>
           <div id="rpt-forraje-content"></div>
         </div>
+      </div>
+
+      <!-- Tab: SENASA -->
+      <div id="tab-rpt-senasa" class="tab-content">
+        <div class="senasa-banner">
+          <strong>Res. SENASA 841/2025</strong> — Todo animal nacido a partir del 1/1/2026 debe tener RFID declarado en SIGSA dentro de los <strong>10 días hábiles</strong> de aplicado el dispositivo.
+        </div>
+
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card">
+            <div class="stat-value" id="senasa-stat-total">0</div>
+            <div class="stat-label">Con RFID</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value senasa-pendiente" id="senasa-stat-pendientes">0</div>
+            <div class="stat-label">Pendientes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="senasa-stat-declarados">0</div>
+            <div class="stat-label">Declarados</div>
+          </div>
+        </div>
+
+        <div class="senasa-toolbar">
+          <label class="senasa-check-all-label">
+            <input type="checkbox" id="senasa-check-all" /> Seleccionar todos
+          </label>
+          <div class="senasa-toolbar-btns">
+            <button class="btn btn-secondary" id="btn-senasa-marcar">✓ Marcar como declarados</button>
+            <button class="btn btn-primary" id="btn-senasa-export-txt">↓ Exportar TXT para SIGSA</button>
+          </div>
+        </div>
+
+        <div class="rpt-section">
+          <h3>Pendientes de declarar</h3>
+          <div class="table-wrapper">
+            <table class="data-table" id="senasa-pendientes-table">
+              <thead>
+                <tr>
+                  <th style="width:32px"></th>
+                  <th>Caravana</th>
+                  <th>Nombre</th>
+                  <th>Tipo</th>
+                  <th>RFID</th>
+                  <th>Dispositivo</th>
+                  <th>Fecha aplic.</th>
+                  <th>Días <span class="tooltip-trigger" tabindex="0" data-tip="Días hábiles transcurridos desde la aplicación. Límite legal: 10 días hábiles.">?</span></th>
+                </tr>
+              </thead>
+              <tbody id="senasa-pendientes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <details class="rfid-section" style="margin-top:16px">
+          <summary>Animales ya declarados</summary>
+          <div class="rfid-section-body" id="senasa-declarados-content"></div>
+        </details>
+
+        <p class="senasa-disclaimer">⚠️ Verificar el formato con el <a href="https://www.senasa.gob.ar" target="_blank" rel="noopener">Manual de Declaración de Dispositivos RFID de SENASA</a> antes de subir a SIGSA → Existencias → Dispositivos de Identificación → Nueva Declaración.</p>
       </div>
 
       <!-- Tab: Exportar -->
