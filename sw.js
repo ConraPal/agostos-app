@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ag-cache-v2';
+const CACHE_NAME = 'ag-cache-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -15,8 +15,10 @@ const ASSETS = [
   '/js/finance.js',
   '/js/fields.js',
   '/js/agricultura.js',
+  '/js/insumos.js',
   '/js/reports.js',
   '/js/app.js',
+  '/css/insumos.css',
   '/assets/vaca-sidebar.jpg',
   '/assets/campo-bg.jpg',
   '/assets/icons/icon-192.svg',

@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Module routing ---
   const pageTitle = document.getElementById('page-title');
-  const moduleTitles = { home: 'Inicio', livestock: 'Ganadería', agricultura: 'Agricultura', fields: 'Potreros', finance: 'Finanzas', reports: 'Reportes' };
+  const moduleTitles = { home: 'Inicio', livestock: 'Ganadería', agricultura: 'Agricultura', fields: 'Potreros', finance: 'Finanzas', insumos: 'Insumos', reports: 'Reportes' };
   const moduleButtons = {
     livestock:   document.getElementById('btn-new-animal'),
     agricultura: [document.getElementById('btn-new-cultivo'), document.getElementById('btn-new-forraje')],
@@ -274,6 +274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (mod === 'agricultura') Agricultura.refresh();
     if (mod === 'fields')      Fields.refresh();
+    if (mod === 'insumos')     Insumos.refresh();
     if (mod === 'reports')     Reports.refresh();
     if (mod === 'home')        renderHomeStats();
 
@@ -336,6 +337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   Finance.init();
   Fields.init();
   Agricultura.init();
+  Insumos.init();
   Reports.init();
 
   // --- Render home stats on initial load ---
@@ -367,6 +369,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       .sort((a, b) => (a.rfid_fecha_aplicacion || '').localeCompare(b.rfid_fecha_aplicacion || ''));
   }
 
+  function getInsumosAlerts() {
+    const today = getTodayStr();
+    const limit30 = new Date(); limit30.setDate(limit30.getDate() + 30);
+    const l30 = limit30.toISOString().slice(0, 10);
+    const insumos = Storage.get('ag_insumos') || [];
+    const bajo    = insumos.filter(i => i.stock_minimo != null && i.stock_actual <= i.stock_minimo);
+    const vencer  = insumos.filter(i => i.vencimiento && i.vencimiento <= l30);
+    return { bajo, vencer };
+  }
+
   function getPlanSanitarioAlerts() {
     const limit30 = new Date(); limit30.setDate(limit30.getDate() + 30);
     const limitStr = limit30.toISOString().slice(0, 10);
@@ -380,9 +392,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userCount   = (Storage.get(ALERTA_KEY) || []).filter(a => !a.completado && a.fecha <= today).length;
     const senasaCount = getSenasaUrgentes().length;
     const planCount   = getPlanSanitarioAlerts().length;
+    const ins         = getInsumosAlerts();
+    const insCount    = ins.bajo.length + ins.vencer.filter(i => i.vencimiento < today).length;
     const badge = document.getElementById('bell-badge');
     if (!badge) return;
-    const total = userCount + senasaCount + planCount;
+    const total = userCount + senasaCount + planCount + insCount;
     badge.textContent = total || '';
     badge.style.display = total ? 'flex' : 'none';
   }
@@ -453,11 +467,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('')}
     ` : '';
 
+    // Sección Insumos
+    const insAlerts = getInsumosAlerts();
+    const insItems  = [...insAlerts.bajo.map(i => ({ tipo: 'bajo', ...i })), ...insAlerts.vencer.map(i => ({ tipo: 'vencer', ...i }))];
+    const insHTML = insItems.length ? `
+      <div class="alert-section-title alert-section-senasa">📦 Insumos — stock / vencimientos</div>
+      ${insItems.map(i => `<div class="alert-item alert-item-${i.tipo === 'bajo' || (i.vencimiento && i.vencimiento < today) ? 'overdue' : 'upcoming'}">
+        <div class="alert-item-info">
+          <span class="alert-item-title">${ui.escapeHtml(i.nombre)}</span>
+          <span class="alert-item-date">${i.tipo === 'bajo' ? `Stock bajo (${i.stock_actual} / mín. ${i.stock_minimo})` : `Vence: ${fmtD(i.vencimiento)}`}</span>
+        </div>
+        <div class="alert-item-actions">
+          <button class="alert-btn-senasa-goto" title="Ir a Insumos" onclick="navigateTo('insumos')">→</button>
+        </div>
+      </div>`).join('')}
+    ` : '';
+
     const listEl = document.getElementById('alerts-list');
     const userContent = section('Vencidos', overdue, 'overdue') +
                         section('Hoy', dueToday, 'today') +
                         section('Próximos 30 días', upcoming, 'upcoming');
-    const allContent = senasaHTML + planHTML + userContent;
+    const allContent = senasaHTML + planHTML + insHTML + userContent;
     listEl.innerHTML = allContent || '<p class="alerts-empty">Sin recordatorios pendientes.</p>';
 
     // Set default date for the add form

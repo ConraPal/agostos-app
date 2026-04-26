@@ -1,0 +1,16 @@
+/* ===== Insumos — badges de categoría ===== */
+.badge-ins-vacuna       { background: var(--c-ok-bg);     color: var(--c-ok-fg); }
+.badge-ins-antiparasit  { background: var(--c-info-bg);   color: var(--c-info-fg); }
+.badge-ins-antibiotico  { background: var(--c-orange-bg); color: var(--c-orange-fg); }
+.badge-ins-semilla      { background: var(--c-purple-bg); color: var(--c-purple-fg); }
+.badge-ins-agroquimico  { background: var(--c-warn-bg);   color: var(--c-warn-fg); }
+.badge-ins-combustible  { background: #e8e8e8;             color: #555; }
+.badge-ins-otro         { background: #f0f0f0;             color: #555; }
+
+/* Fila con stock bajo */
+#insumos-tbody tr.stock-bajo td { color: var(--color-danger); }
+#insumos-tbody tr.stock-bajo td:first-child { font-weight: 600; }
+
+/* Stock actual destacado */
+.stock-val { font-weight: 700; font-size: 15px; }
+.stock-bajo-badge { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; color: var(--color-danger); text-transform: uppercase; vertical-align: middle; }
