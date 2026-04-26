@@ -6,14 +6,9 @@
   margin-bottom: 28px;
 }
 
-@media (max-width: 768px) {
-  .stat-value { font-size: 22px; overflow-wrap: break-word; word-break: break-word; }
-}
-
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .stat-card { padding: 12px 14px; }
-  .stat-value { font-size: 18px; }
 }
 
 .stat-card {
@@ -28,6 +23,8 @@
   box-shadow: var(--shadow);
   transition: box-shadow .15s, transform .12s;
   position: relative;
+  container-type: inline-size;
+  overflow: hidden;
 }
 .stat-card::after {
   content: '';
@@ -49,11 +46,14 @@
   color: var(--color-muted);
 }
 .stat-value {
-  font-size: 30px;
+  font-size: clamp(13px, 16cqi, 28px);
   font-weight: 800;
   color: var(--color-primary);
   letter-spacing: -0.02em;
-  line-height: 1;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ===== Status badges ===== */

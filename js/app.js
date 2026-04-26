@@ -127,6 +127,55 @@ const ui = (() => {
   return { toast, confirm, pagination, debounce, countUp, fieldError, fieldClear, btnLoading, escapeHtml, uid };
 })();
 
+// --- Tooltip dinámico (evita overflow de viewport) ---
+(() => {
+  const box = document.createElement('div');
+  box.className = 'tooltip-box';
+  document.body.appendChild(box);
+
+  function show(trigger) {
+    const tip = trigger.dataset.tip;
+    if (!tip) return;
+    box.textContent = tip;
+    box.style.opacity = '0';
+    box.style.display = 'block';
+
+    const r = trigger.getBoundingClientRect();
+    const bw = box.offsetWidth;
+    const bh = box.offsetHeight;
+    const gap = 6;
+
+    let top = r.top - bh - gap;
+    // Si no cabe arriba, poner abajo
+    if (top < 4) top = r.bottom + gap;
+
+    // Centrar horizontalmente respecto al trigger, clampeado al viewport
+    let left = r.left + r.width / 2 - bw / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
+
+    box.style.top  = top + 'px';
+    box.style.left = left + 'px';
+    box.style.opacity = '1';
+  }
+
+  function hide() { box.style.opacity = '0'; }
+
+  document.addEventListener('mouseover', e => {
+    const t = e.target.closest('.tooltip-trigger');
+    if (t) show(t);
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest('.tooltip-trigger')) hide();
+  });
+  document.addEventListener('focusin', e => {
+    const t = e.target.closest('.tooltip-trigger');
+    if (t) show(t);
+  });
+  document.addEventListener('focusout', e => {
+    if (e.target.closest('.tooltip-trigger')) hide();
+  });
+})();
+
 // --- Modal close animation helper (global) ---
 function closeModalAnimated(overlayId, afterFn) {
   const overlay = document.getElementById(overlayId);

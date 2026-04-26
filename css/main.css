@@ -986,11 +986,30 @@ body.dark .pg-btn               { background: var(--color-surface); border-color
   pointer-events: none;
   opacity: 0;
   transition: opacity .15s;
-  z-index: 500;
+  z-index: 9999;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
-.tooltip-trigger:hover::after,
-.tooltip-trigger:focus::after { opacity: 1; }
+/* ::after deshabilitado — el tooltip lo posiciona JS para evitar overflow */
+.tooltip-trigger::after { display: none; }
+
+.tooltip-box {
+  position: fixed;
+  background: #2c2c2c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 5px 10px;
+  border-radius: 6px;
+  min-width: 160px;
+  max-width: 240px;
+  white-space: normal;
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  opacity: 0;
+  transition: opacity .15s;
+  line-height: 1.4;
+}
 
 /* ===== Bell (recordatorios) ===== */
 .bell-btn { position: relative; }
