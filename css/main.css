@@ -577,12 +577,9 @@ body {
   /* Módulo: padding lateral + inferior para bottom nav */
   .module { padding: 14px 16px calc(var(--bottom-nav-h, 60px) + env(safe-area-inset-bottom, 0px) + 16px); }
 
-  /* Tabs — scroll horizontal, sticky */
+  /* Tabs — grilla de 3 columnas, sticky */
   .tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     padding: 4px;
     gap: 4px;
     border-radius: 10px;
@@ -592,12 +589,15 @@ body {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  .tabs::-webkit-scrollbar { display: none; }
   .tab {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 0;
+    text-align: center;
     white-space: nowrap;
-    flex-shrink: 0;
-    padding: 7px 13px;
-    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 7px 6px;
+    font-size: 11px;
     border-radius: 7px;
   }
 

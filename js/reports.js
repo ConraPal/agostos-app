@@ -36,7 +36,7 @@ const Reports = (() => {
   function destroyChart(ref) { if (ref) { try { ref.destroy(); } catch (_) {} } return null; }
 
   function getTextColor() {
-    return getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#2c2c2c';
+    return getComputedStyle(document.body).getPropertyValue('--color-text').trim() || '#2c2c2c';
   }
 
   const TIPO_LABELS  = { vaca: 'Vaca', toro: 'Toro', ternero: 'Ternero', vaquillona: 'Vaquillona', novillo: 'Novillo' };

@@ -6,10 +6,14 @@
   margin-bottom: 28px;
 }
 
+@media (max-width: 768px) {
+  .stat-value { font-size: 22px; overflow-wrap: break-word; word-break: break-word; }
+}
+
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .stat-card { padding: 14px 16px; }
-  .stat-value { font-size: 22px; }
+  .stat-card { padding: 12px 14px; }
+  .stat-value { font-size: 18px; }
 }
 
 .stat-card {
@@ -24,7 +28,6 @@
   box-shadow: var(--shadow);
   transition: box-shadow .15s, transform .12s;
   position: relative;
-  overflow: hidden;
 }
 .stat-card::after {
   content: '';
