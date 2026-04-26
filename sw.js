@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ag-cache-v3';
+const CACHE_NAME = 'ag-cache-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -15,6 +15,13 @@ const ASSETS = [
   '/js/finance.js',
   '/js/fields.js',
   '/js/agricultura.js',
+  '/partials/module-home.html',
+  '/partials/module-livestock.html',
+  '/partials/module-agricultura.html',
+  '/partials/module-fields.html',
+  '/partials/module-finance.html',
+  '/partials/module-insumos.html',
+  '/partials/module-reports.html',
   '/js/insumos.js',
   '/js/reports.js',
   '/js/app.js',

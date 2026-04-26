@@ -1,0 +1,204 @@
+    <section id="module-finance" class="module">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Balance <span class="stat-label-note">ARS equiv.</span></span>
+          <span class="stat-value" id="stat-balance">$&nbsp;0,00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total ingresos</span>
+          <span class="stat-value monto-ingreso" id="stat-ingresos-ars">$&nbsp;0,00</span>
+          <span class="stat-sub-moneda monto-ingreso" id="stat-ingresos-usd" style="display:none"></span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total gastos</span>
+          <span class="stat-value monto-gasto" id="stat-gastos-ars">$&nbsp;0,00</span>
+          <span class="stat-sub-moneda monto-gasto" id="stat-gastos-usd" style="display:none"></span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Impuestos / Retenciones</span>
+          <span class="stat-value monto-impuesto" id="stat-impuestos-ars">$&nbsp;0,00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Transacciones del mes</span>
+          <span class="stat-value" id="stat-mes">0</span>
+        </div>
+      </div>
+
+      <!-- CTA principal -->
+      <div class="module-cta">
+        <button class="btn btn-primary btn-cta-lg" onclick="document.getElementById('btn-new-transaction').click()">+ Nueva transacción</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="transactions">Transacciones</button>
+        <button class="tab" data-tab="resumen">Resumen</button>
+        <button class="tab" data-tab="amortizaciones">Amortizaciones</button>
+        <button class="tab" data-tab="margen">Margen</button>
+        <button class="tab" data-tab="presupuesto">Presupuesto</button>
+        <button class="tab" data-tab="vencimientos">Vencimientos</button>
+      </div>
+
+      <!-- Tab: Transacciones -->
+      <div id="tab-transactions" class="tab-content active">
+        <div class="cotizacion-bar" id="cotizacion-bar">
+          <span class="cotizacion-label">Cotización USD:</span>
+          <input type="number" id="cotizacion-usd" class="cotizacion-input" min="0" step="1" placeholder="Ej: 1200" />
+          <span class="cotizacion-hint" id="cotizacion-hint"></span>
+          <button class="btn btn-secondary btn-sm" id="btn-save-cotizacion">Guardar</button>
+        </div>
+        <div class="table-toolbar">
+          <input type="search" class="search-input" id="search-transactions" placeholder="Buscar por descripción o categoría..." />
+          <select class="filter-select" id="filter-tipo-fin">
+            <option value="">Todos los tipos</option>
+            <option value="ingreso">Ingreso</option>
+            <option value="gasto">Gasto</option>
+            <option value="impuesto">Impuesto/Retención</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="transactions-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th style="text-align:right">Monto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="transactions-tbody">
+              <tr class="empty-row">
+                <td colspan="6">No hay transacciones registradas.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="transactions-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Resumen -->
+      <div id="tab-resumen" class="tab-content">
+        <div class="resumen-grid">
+          <div class="resumen-section">
+            <h3>Ingresos por categoría</h3>
+            <div id="resumen-ingresos"></div>
+          </div>
+          <div class="resumen-section">
+            <h3>Gastos por categoría</h3>
+            <div id="resumen-gastos"></div>
+          </div>
+        </div>
+        <div class="resumen-section" style="margin-top:24px">
+          <h3>Impuestos / Retenciones</h3>
+          <div id="resumen-impuestos"></div>
+        </div>
+        <div class="resumen-section" style="margin-top:24px">
+          <h3>Gastos por potrero</h3>
+          <div id="resumen-potrero"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Amortizaciones -->
+      <div id="tab-amortizaciones" class="tab-content">
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card">
+            <span class="stat-label">Total activos</span>
+            <span class="stat-value" id="stat-amort-total">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Cuota anual total</span>
+            <span class="stat-value" id="stat-amort-cuota">$&nbsp;0,00</span>
+          </div>
+        </div>
+        <div class="table-toolbar">
+          <button class="btn btn-secondary" id="btn-new-amort">+ Nueva amortización</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="amort-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th style="text-align:right">Valor original</th>
+                <th>Vida útil</th>
+                <th style="text-align:right">Cuota anual</th>
+                <th>Año inicio</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="amort-tbody">
+              <tr class="empty-row">
+                <td colspan="7">No hay amortizaciones registradas.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="amort-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Margen -->
+      <div id="tab-margen" class="tab-content">
+        <div class="margen-toolbar">
+          <label for="margen-year">Año:</label>
+          <select id="margen-year" class="filter-select"></select>
+        </div>
+        <div class="margen-cards" id="margen-cards"></div>
+      </div>
+
+      <!-- Tab: Presupuesto -->
+      <div id="tab-presupuesto" class="tab-content">
+        <div class="table-toolbar">
+          <label for="presupuesto-year" style="font-size:13px;font-weight:500">Año:</label>
+          <select id="presupuesto-year" class="filter-select"></select>
+          <button class="btn btn-secondary" id="btn-new-presup">+ Agregar ítem</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="presupuesto-table">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th style="text-align:right">Presupuestado</th>
+                <th style="text-align:right">Real</th>
+                <th style="text-align:right">Diferencia</th>
+                <th>% Ejec.</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="presupuesto-tbody">
+              <tr class="empty-row">
+                <td colspan="7">Sin presupuesto para este año.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Vencimientos -->
+      <div id="tab-vencimientos" class="tab-content">
+        <div class="table-wrapper">
+          <table class="data-table" id="vencimientos-table">
+            <thead>
+              <tr>
+                <th>Fecha venc.</th>
+                <th>Concepto</th>
+                <th style="text-align:right">Monto</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="vencimientos-tbody">
+              <tr class="empty-row">
+                <td colspan="5">No hay vencimientos registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="vencimientos-pagination"></div>
+        </div>
+      </div>
+
+    </section>

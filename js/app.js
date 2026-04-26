@@ -165,11 +165,30 @@ function emptyStateHTML(msg, btnLabel, btnAction) {
     </td></tr>`;
 }
 
+// ===== Loader de partials =====
+async function loadPartials() {
+  const NAMES = ['home', 'livestock', 'agricultura', 'fields', 'finance', 'insumos', 'reports'];
+  await Promise.all(NAMES.map(async name => {
+    try {
+      const res = await fetch(`partials/module-${name}.html`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const html = await res.text();
+      const el = document.getElementById(`partial-module-${name}`);
+      if (el) el.outerHTML = html;
+    } catch (err) {
+      console.warn(`No se pudo cargar partial module-${name}:`, err.message);
+    }
+  }));
+}
+
 // ===== App Bootstrap =====
 document.addEventListener('DOMContentLoaded', async () => {
 
   const loadingEl    = document.getElementById('app-loading');
   const loginScreen  = document.getElementById('login-screen');
+
+  // --- Cargar partials de módulos ---
+  await loadPartials();
 
   // --- Init storage (Supabase o fallback localStorage) ---
   const { needsAuth } = await Storage.init();

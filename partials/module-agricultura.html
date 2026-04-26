@@ -1,0 +1,101 @@
+    <section id="module-agricultura" class="module">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Cultivos registrados</span>
+          <span class="stat-value" id="stat-agro-cultivos">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total rollos</span>
+          <span class="stat-value" id="stat-agro-rollos">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total fardos</span>
+          <span class="stat-value" id="stat-agro-fardos">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Potreros con cultivo</span>
+          <span class="stat-value" id="stat-agro-potreros">0</span>
+        </div>
+      </div>
+
+      <!-- CTA principal -->
+      <div class="module-cta">
+        <button class="btn btn-primary btn-cta-lg" onclick="document.getElementById('btn-new-cultivo').click()">+ Nuevo cultivo</button>
+        <button class="btn btn-secondary btn-cta-lg" onclick="document.getElementById('btn-new-forraje').click()">+ Nuevo forraje</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="cultivos">Cultivos</button>
+        <button class="tab" data-tab="forraje">Forraje</button>
+      </div>
+
+      <!-- Tab: Cultivos -->
+      <div id="tab-cultivos" class="tab-content active">
+        <div class="table-toolbar">
+          <select class="filter-select" id="cultivos-year-filter">
+            <option value="">Todos los años</option>
+          </select>
+          <select class="filter-select" id="cultivos-potrero-filter">
+            <option value="">Todos los potreros</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="cultivos-table">
+            <thead>
+              <tr>
+                <th>Potrero</th>
+                <th>Siembra</th>
+                <th>Tipo</th>
+                <th>Detalle</th>
+                <th>Rendimiento</th>
+                <th>Notas</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cultivos-tbody">
+              <tr class="empty-row">
+                <td colspan="7">No hay cultivos registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="cultivos-pagination"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Forraje -->
+      <div id="tab-forraje" class="tab-content">
+        <div class="table-toolbar">
+          <select class="filter-select" id="forraje-year-filter">
+            <option value="">Todos los años</option>
+          </select>
+          <select class="filter-select" id="forraje-potrero-filter">
+            <option value="">Todos los potreros</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="forraje-table">
+            <thead>
+              <tr>
+                <th>Potrero</th>
+                <th>Año</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Cortes</th>
+                <th>Observaciones</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="forraje-tbody">
+              <tr class="empty-row">
+                <td colspan="7">No hay datos de forraje registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="forraje-pagination"></div>
+        </div>
+      </div>
+
+    </section>

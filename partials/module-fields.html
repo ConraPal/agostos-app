@@ -1,0 +1,84 @@
+    <section id="module-fields" class="module">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total potreros</span>
+          <span class="stat-value" id="stat-fields-total">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total hectáreas</span>
+          <span class="stat-value" id="stat-fields-ha">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">En uso</span>
+          <span class="stat-value" id="stat-fields-en-uso">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Libres</span>
+          <span class="stat-value" id="stat-fields-libres">0</span>
+        </div>
+      </div>
+
+      <!-- CTA principal -->
+      <div class="module-cta">
+        <button class="btn btn-primary btn-cta-lg" onclick="document.getElementById('btn-new-field').click()">+ Nuevo potrero</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="fields-list">Potreros</button>
+        <button class="tab" data-tab="fields-stock">Stock</button>
+      </div>
+
+      <!-- Tab: Potreros -->
+      <div id="tab-fields-list" class="tab-content active">
+        <div class="table-toolbar">
+          <input type="search" class="search-input" id="search-fields" placeholder="Buscar por nombre o pastura..." />
+          <button class="btn btn-primary" id="btn-new-field-inline">+ Nuevo potrero</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="fields-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Hectáreas</th>
+                <th>Pastura</th>
+                <th>Implantación</th>
+                <th>Carga</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="fields-tbody">
+              <tr class="empty-row">
+                <td colspan="7">No hay potreros registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Stock -->
+      <div id="tab-fields-stock" class="tab-content">
+        <div class="table-wrapper">
+          <table class="data-table" id="stock-table">
+            <thead>
+              <tr>
+                <th>Potrero</th>
+                <th>Hectáreas</th>
+                <th>Animales</th>
+                <th>Carga</th>
+                <th>Caravanas</th>
+              </tr>
+            </thead>
+            <tbody id="stock-tbody">
+              <tr class="empty-row">
+                <td colspan="5">Sin datos de stock.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>

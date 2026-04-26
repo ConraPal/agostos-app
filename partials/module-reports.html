@@ -1,0 +1,277 @@
+    <section id="module-reports" class="module">
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="rpt-hacienda">Ganadería</button>
+        <button class="tab" data-tab="rpt-finanzas">Finanzas</button>
+        <button class="tab" data-tab="rpt-reproduccion">Reproducción</button>
+        <button class="tab" data-tab="rpt-forraje">Forraje</button>
+        <button class="tab" data-tab="rpt-senasa">SENASA</button>
+        <button class="tab" data-tab="rpt-exportar">Exportar</button>
+      </div>
+
+      <!-- Tab: Hacienda -->
+      <div id="tab-rpt-hacienda" class="tab-content active">
+
+        <!-- Indicadores productivos -->
+        <div class="stats-grid" style="margin-bottom:20px">
+          <div class="stat-card">
+            <span class="stat-label">Carga animal <span class="tooltip-trigger" tabindex="0" data-tip="Equivalentes vaca por hectárea activa. EV: vaca=1, toro=1.3, ternero=0.6, novillo/vaquillona=0.7">?</span></span>
+            <span class="stat-value" id="stat-carga-animal">—</span>
+            <span class="cell-sub">EV / ha</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Producción de carne <span class="tooltip-trigger" tabindex="0" data-tip="Kg de carne vendida en el año actual / hectáreas activas. Solo categorías de hacienda con peso registrado.">?</span></span>
+            <span class="stat-value" id="stat-prod-carne">—</span>
+            <span class="cell-sub">kg / ha (año actual)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">% Parición <span class="tooltip-trigger" tabindex="0" data-tip="Partos / vacas totales del último ciclo reproductivo registrado">?</span></span>
+            <span class="stat-value" id="stat-paricion">—</span>
+            <span class="cell-sub">último ciclo</span>
+          </div>
+        </div>
+
+        <div class="rpt-grid">
+          <div class="rpt-section">
+            <h3>Stock activo por tipo</h3>
+            <table class="data-table">
+              <thead>
+                <tr><th>Tipo</th><th>Cantidad</th><th>%</th></tr>
+              </thead>
+              <tbody id="rpt-tipo-tbody">
+                <tr class="empty-row"><td colspan="3">Sin animales activos.</td></tr>
+              </tbody>
+              <tfoot>
+                <tr><td><strong>Total</strong></td><td><strong id="rpt-tipo-total">0</strong></td><td></td></tr>
+              </tfoot>
+            </table>
+            <div class="chart-container"><canvas id="chart-hacienda"></canvas></div>
+          </div>
+          <div class="rpt-section">
+            <h3>Stock activo por potrero</h3>
+            <table class="data-table">
+              <thead>
+                <tr><th>Potrero</th><th>Animales</th><th>%</th></tr>
+              </thead>
+              <tbody id="rpt-potrero-tbody">
+                <tr class="empty-row"><td colspan="3">Sin animales activos.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Evolución de peso -->
+      <div class="rpt-section" style="margin-top:20px">
+        <h3>Evolución de peso por animal</h3>
+        <div class="form-group" style="max-width:320px;margin-bottom:16px">
+          <label for="rpt-peso-animal">Animal</label>
+          <select id="rpt-peso-animal"><option value="">— Seleccionar —</option></select>
+        </div>
+        <p id="rpt-peso-empty" style="color:var(--color-muted);font-size:13px">Seleccioná un animal para ver su evolución de peso.</p>
+        <div class="chart-container" id="rpt-peso-chart-wrap" style="display:none"><canvas id="chart-peso"></canvas></div>
+      </div>
+
+      <!-- Tab: Finanzas -->
+      <div id="tab-rpt-finanzas" class="tab-content">
+        <div class="rpt-section">
+          <h3>Balance mensual <span id="rpt-finanzas-year"></span></h3>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th style="text-align:right">Ingresos</th>
+                  <th style="text-align:right">Gastos</th>
+                  <th style="text-align:right">Balance</th>
+                </tr>
+              </thead>
+              <tbody id="rpt-finanzas-tbody"></tbody>
+            </table>
+          </div>
+          <div class="chart-container"><canvas id="chart-finanzas"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tab: Reproducción -->
+      <div id="tab-rpt-reproduccion" class="tab-content">
+        <div class="rpt-section">
+          <h3>Ciclos reproductivos por año</h3>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Año</th>
+                  <th>Vacas servidas</th>
+                  <th>% Preñez</th>
+                  <th>Partos</th>
+                  <th>% Destete</th>
+                  <th>Mortalidad</th>
+                </tr>
+              </thead>
+              <tbody id="rpt-repro-tbody">
+                <tr class="empty-row"><td colspan="6">Sin ciclos registrados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="chart-container"><canvas id="chart-repro"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tab: Forraje -->
+      <div id="tab-rpt-forraje" class="tab-content">
+        <div class="rpt-section">
+          <h3>Stock de forraje</h3>
+          <div id="rpt-forraje-content"></div>
+        </div>
+      </div>
+
+      <!-- Tab: SENASA -->
+      <div id="tab-rpt-senasa" class="tab-content">
+        <div class="senasa-banner">
+          <strong>Res. SENASA 841/2025</strong> — Todo animal nacido a partir del 1/1/2026 debe tener RFID declarado en SIGSA dentro de los <strong>10 días hábiles</strong> de aplicado el dispositivo.
+        </div>
+
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card">
+            <div class="stat-value" id="senasa-stat-total">0</div>
+            <div class="stat-label">Con RFID</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value senasa-pendiente" id="senasa-stat-pendientes">0</div>
+            <div class="stat-label">Pendientes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="senasa-stat-declarados">0</div>
+            <div class="stat-label">Declarados</div>
+          </div>
+        </div>
+
+        <div class="senasa-toolbar">
+          <label class="senasa-check-all-label">
+            <input type="checkbox" id="senasa-check-all" /> Seleccionar todos
+          </label>
+          <div class="senasa-toolbar-btns">
+            <button class="btn btn-secondary" id="btn-senasa-marcar">✓ Marcar como declarados</button>
+            <button class="btn btn-primary" id="btn-senasa-export-txt">↓ Exportar TXT para SIGSA</button>
+          </div>
+        </div>
+
+        <div class="rpt-section">
+          <h3>Pendientes de declarar</h3>
+          <div class="table-wrapper">
+            <table class="data-table" id="senasa-pendientes-table">
+              <thead>
+                <tr>
+                  <th style="width:32px"></th>
+                  <th>Caravana</th>
+                  <th>Nombre</th>
+                  <th>Tipo</th>
+                  <th>RFID</th>
+                  <th>Dispositivo</th>
+                  <th>Fecha aplic.</th>
+                  <th>Días <span class="tooltip-trigger" tabindex="0" data-tip="Días hábiles transcurridos desde la aplicación. Límite legal: 10 días hábiles.">?</span></th>
+                </tr>
+              </thead>
+              <tbody id="senasa-pendientes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <details class="rfid-section" style="margin-top:16px">
+          <summary>Animales ya declarados</summary>
+          <div class="rfid-section-body" id="senasa-declarados-content"></div>
+        </details>
+
+        <p class="senasa-disclaimer">⚠️ Verificar el formato con el <a href="https://www.senasa.gob.ar" target="_blank" rel="noopener">Manual de Declaración de Dispositivos RFID de SENASA</a> antes de subir a SIGSA → Existencias → Dispositivos de Identificación → Nueva Declaración.</p>
+      </div>
+
+      <!-- Tab: Exportar -->
+      <div id="tab-rpt-exportar" class="tab-content">
+        <h3 class="export-section-title">Exportar CSV</h3>
+        <div class="export-grid">
+          <div class="export-card">
+            <span class="export-card-title">Animales</span>
+            <span class="export-card-desc">Todo el registro de hacienda con estado y potrero actual.</span>
+            <button class="btn btn-secondary" id="btn-export-animals">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Movimientos</span>
+            <span class="export-card-desc">Historial de traslados, entradas y salidas entre potreros.</span>
+            <button class="btn btn-secondary" id="btn-export-movements">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Transacciones</span>
+            <span class="export-card-desc">Ingresos y gastos con categoría, monto y descripción.</span>
+            <button class="btn btn-secondary" id="btn-export-transactions">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Potreros</span>
+            <span class="export-card-desc">Registro de potreros con hectáreas, pastura y estado.</span>
+            <button class="btn btn-secondary" id="btn-export-fields">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Sanidad</span>
+            <span class="export-card-desc">Eventos sanitarios: vacunaciones, desparasitaciones y atenciones veterinarias.</span>
+            <button class="btn btn-secondary" id="btn-export-sanidad">Descargar CSV</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Reproducción</span>
+            <span class="export-card-desc">Ciclos reproductivos con índices de preñez, destete y mortalidad.</span>
+            <button class="btn btn-secondary" id="btn-export-reproduccion">Descargar CSV</button>
+          </div>
+        </div>
+        <h3 class="export-section-title">Imprimir / PDF</h3>
+        <div class="export-grid">
+          <div class="export-card">
+            <span class="export-card-title">Rodeo actual</span>
+            <span class="export-card-desc">Animales activos por tipo y por potrero con totales.</span>
+            <div class="export-card-actions">
+              <button class="btn btn-secondary" id="btn-print-rodeo">🖨️ Imprimir</button>
+              <button class="btn btn-secondary" id="btn-share-rodeo">🔗 Compartir</button>
+            </div>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Movimientos del mes</span>
+            <span class="export-card-desc">Traslados, entradas y salidas del mes actual.</span>
+            <div class="export-card-actions">
+              <button class="btn btn-secondary" id="btn-print-movimientos">🖨️ Imprimir</button>
+              <button class="btn btn-secondary" id="btn-share-movimientos">🔗 Compartir</button>
+            </div>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Transacciones</span>
+            <span class="export-card-desc">Ingresos y gastos del año en curso.</span>
+            <div class="export-card-actions">
+              <button class="btn btn-secondary" id="btn-print-transacciones">🖨️ Imprimir</button>
+              <button class="btn btn-secondary" id="btn-share-transacciones">🔗 Compartir</button>
+            </div>
+          </div>
+        </div>
+        <h3 class="export-section-title">Importar animales</h3>
+        <div class="export-grid">
+          <div class="export-card">
+            <span class="export-card-title">Importar CSV animales</span>
+            <span class="export-card-desc">Cargá un CSV con el formato del exportado. Las caravanas duplicadas se omiten.</span>
+            <button class="btn btn-secondary" id="btn-import-csv">Importar CSV</button>
+            <input type="file" id="import-csv-input" accept=".csv" class="hidden" />
+          </div>
+        </div>
+        <h3 class="export-section-title">Backup completo</h3>
+        <div class="export-grid">
+          <div class="export-card">
+            <span class="export-card-title">Exportar backup</span>
+            <span class="export-card-desc">Descarga todos los datos como un archivo JSON.</span>
+            <button class="btn btn-secondary" id="btn-export-backup">Exportar JSON</button>
+          </div>
+          <div class="export-card">
+            <span class="export-card-title">Restaurar backup</span>
+            <span class="export-card-desc">Restaura los datos desde un archivo JSON de backup previo.</span>
+            <button class="btn btn-secondary" id="btn-import-backup">Restaurar JSON</button>
+            <input type="file" id="import-backup-input" accept=".json" class="hidden" />
+          </div>
+        </div>
+      </div>
+
+    </section>

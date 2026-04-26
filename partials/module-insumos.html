@@ -1,0 +1,73 @@
+    <section id="module-insumos" class="module">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Insumos registrados</span>
+          <span class="stat-value" id="stat-ins-total">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Bajo stock mínimo</span>
+          <span class="stat-value" id="stat-ins-bajo">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Vencidos / próx. a vencer</span>
+          <span class="stat-value" id="stat-ins-vencer">0</span>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="module-cta">
+        <button class="btn btn-primary btn-cta-lg" id="btn-new-insumo">+ Nuevo insumo</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="ins-stock">Stock</button>
+        <button class="tab" data-tab="ins-movimientos">Movimientos</button>
+      </div>
+
+      <!-- Tab: Stock -->
+      <div id="tab-ins-stock" class="tab-content active">
+        <div class="table-wrapper">
+          <table class="data-table" id="insumos-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Unidad</th>
+                <th>Stock actual</th>
+                <th>Stock mínimo</th>
+                <th>Vencimiento</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="insumos-tbody">
+              <tr class="empty-row"><td colspan="7">Sin insumos registrados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Movimientos -->
+      <div id="tab-ins-movimientos" class="tab-content">
+        <div class="table-wrapper">
+          <table class="data-table" id="ins-movs-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Insumo</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Motivo</th>
+                <th>Costo</th>
+              </tr>
+            </thead>
+            <tbody id="ins-movs-tbody">
+              <tr class="empty-row"><td colspan="6">Sin movimientos registrados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
