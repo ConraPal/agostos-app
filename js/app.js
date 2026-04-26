@@ -346,14 +346,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function getTodayStr() { return new Date().toISOString().slice(0, 10); }
 
+  // Días hábiles transcurridos desde una fecha ISO hasta hoy
+  function diasHabilesDesde(fechaISO) {
+    if (!fechaISO) return 0;
+    let count = 0;
+    const end = new Date(); end.setHours(0, 0, 0, 0);
+    let cur = new Date(fechaISO + 'T00:00:00');
+    while (cur < end) {
+      cur.setDate(cur.getDate() + 1);
+      const dow = cur.getDay();
+      if (dow !== 0 && dow !== 6) count++;
+    }
+    return count;
+  }
+
+  // Animales con RFID no declarado y >= 7 días hábiles desde aplicación
+  function getSenasaUrgentes() {
+    return (Storage.get('ag_animals') || [])
+      .filter(a => a.rfid && !a.rfid_declarado_senasa && diasHabilesDesde(a.rfid_fecha_aplicacion) >= 7)
+      .sort((a, b) => (a.rfid_fecha_aplicacion || '').localeCompare(b.rfid_fecha_aplicacion || ''));
+  }
+
   function refreshAlertBadge() {
     const today = getTodayStr();
-    const count = (Storage.get(ALERTA_KEY) || [])
-      .filter(a => !a.completado && a.fecha <= today).length;
+    const userCount   = (Storage.get(ALERTA_KEY) || []).filter(a => !a.completado && a.fecha <= today).length;
+    const senasaCount = getSenasaUrgentes().length;
     const badge = document.getElementById('bell-badge');
     if (!badge) return;
-    badge.textContent = count || '';
-    badge.style.display = count ? 'flex' : 'none';
+    const total = userCount + senasaCount;
+    badge.textContent = total || '';
+    badge.style.display = total ? 'flex' : 'none';
   }
 
   function renderAlertsList() {
@@ -384,11 +406,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `<div class="alert-section-title">${title}</div>${items.map(a => itemHTML(a, cls)).join('')}`
       : '';
 
+    // Sección SENASA — animales con RFID a punto de vencer o vencidos
+    const urgentes = getSenasaUrgentes();
+    const senasaHTML = urgentes.length ? `
+      <div class="alert-section-title alert-section-senasa">🔴 SENASA — RFID sin declarar</div>
+      ${urgentes.map(a => {
+        const dias = diasHabilesDesde(a.rfid_fecha_aplicacion);
+        const restantes = Math.max(0, 10 - dias);
+        return `<div class="alert-item alert-item-overdue alert-item-senasa">
+          <div class="alert-item-info">
+            <span class="alert-item-title">${ui.escapeHtml(a.caravana)}${a.nombre ? ' — ' + ui.escapeHtml(a.nombre) : ''}</span>
+            <span class="alert-item-date">${dias} d.h. — ${restantes > 0 ? restantes + ' d.h. restantes' : '¡VENCIDO!'}</span>
+          </div>
+          <div class="alert-item-actions">
+            <button class="alert-btn-senasa-goto" title="Ver en SENASA" aria-label="Ir al tab SENASA" onclick="navigateTo('reports');document.querySelector('[data-tab=rpt-senasa]')?.click()">→</button>
+          </div>
+        </div>`;
+      }).join('')}
+    ` : '';
+
     const listEl = document.getElementById('alerts-list');
-    const content = section('Vencidos', overdue, 'overdue') +
-                    section('Hoy', dueToday, 'today') +
-                    section('Próximos 30 días', upcoming, 'upcoming');
-    listEl.innerHTML = content || '<p class="alerts-empty">Sin recordatorios pendientes.</p>';
+    const userContent = section('Vencidos', overdue, 'overdue') +
+                        section('Hoy', dueToday, 'today') +
+                        section('Próximos 30 días', upcoming, 'upcoming');
+    const allContent = senasaHTML + userContent;
+    listEl.innerHTML = allContent || '<p class="alerts-empty">Sin recordatorios pendientes.</p>';
 
     // Set default date for the add form
     document.getElementById('alerta-fecha').value = today;
