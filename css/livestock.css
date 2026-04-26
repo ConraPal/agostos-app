@@ -46,14 +46,13 @@
   color: var(--color-muted);
 }
 .stat-value {
-  font-size: clamp(13px, 16cqi, 28px);
+  font-size: clamp(10px, 10cqi, 26px);
   font-weight: 800;
   color: var(--color-primary);
   letter-spacing: -0.02em;
-  line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 /* ===== Status badges ===== */
