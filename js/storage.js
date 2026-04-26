@@ -138,5 +138,24 @@ const Storage = (() => {
     }
   }
 
-  return { init, login, logout, getUser, get, set, remove };
+  async function signUp(email, password) {
+    if (!sb) throw new Error('Cliente Supabase no inicializado.');
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) throw error;
+    return data;
+  }
+
+  async function resetPassword(email, redirectTo) {
+    if (!sb) throw new Error('Cliente Supabase no inicializado.');
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+  }
+
+  async function updatePassword(newPassword) {
+    if (!sb) throw new Error('Cliente Supabase no inicializado.');
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
+  return { init, login, logout, getUser, get, set, remove, signUp, resetPassword, updatePassword };
 })();

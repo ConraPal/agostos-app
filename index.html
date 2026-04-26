@@ -43,6 +43,11 @@
         </div>
         <p id="login-error" class="login-error hidden">Email o contraseña incorrectos.</p>
         <button type="submit" class="btn btn-primary login-btn" id="login-submit">Ingresar</button>
+        <button type="button" class="btn btn-secondary login-btn" id="btn-demo" style="margin-top:8px">Probar con datos de ejemplo</button>
+        <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px">
+          <a href="#" id="link-signup" style="color:var(--color-primary)">Crear cuenta</a>
+          <a href="#" id="link-recovery" style="color:var(--color-muted)">Olvidé mi contraseña</a>
+        </div>
       </form>
     </div>
   </div>
@@ -105,7 +110,9 @@
       <div class="topbar-actions">
         <button class="btn-icon bell-btn" id="btn-alertas" title="Recordatorios" aria-label="Recordatorios">🔔<span class="bell-badge" id="bell-badge" style="display:none"></span></button>
         <button class="btn-icon" id="btn-dark-toggle" title="Modo oscuro" aria-label="Alternar modo oscuro">🌙</button>
+        <span id="demo-banner" class="hidden" style="background:#f59e0b;color:#1c1c1c;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;letter-spacing:.4px">MODO DEMO</span>
         <span class="topbar-user" id="topbar-user" title="Sesión activa"></span>
+        <button class="btn btn-secondary btn-sm hidden" id="btn-create-account" style="font-size:11px">Crear cuenta</button>
         <button class="btn btn-secondary btn-sm" id="btn-logout" title="Cerrar sesión">Salir</button>
         <button class="btn btn-primary hidden" id="btn-new-animal">+ Nuevo animal</button>
         <button class="btn btn-primary hidden" id="btn-new-cultivo">+ Agregar cultivo</button>
@@ -2333,5 +2340,73 @@
   <script src="js/insumos.js"></script>
   <script src="js/reports.js"></script>
   <script src="js/app.js"></script>
+
+  <!-- Modal: Crear cuenta -->
+  <div class="modal-overlay hidden" id="modal-signup" style="z-index:9999">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h2>Crear cuenta</h2>
+        <button class="modal-close" id="modal-signup-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-signup">
+        <div class="form-group">
+          <label for="su-email">Email</label>
+          <input type="email" id="su-email" required autocomplete="email" placeholder="usuario@ejemplo.com" />
+        </div>
+        <div class="form-group">
+          <label for="su-password">Contraseña <span class="form-hint">(mínimo 6 caracteres)</span></label>
+          <input type="password" id="su-password" required minlength="6" autocomplete="new-password" placeholder="••••••••" />
+        </div>
+        <p id="signup-error" class="login-error hidden"></p>
+        <p id="signup-success" class="hidden" style="color:var(--c-ok-fg);font-size:13px;margin-bottom:8px"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-signup">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-signup">Crear cuenta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Recuperar contraseña -->
+  <div class="modal-overlay hidden" id="modal-recovery" style="z-index:9999">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h2>Recuperar contraseña</h2>
+        <button class="modal-close" id="modal-recovery-close">&times;</button>
+      </div>
+      <form class="modal-form" id="form-recovery">
+        <p style="font-size:13px;color:var(--color-muted);margin-bottom:12px">Ingresá tu email y te enviamos un link para restablecer la contraseña.</p>
+        <div class="form-group">
+          <label for="rec-email">Email</label>
+          <input type="email" id="rec-email" required autocomplete="email" placeholder="usuario@ejemplo.com" />
+        </div>
+        <p id="recovery-error" class="login-error hidden"></p>
+        <p id="recovery-success" class="hidden" style="color:var(--c-ok-fg);font-size:13px;margin-bottom:8px"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-recovery">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-recovery">Enviar link</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nueva contraseña (deeplink recovery) -->
+  <div class="modal-overlay hidden" id="modal-new-password" style="z-index:9999">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h2>Nueva contraseña</h2>
+      </div>
+      <form class="modal-form" id="form-new-password">
+        <div class="form-group">
+          <label for="np-password">Nueva contraseña <span class="form-hint">(mínimo 6 caracteres)</span></label>
+          <input type="password" id="np-password" required minlength="6" autocomplete="new-password" placeholder="••••••••" />
+        </div>
+        <p id="new-pw-error" class="login-error hidden"></p>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary" id="btn-submit-new-pw">Guardar contraseña</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </body>
 </html>

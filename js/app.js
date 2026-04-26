@@ -204,6 +204,99 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
+    // Modo demo
+    document.getElementById('btn-demo')?.addEventListener('click', () => {
+      _loadDemoData();
+      localStorage.setItem('ag_demo_mode', 'true');
+      loginScreen.classList.add('hidden');
+      _initApp();
+      document.getElementById('demo-banner')?.classList.remove('hidden');
+      document.getElementById('btn-create-account')?.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-create-account')?.addEventListener('click', () => {
+      document.getElementById('modal-signup')?.classList.remove('hidden');
+    });
+
+    // Signup modal
+    document.getElementById('link-signup')?.addEventListener('click', e => {
+      e.preventDefault();
+      document.getElementById('modal-signup')?.classList.remove('hidden');
+    });
+    document.getElementById('modal-signup-close')?.addEventListener('click', () => document.getElementById('modal-signup').classList.add('hidden'));
+    document.getElementById('btn-cancel-signup')?.addEventListener('click', () => document.getElementById('modal-signup').classList.add('hidden'));
+    document.getElementById('form-signup')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('su-email').value.trim();
+      const pw    = document.getElementById('su-password').value;
+      const errEl = document.getElementById('signup-error');
+      const okEl  = document.getElementById('signup-success');
+      const btn   = document.getElementById('btn-submit-signup');
+      errEl.classList.add('hidden'); okEl.classList.add('hidden');
+      ui.btnLoading(btn, true);
+      try {
+        await Storage.signUp(email, pw);
+        okEl.textContent = 'Cuenta creada. Revisá tu email para confirmar el registro.';
+        okEl.classList.remove('hidden');
+        ui.btnLoading(btn, false);
+      } catch (err) {
+        errEl.textContent = err.message || 'Error al crear cuenta.';
+        errEl.classList.remove('hidden');
+        ui.btnLoading(btn, false);
+      }
+    });
+
+    // Recovery modal
+    document.getElementById('link-recovery')?.addEventListener('click', e => {
+      e.preventDefault();
+      document.getElementById('modal-recovery')?.classList.remove('hidden');
+    });
+    document.getElementById('modal-recovery-close')?.addEventListener('click', () => document.getElementById('modal-recovery').classList.add('hidden'));
+    document.getElementById('btn-cancel-recovery')?.addEventListener('click', () => document.getElementById('modal-recovery').classList.add('hidden'));
+    document.getElementById('form-recovery')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('rec-email').value.trim();
+      const errEl = document.getElementById('recovery-error');
+      const okEl  = document.getElementById('recovery-success');
+      const btn   = document.getElementById('btn-submit-recovery');
+      errEl.classList.add('hidden'); okEl.classList.add('hidden');
+      ui.btnLoading(btn, true);
+      try {
+        await Storage.resetPassword(email, window.location.href);
+        okEl.textContent = 'Email enviado. Revisá tu bandeja para el link de restablecimiento.';
+        okEl.classList.remove('hidden');
+        ui.btnLoading(btn, false);
+      } catch (err) {
+        errEl.textContent = err.message || 'Error al enviar email.';
+        errEl.classList.remove('hidden');
+        ui.btnLoading(btn, false);
+      }
+    });
+
+    // Deeplink recovery: ?type=recovery
+    if (new URLSearchParams(location.search).get('type') === 'recovery') {
+      loginScreen.classList.add('hidden');
+      document.getElementById('modal-new-password')?.classList.remove('hidden');
+      document.getElementById('form-new-password')?.addEventListener('submit', async e => {
+        e.preventDefault();
+        const pw    = document.getElementById('np-password').value;
+        const errEl = document.getElementById('new-pw-error');
+        const btn   = document.getElementById('btn-submit-new-pw');
+        errEl.classList.add('hidden');
+        ui.btnLoading(btn, true);
+        try {
+          await Storage.updatePassword(pw);
+          document.getElementById('modal-new-password').classList.add('hidden');
+          ui.toast('Contraseña actualizada. Ingresá con tu nueva contraseña.');
+          loginScreen.classList.remove('hidden');
+        } catch (err) {
+          errEl.textContent = err.message || 'Error al actualizar contraseña.';
+          errEl.classList.remove('hidden');
+          ui.btnLoading(btn, false);
+        }
+      });
+    }
+
     // Toggle password visibility
     document.getElementById('toggle-password')?.addEventListener('click', () => {
       const pwd = document.getElementById('login-password');
@@ -258,13 +351,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       : 'Sin datos registrados aún.';
   }
 
+  const VALID_MODULES = new Set(['home', 'livestock', 'agricultura', 'fields', 'finance', 'insumos', 'reports']);
+
   function navigateTo(mod) {
+    if (!VALID_MODULES.has(mod)) mod = 'home';
+    history.replaceState(null, '', '#' + mod);
+
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
     document.querySelector(`.nav-item[data-module="${mod}"]`)?.classList.add('active');
     const moduleEl = document.getElementById(`module-${mod}`);
     if (moduleEl) {
-      // Re-trigger animation by removing and re-adding active
       moduleEl.classList.remove('active');
       void moduleEl.offsetWidth;
       moduleEl.classList.add('active');
@@ -328,7 +425,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Logout ---
   document.getElementById('btn-logout')?.addEventListener('click', async () => {
-    await Storage.logout();
+    if (localStorage.getItem('ag_demo_mode') === 'true') {
+      const DEMO_KEYS = ['ag_animals','ag_movements','ag_history','ag_reproduction','ag_sanidad',
+        'ag_transactions','ag_fields','ag_plan_sanitario','ag_pesadas','ag_insumos','ag_insumos_movs','ag_demo_mode'];
+      DEMO_KEYS.forEach(k => localStorage.removeItem(k));
+    } else {
+      await Storage.logout();
+    }
     location.reload();
   });
 
@@ -339,6 +442,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   Agricultura.init();
   Insumos.init();
   Reports.init();
+
+  // --- Hash routing: leer hash inicial y escuchar cambios ---
+  const initialMod = location.hash.slice(1);
+  if (VALID_MODULES.has(initialMod)) {
+    navigateTo(initialMod);
+  } else {
+    navigateTo('home');
+  }
+  window.addEventListener('hashchange', () => {
+    const mod = location.hash.slice(1);
+    if (VALID_MODULES.has(mod)) navigateTo(mod);
+  });
 
   // --- Render home stats on initial load ---
   renderHomeStats();
@@ -757,6 +872,63 @@ document.addEventListener('DOMContentLoaded', async () => {
   Onboarding.checkAndStart();
   } // fin _initApp
 });
+
+// ===== Demo data =====
+function _loadDemoData() {
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+
+  const fields = [
+    { id: uid(), nombre: 'La Loma',    hectareas: 120, pastura: 'Natural',  estado: 'activo', observaciones: '' },
+    { id: uid(), nombre: 'El Bajo',    hectareas:  85, pastura: 'Mejorada', estado: 'activo', observaciones: '' },
+    { id: uid(), nombre: 'San Roque',  hectareas:  60, pastura: 'Verdeo',   estado: 'activo', observaciones: '' },
+  ];
+  Storage.set('ag_fields', fields);
+
+  const animals = [
+    { id: uid(), caravana: 'AR-001', nombre: 'Negra',   tipo: 'vaca',       raza: 'Aberdeen Angus', nacimiento: daysAgo(1800), potrero: 'La Loma',   estado: 'activo', peso: 480, observaciones: '' },
+    { id: uid(), caravana: 'AR-002', nombre: 'Blanca',  tipo: 'vaca',       raza: 'Hereford',       nacimiento: daysAgo(1600), potrero: 'La Loma',   estado: 'activo', peso: 510, observaciones: '' },
+    { id: uid(), caravana: 'AR-003', nombre: 'Rubia',   tipo: 'vaca',       raza: 'Limousin',       nacimiento: daysAgo(1400), potrero: 'La Loma',   estado: 'activo', peso: 490, observaciones: '' },
+    { id: uid(), caravana: 'AR-004', nombre: '',        tipo: 'vaca',       raza: 'Aberdeen Angus', nacimiento: daysAgo(1500), potrero: 'El Bajo',   estado: 'activo', peso: 460, observaciones: '' },
+    { id: uid(), caravana: 'AR-005', nombre: 'Mora',    tipo: 'vaca',       raza: 'Aberdeen Angus', nacimiento: daysAgo(1700), potrero: 'El Bajo',   estado: 'activo', peso: 500, observaciones: '' },
+    { id: uid(), caravana: 'AR-006', nombre: '',        tipo: 'vaca',       raza: 'Hereford',       nacimiento: daysAgo(1300), potrero: 'El Bajo',   estado: 'activo', peso: 455, observaciones: '' },
+    { id: uid(), caravana: 'AR-007', nombre: '',        tipo: 'vaca',       raza: 'Hereford',       nacimiento: daysAgo(1900), potrero: 'San Roque', estado: 'activo', peso: 520, observaciones: '' },
+    { id: uid(), caravana: 'AR-008', nombre: 'Fina',    tipo: 'vaca',       raza: 'Limousin',       nacimiento: daysAgo(1200), potrero: 'San Roque', estado: 'activo', peso: 475, observaciones: '' },
+    { id: uid(), caravana: 'AR-009', nombre: 'Toro 1',  tipo: 'toro',       raza: 'Aberdeen Angus', nacimiento: daysAgo(1100), potrero: 'La Loma',   estado: 'activo', peso: 720, observaciones: 'Toro reproductor' },
+    { id: uid(), caravana: 'AR-010', nombre: 'Toro 2',  tipo: 'toro',       raza: 'Hereford',       nacimiento: daysAgo(1050), potrero: 'El Bajo',   estado: 'activo', peso: 690, observaciones: '' },
+    { id: uid(), caravana: 'AR-011', nombre: '',        tipo: 'ternero',    raza: 'Aberdeen Angus', nacimiento: daysAgo(120),  potrero: 'La Loma',   estado: 'activo', peso: 180, castracion_fecha: null, observaciones: '' },
+    { id: uid(), caravana: 'AR-012', nombre: '',        tipo: 'ternero',    raza: 'Hereford',       nacimiento: daysAgo(110),  potrero: 'La Loma',   estado: 'activo', peso: 165, castracion_fecha: null, observaciones: '' },
+    { id: uid(), caravana: 'AR-013', nombre: '',        tipo: 'novillo',    raza: 'Aberdeen Angus', nacimiento: daysAgo(400),  potrero: 'El Bajo',   estado: 'activo', peso: 380, observaciones: '' },
+    { id: uid(), caravana: 'AR-014', nombre: '',        tipo: 'vaquillona', raza: 'Hereford',       nacimiento: daysAgo(380),  potrero: 'San Roque', estado: 'activo', peso: 340, observaciones: '' },
+    { id: uid(), caravana: 'AR-015', nombre: '',        tipo: 'vaquillona', raza: 'Limousin',       nacimiento: daysAgo(360),  potrero: 'San Roque', estado: 'activo', peso: 355, observaciones: '' },
+  ];
+  Storage.set('ag_animals', animals);
+
+  Storage.set('ag_transactions', [
+    { id: uid(), fecha: daysAgo(60),  tipo: 'ingreso', categoria: 'Terneros machos',  monto: 450000, moneda: 'ARS', descripcion: 'Venta terneros destete', peso_kg: 1200, precio_kg: 375, observaciones: '' },
+    { id: uid(), fecha: daysAgo(45),  tipo: 'ingreso', categoria: 'Novillos',         monto: 680000, moneda: 'ARS', descripcion: 'Venta novillos gordo',   peso_kg: 1700, precio_kg: 400, observaciones: '' },
+    { id: uid(), fecha: daysAgo(30),  tipo: 'gasto',   categoria: 'Vacunas',          monto:  85000, moneda: 'ARS', descripcion: 'Aftosa y brucelosis',    observaciones: '' },
+    { id: uid(), fecha: daysAgo(20),  tipo: 'gasto',   categoria: 'Combustibles',     monto:  42000, moneda: 'ARS', descripcion: 'Gasoil tractor',         observaciones: '' },
+    { id: uid(), fecha: daysAgo(10),  tipo: 'ingreso', categoria: 'Arrendamiento',    monto: 200000, moneda: 'ARS', descripcion: 'Arrendamiento San Roque', observaciones: '' },
+    { id: uid(), fecha: daysAgo(5),   tipo: 'impuesto', categoria: 'Impuesto inmobiliario', monto: 55000, moneda: 'ARS', descripcion: 'Inmobiliario rural', observaciones: '' },
+  ]);
+
+  Storage.set('ag_sanidad', [
+    { id: uid(), fecha: daysAgo(30), animalId: null, caravana: '', animalNombre: '', tipo: 'vacunación', descripcion: 'Aftosa', producto: 'Aftovaxpur', dosis: '2ml', observaciones: 'Todo el rodeo' },
+    { id: uid(), fecha: daysAgo(60), animalId: null, caravana: '', animalNombre: '', tipo: 'desparasitación', descripcion: 'Desparasitación general', producto: 'Ivermectina 1%', dosis: '1ml/50kg', observaciones: '' },
+  ]);
+
+  Storage.set('ag_plan_sanitario', [
+    { id: uid(), nombre: 'Aftosa',     frecuencia_meses: 6,  aplica_a: 'todo el rodeo', proximo_vencimiento: daysAgo(-150) },
+    { id: uid(), nombre: 'Brucelosis', frecuencia_meses: 8,  aplica_a: 'vacas',          proximo_vencimiento: daysAgo(-60)  },
+    { id: uid(), nombre: 'Carbunclo',  frecuencia_meses: 12, aplica_a: 'todo el rodeo', proximo_vencimiento: daysAgo(-200) },
+  ]);
+
+  Storage.set('ag_reproduction', [
+    { id: uid(), año: new Date().getFullYear() - 1, fecha_entrada_toros: daysAgo(400), fecha_salida_toros: daysAgo(310), tacto_fecha: daysAgo(280), vacas_total: 8, vacas_positivas: 7, vacas_negativas: 1, prenez_pct: 87.5, ia_realizada: false, ia_fecha: '', ia_toro: '', ia_prenez_pct: 0, paricion_inicio: daysAgo(160), paricion_fin: daysAgo(100), partos: 7, muertes_paricion: 0, destete_fecha: daysAgo(30), terneros_machos_destete: 4, terneras_hembras_destete: 3, muertes_destete: 0, indice_destete: 100, mortalidad_total: 0, observaciones: 'Buena parición' },
+  ]);
+}
 
 // ===== Service Worker (PWA) =====
 if ('serviceWorker' in navigator) {
