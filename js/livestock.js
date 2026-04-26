@@ -1,7 +1,7 @@
 // ===== Livestock Module =====
 const Livestock = (() => {
 
-  const KEYS = { animals: 'ag_animals', movements: 'ag_movements', history: 'ag_history', reproduction: 'ag_reproduction', sanidad: 'ag_sanidad' };
+  const KEYS = { animals: 'ag_animals', movements: 'ag_movements', history: 'ag_history', reproduction: 'ag_reproduction', sanidad: 'ag_sanidad', pesadas: 'ag_pesadas' };
 
   // --- Data helpers ---
   const getData = key => Storage.get(key, []);
@@ -472,6 +472,7 @@ const Livestock = (() => {
       document.getElementById('f-rfid-fecha').value = animal.rfid_fecha_aplicacion || '';
       if (animal.rfid) document.getElementById('rfid-section').open = true;
     }
+    renderPesadasInModal(animal ? animal.id : null);
     toggleCastracion(animal ? animal.tipo : '');
     populateFieldOptions('potrero-options');
     document.getElementById('modal-animal').classList.remove('hidden');
@@ -479,6 +480,47 @@ const Livestock = (() => {
 
   const closeModal = () => {
     closeModalAnimated('modal-animal', () => { editingId = null; });
+  };
+
+  const renderPesadasInModal = animalId => {
+    const body = document.getElementById('pesadas-body');
+    if (!animalId) {
+      body.innerHTML = '<p class="form-hint" style="padding:8px 0">Guardá el animal primero para registrar pesadas.</p>';
+      return;
+    }
+    const pesadas = getData(KEYS.pesadas).filter(p => p.animalId === animalId)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+    let html = '';
+    if (pesadas.length) {
+      html += '<div class="table-wrapper" style="margin-bottom:12px"><table class="data-table"><thead><tr><th>Fecha</th><th>Peso (kg)</th><th>Observaciones</th><th></th></tr></thead><tbody>';
+      pesadas.forEach(p => {
+        html += `<tr>
+          <td>${p.fecha}</td>
+          <td>${p.peso_kg} kg</td>
+          <td>${ui.escapeHtml(p.observaciones || '')}</td>
+          <td><button type="button" class="action-btn danger btn-del-pesada" data-id="${p.id}" title="Eliminar">🗑</button></td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+    } else {
+      html += '<p class="form-hint" style="padding:4px 0 10px">Sin pesadas registradas.</p>';
+    }
+    html += `<div class="form-row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div class="form-group" style="flex:1;min-width:120px">
+        <label style="font-size:12px">Fecha</label>
+        <input type="date" id="pesada-fecha" value="${new Date().toISOString().slice(0, 10)}" />
+      </div>
+      <div class="form-group" style="flex:1;min-width:100px">
+        <label style="font-size:12px">Peso (kg)</label>
+        <input type="number" id="pesada-peso" min="0" step="0.1" placeholder="Ej: 380" />
+      </div>
+      <div class="form-group" style="flex:2;min-width:140px">
+        <label style="font-size:12px">Observaciones</label>
+        <input type="text" id="pesada-obs" placeholder="Opcional" maxlength="100" />
+      </div>
+      <button type="button" class="btn btn-secondary btn-add-pesada" data-animal="${animalId}" style="flex-shrink:0;margin-bottom:0">+ Agregar</button>
+    </div>`;
+    body.innerHTML = html;
   };
 
   // --- Save animal ---
@@ -1060,6 +1102,32 @@ const Livestock = (() => {
 
     // Form submit
     document.getElementById('form-animal').addEventListener('submit', saveAnimal);
+
+    // Pesadas en modal animal (delegación)
+    document.getElementById('modal-animal').addEventListener('click', e => {
+      const addBtn = e.target.closest('.btn-add-pesada');
+      if (addBtn) {
+        const animalId = addBtn.dataset.animal;
+        const fecha    = document.getElementById('pesada-fecha')?.value;
+        const pesoVal  = document.getElementById('pesada-peso')?.value;
+        if (!fecha || !pesoVal) { ui.toast('Completá fecha y peso.', 'error'); return; }
+        const peso_kg  = Number(pesoVal);
+        const pesadas  = getData(KEYS.pesadas);
+        pesadas.unshift({ id: ui.uid(), animalId, fecha, peso_kg, observaciones: (document.getElementById('pesada-obs')?.value.trim() || '') });
+        saveData(KEYS.pesadas, pesadas);
+        const animals = getData(KEYS.animals);
+        const idx = animals.findIndex(a => a.id === animalId);
+        if (idx >= 0) { animals[idx].peso = peso_kg; saveData(KEYS.animals, animals); }
+        renderPesadasInModal(animalId);
+        document.getElementById('pesadas-section').open = true;
+        return;
+      }
+      const delBtn = e.target.closest('.btn-del-pesada');
+      if (delBtn) {
+        saveData(KEYS.pesadas, getData(KEYS.pesadas).filter(p => p.id !== delBtn.dataset.id));
+        renderPesadasInModal(editingId);
+      }
+    });
 
     // Filters (debounced search)
     document.getElementById('search-animals').addEventListener('input', ui.debounce(() => { animalsPage = 1; renderAnimals(); }, 300));

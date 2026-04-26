@@ -10,6 +10,7 @@ const Reports = (() => {
   let _chartHacienda = null;
   let _chartFinanzas = null;
   let _chartRepro    = null;
+  let _chartPeso     = null;
 
   // Color palette matching app theme
   const CHART_COLORS = ['#3d6b3f', '#7ab87d', '#2c7da0', '#c06c2b', '#7c3aed', '#c0392b'];
@@ -86,6 +87,66 @@ const Reports = (() => {
           <td>${total > 0 ? Math.round(c / total * 100) + '%' : '—'}</td>
         </tr>`).join('')
       : '<tr class="empty-row"><td colspan="3">Sin animales activos.</td></tr>';
+
+    populatePesoSelector();
+  }
+
+  function populatePesoSelector() {
+    const sel = document.getElementById('rpt-peso-animal');
+    if (!sel) return;
+    const prev = sel.value;
+    const animals = getAnimals().filter(a => a.estado === 'activo')
+      .sort((a, b) => (a.caravana || '').localeCompare(b.caravana || ''));
+    sel.innerHTML = '<option value="">— Seleccionar —</option>'
+      + animals.map(a => `<option value="${a.id}"${a.id === prev ? ' selected' : ''}>${a.caravana}${a.nombre ? ' — ' + a.nombre : ''}</option>`).join('');
+    if (prev && sel.value !== prev) renderPesoChart('');
+  }
+
+  function renderPesoChart(animalId) {
+    _chartPeso = destroyChart(_chartPeso);
+    const empty = document.getElementById('rpt-peso-empty');
+    const wrap  = document.getElementById('rpt-peso-chart-wrap');
+    if (!animalId) {
+      if (empty) { empty.textContent = 'Seleccioná un animal para ver su evolución de peso.'; empty.style.display = ''; }
+      if (wrap)  wrap.style.display = 'none';
+      return;
+    }
+    const pesadas = (Storage.get('ag_pesadas') || [])
+      .filter(p => p.animalId === animalId)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+    if (!pesadas.length) {
+      if (empty) { empty.textContent = 'Este animal no tiene pesadas registradas.'; empty.style.display = ''; }
+      if (wrap)  wrap.style.display = 'none';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    if (wrap)  wrap.style.display = '';
+    const canvas = document.getElementById('chart-peso');
+    if (!canvas || typeof Chart === 'undefined') return;
+    _chartPeso = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: pesadas.map(p => p.fecha),
+        datasets: [{
+          label: 'Peso (kg)',
+          data: pesadas.map(p => p.peso_kg),
+          borderColor: CHART_GREEN,
+          backgroundColor: 'rgba(61,107,63,0.08)',
+          pointBackgroundColor: CHART_GREEN,
+          pointRadius: 5,
+          tension: 0.3,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: false, title: { display: true, text: 'kg', color: getTextColor() }, ticks: { color: getTextColor() } },
+          x: { title: { display: true, text: 'Fecha', color: getTextColor() }, ticks: { color: getTextColor() } }
+        }
+      }
+    });
   }
 
   // --- Tab: Finanzas ---
@@ -602,7 +663,7 @@ const Reports = (() => {
   const ALL_KEYS = ['ag_animals', 'ag_movements', 'ag_history', 'ag_reproduction', 'ag_sanidad',
                     'ag_transactions', 'ag_amortizations', 'ag_presupuesto', 'ag_cotizacion',
                     'ag_fields', 'ag_crop_history', 'ag_forraje',
-                    'ag_alertas', 'ag_vencimientos'];
+                    'ag_alertas', 'ag_vencimientos', 'ag_pesadas'];
 
   function exportBackup() {
     const backup = {};
@@ -635,6 +696,7 @@ const Reports = (() => {
 
   // --- Public ---
   function refresh() {
+    _chartPeso = destroyChart(_chartPeso);
     renderHacienda();
     renderFinanzas();
     renderReproduccion();
@@ -662,6 +724,8 @@ const Reports = (() => {
     document.getElementById('senasa-check-all')?.addEventListener('change', e => {
       document.querySelectorAll('.senasa-check').forEach(c => { c.checked = e.target.checked; });
     });
+
+    document.getElementById('rpt-peso-animal')?.addEventListener('change', e => renderPesoChart(e.target.value));
 
     document.getElementById('btn-export-backup')?.addEventListener('click', exportBackup);
     document.getElementById('import-backup-input')?.addEventListener('change', e => {

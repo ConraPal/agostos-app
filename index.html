@@ -836,6 +836,17 @@
         </div>
       </div>
 
+      <!-- Evolución de peso -->
+      <div class="rpt-section" style="margin-top:20px">
+        <h3>Evolución de peso por animal</h3>
+        <div class="form-group" style="max-width:320px;margin-bottom:16px">
+          <label for="rpt-peso-animal">Animal</label>
+          <select id="rpt-peso-animal"><option value="">— Seleccionar —</option></select>
+        </div>
+        <p id="rpt-peso-empty" style="color:var(--color-muted);font-size:13px">Seleccioná un animal para ver su evolución de peso.</p>
+        <div class="chart-container" id="rpt-peso-chart-wrap" style="display:none"><canvas id="chart-peso"></canvas></div>
+      </div>
+
       <!-- Tab: Finanzas -->
       <div id="tab-rpt-finanzas" class="tab-content">
         <div class="rpt-section">
@@ -1300,6 +1311,13 @@
               </div>
               <div class="form-group"><!-- spacer --></div>
             </div>
+          </div>
+        </details>
+
+        <details class="rfid-section" id="pesadas-section">
+          <summary>Pesadas históricas</summary>
+          <div class="rfid-section-body" id="pesadas-body">
+            <p class="form-hint" style="padding:8px 0">Guardá el animal primero para registrar pesadas.</p>
           </div>
         </details>
 
